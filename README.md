@@ -6,6 +6,12 @@ Status: documentation only. No application, bank connections, hosting, or paid s
 
 Repository: [kah-eru/budget](https://github.com/kah-eru/budget).
 
+## AI context workflow
+
+[AGENTS.md](AGENTS.md) requires the [project-context skill](.agents/skills/project-context/SKILL.md) on every prompt in this repository. Read the docs and [AI_HANDOFF.md](AI_HANDOFF.md) before work; update affected docs and refresh the handoff before finishing, including no-change turns. The handoff records current decisions, latest changes, actual validation, blockers, and ordered next steps.
+
+This is repository guidance, not a background hook. The skill is stored in Codex's repository skill directory; if discovery has not refreshed, the agent can read its file directly as required by AGENTS.md. [Official skill discovery](https://learn.chatgpt.com/docs/build-skills) and [project instruction loading](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+
 ## Project documents
 
 - [Product and technical design](docs/superpowers/specs/2026-09-22-budget-app-design.md): requirements, privacy, screens, data model, integrations, and release criteria.
