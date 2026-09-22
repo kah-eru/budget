@@ -1,0 +1,242 @@
+# Low-fidelity wireframes and user flows
+
+Status: first draft for UX review, not a working app or final visual design. All names/amounts below are illustrative. These wireframes implement the user's direction: Flowbite components first, low fidelity, and attention to user journeys before decoration.
+
+Read alongside the [product spec](superpowers/specs/2026-09-22-budget-app-design.md) and [build plan](superpowers/plans/2026-09-22-budget-app.md). Permissions and financial calculations remain defined by the spec.
+
+## Navigation and reusable components
+
+The active workspace stays visible: Personal, Partner group, or a named Friends group. Switching context changes transactions, budgets, rules, and insights together. Ask before discarding an unsaved edit; never transfer a draft or permission decision silently between workspaces.
+
+Phone destinations: Overview, Timeline, Budgets, Insights, More. More opens a page containing Accounts, Sharing & people, Statements & imports, Notifications, and Settings. A notification button is also available in the header. Desktop uses the same destinations in a sidebar.
+
+| UI need | Reuse from Flowbite | App-specific work |
+| --- | --- | --- |
+| Phone/desktop shell | Bottom navigation, sidebar, dropdown | Routes and current workspace. |
+| Overview | Cards, badges, progress bars, buttons | Authorized totals, budget status, freshness. |
+| Spending history | Timeline, list group, table, pagination controls | Dates, cursor paging, amounts, transaction links. |
+| Filters/editors | Forms, select, checkbox, drawer/modal | Validation, permissions, save/back behavior. |
+| Sharing | List group, checkbox/toggle, alert, modal | Who sees which account and confirmation. |
+| Alerts/results | Alerts, toast, badge, skeleton, spinner | Job state, retry action, inbox persistence. |
+| Charts | Documented chart integration | Financial series, selection, equivalent data table. |
+
+References: [Flowbite catalog](https://github.com/themesberg/flowbite), [Django integration](https://flowbite.com/docs/getting-started/django/), [bottom navigation](https://flowbite.com/docs/components/bottom-navigation/), [timeline](https://flowbite.com/docs/components/timeline/), and [charts](https://flowbite.com/docs/plugins/charts/). Use the standard open-source catalog first; paid templates are not assumed. Implement missing finance logic, not a replacement widget library.
+
+## 1. First use: connect privately, then choose sharing
+
+Journey: sign in/accept invitation -> choose workspace -> connect bank or import CSV -> select accounts -> initial import -> Overview. Linking is always owned by the signed-in person. Sharing is a separate explicit action.
+
+```text
++----------------------------------+
+| Personal v               Alerts  |
+| Add your first account            |
+|                                  |
+| Track spending in one place.     |
+| New accounts start private.      |
+|                                  |
+| [ Connect a bank ]               |
+| [ Import a CSV instead ]         |
+|                                  |
+| Your accounts                    |
+| No accounts connected yet.       |
+|                                  |
+| Overview Timeline Budgets        |
+|           Insights More          |
++----------------------------------+
+```
+
+The two-line navigation here is notation for the five destinations, not a prescribed two-row bottom bar. Actual layout must fit readable labels/hit areas at the minimum viewport.
+
+Bank connection opens Plaid's existing Link UI. Reuse that flow; do not design a bank-password form. On return, list available accounts with import checkboxes and a Private badge. Cancel returns safely to Accounts. A partial initial import shows Loading history and the last bank update; it does not show a misleading zero-spend final result.
+
+## 2. Overview: understand the period, then inspect
+
+Journey: select workspace/period -> see posted spend and budget status -> tap category/budget/recent transaction -> matching timeline or purchase.
+
+```text
++----------------------------------+
+| Partner group v          Alerts  |
+| < September 2026 >     Month/Year |
+|                                  |
+| Posted spending          $1,240  |
+| Pending                    $38  |
+| Updated 10 minutes ago           |
+| [ Sync my accounts ]             |
+|                                  |
+| Budgets                 View all |
+| Dining     $212 / $200   $12 over |
+| [====================]           |
+| Groceries  $180 / $400            |
+| [=========           ]           |
+|                                  |
+| Recent spending         View all |
+| Sep 22  Grocery store       $45 > |
+| Sep 21  Cafe                 $8 > |
+|                                  |
+| Overview Timeline Budgets        |
+|           Insights More          |
++----------------------------------+
+```
+
+Sync my accounts only refreshes connections owned by the current user, even in a group. Show each connection's state and allow retry/reconnect from Accounts. Other members' shared data shows its own freshness; membership does not grant control of their connections. Empty budgets offer Create a budget. Always label money as posted/pending rather than blending the two.
+
+## 3. Timeline: investigate, filter, and edit
+
+Journey: Timeline -> filters/date/chart point -> purchase -> edit -> save -> return to the same position and filters.
+
+```text
++----------------------------------+
+| Partner group v          Alerts  |
+| Timeline          September  v   |
+| [ Search merchant ] [ Filters ]  |
+|                                  |
+| [ Daily / Cumulative chart ]     |
+| Selected: Sep 22     Spent $45    |
+| [ View chart data as a table ]   |
+|                                  |
+| Sep 22                    $45    |
+| o Grocery store            $45 > |
+|   Groceries / Your checking      |
+| Sep 21                     $8    |
+| o Cafe                      $8 > |
+|   Dining / Friend's account      |
+|                                  |
+| [ Load more ]                    |
+| Overview Timeline Budgets        |
+|           Insights More          |
++----------------------------------+
+
++----------------------------------+
+| < Back       Edit purchase       |
+| Partner group                    |
+| Grocery store        Sep 22 $45  |
+| Original bank amount: read-only  |
+|                                  |
+| Display name [ Grocery store ]   |
+| Category     [ Groceries     v ] |
+| Type         [ Expense       v ] |
+| Group note   [                 ] |
+|                                  |
+| [ Create a rule for this name ]  |
+|                                  |
+| [ Save changes ]     Cancel      |
++----------------------------------+
+```
+
+For another member's purchase, show a read-only detail page, not a Save button. Notes explicitly say Personal note or Group note. Filters include category, merchant, account, person, and dates; apply/reset is visible. No matches offers Clear filters. Failed save preserves input; discard confirmation protects unsaved edits. Keyboard-open behavior must keep fields and actions accessible.
+
+Rule journey: create from purchase -> choose exact merchant/description contains -> select or create category -> preview affected existing purchases -> choose Apply to existing history -> save rule. Preview states that manual category overrides will be preserved. Future matches use the saved rule automatically. A background backfill shows progress and a link back to results.
+
+## 4. Budget and alert: set a threshold and act on it
+
+Journey: Budgets -> Create budget -> select category or merchant -> enter positive limit and monthly/yearly period -> save -> inspect progress. Push activation is optional and does not block saving a budget.
+
+```text
++----------------------------------+
+| < Budgets       Partner group    |
+| Dining                           |
+| September 2026                   |
+| $212 spent / $200 budget         |
+| $12 over                         |
+| [====================]           |
+|                                  |
+| [ View matching transactions ]  |
+| [ Edit budget ]                  |
+|                                  |
+| Notifications                    |
+| In-app: enabled                  |
+| This phone: not enabled          |
+| [ Enable push on this phone ]    |
++----------------------------------+
+```
+
+Alert journey: threshold crossed -> inbox/push -> sign in if needed -> affected budget -> filtered transactions. Show pending separately and explain that alerts follow bank updates. If access was revoked, show This item is no longer available and link to current Overview; never display saved private detail.
+
+## 5. Share finances with a friend
+
+Journey: More -> Sharing & people -> create/select group -> invite person -> friend accepts -> each owner chooses accounts to share -> shared Overview. Account owners can share after creating the group or after acceptance; preview who can see the data in either case.
+
+```text
++----------------------------------+
+| < Sharing        Friends group   |
+| Members: You, Alex               |
+| [ Invite someone ]               |
+|                                  |
+| Your accounts in this group      |
+| [x] Chase checking               |
+| [ ] Chase credit                 |
+| [ ] Marcus savings               |
+|                                  |
+| Alex will see past and future    |
+| transactions for selected        |
+| accounts. Personal notes and     |
+| statement PDFs stay private.     |
+|                                  |
+| [ Review sharing changes ]       |
++----------------------------------+
+```
+
+Review shows the added/removed accounts and current recipients before Save sharing. Newly invited members will see accounts already shared with the group: disclose this before sending the invitation and notify account owners when membership changes. A friend can share their accounts back, but accepting an invite never automatically shares their personal data. Revocation updates the group's totals/timeline and cancels access-dependent outputs. Offer a separate two-person group when the owner wants to share with one friend rather than every member of an existing group.
+
+AI permission is not hidden inside this sharing form. A separate account/provider consent step is required before external AI processing.
+
+## 6. AI insights: understand scope and cost before sending
+
+Journey: Insights -> configure personal key if missing -> choose workspace/period -> review eligible accounts and payload -> request analysis -> progress -> findings with links to source totals/timeline.
+
+```text
++----------------------------------+
+| Partner group v          Alerts  |
+| Insights          September v    |
+|                                  |
+| Analyze spending patterns        |
+| Key: configured (yours)          |
+| 2 of 3 shared accounts eligible  |
+| 1 owner has not enabled AI use   |
+|                                  |
+| [ Review data being sent ]       |
+| Estimate: shown before request  |
+| Remaining daily allowance: ...   |
+| [ Generate insights ]            |
+|                                  |
+| Results are visible only to you. |
++----------------------------------+
+```
+
+The ellipsis is a wireframe position for the user's actual configured allowance, not permission to ship placeholder copy. Preview uses plain language for categories/totals shared with the selected provider. Key input appears only in Settings and is masked after save. Missing consent gives a partial-analysis notice, not an attempt to grant permission for another owner. During generation show progress and allow navigation away; return to the same job without another charge. Failure retains context and explains whether retry could incur another charge.
+
+## 7. Secondary paths and recovery
+
+| Starting point | Happy path | Required recovery |
+| --- | --- | --- |
+| More -> Statements | Owned account -> month -> download bank PDF or upload a PDF | Unsupported bank offers upload; reject invalid files without losing account selection. |
+| More -> Imports | Owned account -> choose CSV -> map columns -> preview -> import job -> results | Invalid rows show row errors before commit; overlap review keeps legitimate duplicates. |
+| Accounts -> connection warning | Reconnect through Plaid -> sync resumes | Cancel keeps existing history and reconnect notice. |
+| Notification settings | Enable device push -> browser permission -> confirmation | Denial explains browser settings; inbox remains usable. |
+| Offline / interrupted network | Clear connection status -> retry when online | Preserve unsaved input within the current page; do not queue financial edits silently. |
+
+## Desktop adaptation and review tasks
+
+```text
++------------+----------------------------------------------+
+| Workspace  | Period / filters                    Alerts   |
+| Overview   |                                              |
+| Timeline   | Main list / chart       Selected detail      |
+| Budgets    |                                              |
+| Insights   |                                              |
+| More       |                                              |
++------------+----------------------------------------------+
+```
+
+Use the same Flowbite components, routes, labels, and permissions across breakpoints. Additional width permits a second column; it does not introduce a separate workflow. The main page scrolls naturally; keyboard focus and screen-reader reading order follow the meaningful content order.
+
+Review by walking through these tasks, then amend the wireframes before polishing screens:
+
+1. Connect a bank without sharing anything, then share only checking with a friend.
+2. Find yesterday's purchase, change its category, and create a rule for matching history/future imports.
+3. Find why a budget is over its limit from an inbox alert.
+4. Identify which workspace and which people an edit or sharing action affects.
+5. Generate an insight, explaining which accounts are omitted and whose key pays.
+6. Recover from cancelled bank linking, failed save, denied push, revoked sharing, and offline mode.
+
+Success means users can identify their next action, current scope, consequence, and recovery path. These are reviewable low-fidelity artifacts; no usability testing or working UI is claimed yet.

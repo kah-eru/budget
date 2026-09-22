@@ -23,6 +23,7 @@ Confirmed features:
 - API-key-based AI financial insights. The user has no provider preference.
 - A chronological timeline of money spent.
 - A polished phone-first web app with responsive layouts and fast interactions, while remaining fully usable on tablets and desktop.
+- Use Flowbite UI components rather than recreating existing controls. Start design with low-fidelity wireframes focused on UX and user flow.
 
 The user wants spending visibility and notifications, not the ability to decline card purchases.
 
@@ -173,7 +174,9 @@ API behavior must be checked against the official SDK/reference during implement
 
 ## 5. Architecture recommendation
 
-Use one Django application with server-rendered templates, modest vanilla JavaScript, PostgreSQL, and a web manifest/service worker for push. Django supplies authentication, forms, database migrations, and testing in one framework. Use supported security patch releases; proposed baseline is Python 3.12+ and Django 5.2 LTS. [Django documentation](https://docs.djangoproject.com/en/5.2/)
+Use one Django application with server-rendered templates, Tailwind CSS and Flowbite's HTML/JavaScript components, PostgreSQL, and a web manifest/service worker for push. Add only application-specific JavaScript around the existing components. Django supplies authentication, forms, database migrations, and testing in one framework. Use supported security patch releases; proposed baseline is Python 3.12+ and Django 5.2 LTS. [Django documentation](https://docs.djangoproject.com/en/5.2/) and [Flowbite's Django integration](https://flowbite.com/docs/getting-started/django/).
+
+Flowbite is an explicit user choice. Use its standard open-source components with Django template includes; Flowbite React is unnecessary for this stack. Pin compatible Flowbite/Tailwind versions at implementation and build local production assets with a small Node-based asset pipeline. Include template/component paths in Tailwind's source scanning. Do not use a runtime CDN/playground compiler in production. Reuse existing components and behaviors before adding custom controls or a second UI kit. [Flowbite source and component catalog](https://github.com/themesberg/flowbite)
 
 Use the official Plaid Python SDK, a maintained Web Push library, and established encryption/JWT libraries where required. Do not implement cryptography or push protocols from scratch. Verify compatibility and pin concrete versions when scaffolding.
 
@@ -262,7 +265,9 @@ These are first-release requirements because financial correctness and selective
 
 The main job of the phone UI is to answer what was spent, how much remains, and what needs attention, then let the user inspect or correct a purchase with few taps. Design core flows on a narrow screen first, then use additional space on tablet/desktop. Responsive means both fitting the screen and responding promptly to input.
 
-Proposed visual direction: a calm personal finance journal with a recognizable dated spending rail as the main visual signature. Use a restrained palette: canvas `#F5F7FA`, surface `#FFFFFF`, text `#17243A`, primary `#2454B8`, positive `#176B52`, and over-budget `#B42335`. Verify contrast for actual text/background combinations; don't use these colors as the sole way to communicate state. Use a compact Manrope heading face with system fallbacks, system UI body text, and tabular numerals for aligned amounts. Self-host at most one small font file with swap/fallback behavior; avoid decorative hero images and heavy animation. These are proposed design tokens, not an approved final brand.
+Design starts with the [low-fidelity wireframes and user flows](../../ux-wireframes.md). Validate navigation, workspace context, action order, disclosure of sharing, and recovery paths before choosing decorative styling. Use neutral grayscale boxes and plain text for this stage; the earlier custom palette/font proposal is superseded. During implementation start with Flowbite defaults and system typography, making small consistent theme changes only after the flows work. Reuse Flowbite's timeline, navigation, cards, forms, progress indicators, dialogs/drawers, tables, alerts, and loading states; do not build an independent design system.
+
+Keep repeated component markup in simple Django template includes. Preserve the library's documented behavior, then verify keyboard, focus, touch, and responsive behavior in our actual composition. If a required behavior is missing, document the gap and add the smallest adaptation; do not recreate an available component. Charts should use the existing Flowbite chart integration or a suitable maintained chart package, with a separate accessible data table; never hand-build a chart engine. [Flowbite charts](https://flowbite.com/docs/plugins/charts/)
 
 Layout and navigation requirements:
 
@@ -290,7 +295,7 @@ Test current stable iOS Safari and Android Chrome on actual phones, plus desktop
 
 Proposed performance targets: LCP at or below 2.5 seconds, INP at or below 200 ms, and CLS at or below 0.1 at the 75th percentile when field data is available. Before launch, use a documented mid-range Android/4G lab profile and measure key interactions directly; lab results are not field percentiles. These browser-experience targets complement, rather than replace, the server/load targets in section 5. [Core Web Vitals definitions](https://web.dev/articles/vitals)
 
-Prefer server-rendered useful content, minimal JavaScript, paginated feeds, compressed assets, and lazy loading of nonessential chart/AI UI. Proposed initial-route budget: at most 150 KiB compressed first-party JavaScript, with third-party Plaid assets loaded only when connecting/reconnecting. No chart or AI library should block viewing purchases. Measure the actual asset/network trace and investigate long main-thread tasks before adding dependencies.
+Prefer server-rendered useful content, minimal JavaScript, paginated feeds, compressed assets, and lazy loading of nonessential chart/AI UI. Proposed initial-route budget: at most 150 KiB compressed app-delivered JavaScript, including Flowbite and other bundled dependencies, with third-party Plaid assets loaded only when connecting/reconnecting. No chart or AI library should block viewing purchases. Measure the actual asset/network trace and investigate long main-thread tasks before adding dependencies. Use selective supported component imports/builds where practical, while preserving Flowbite behavior.
 
 ## 8. Growth without a rewrite
 
@@ -334,6 +339,7 @@ Deferred: billing users, public signup, social feeds, settlements, card issuing/
 - Core flows pass the phone/tablet/desktop width matrix, real iOS/Android browser checks, keyboard-open and enlarged-text cases, and screenshot review without hidden controls or whole-page overflow.
 - Timeline charts, purchase editing, sharing, and notifications are touch/keyboard accessible; browser Back preserves context and slow-network errors preserve user input.
 - Mobile loading/interaction/layout-shift measurements and asset sizes are recorded against section 7 targets before mobile performance is called verified.
+- The low-fidelity journeys are reviewed before visual polish; each implemented UI pattern is mapped to a reused Flowbite component or a documented genuine gap.
 
 ## 10. Review notes
 

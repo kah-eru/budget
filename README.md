@@ -9,11 +9,13 @@ Repository: [kah-eru/budget](https://github.com/kah-eru/budget).
 ## Project documents
 
 - [Product and technical design](docs/superpowers/specs/2026-09-22-budget-app-design.md): requirements, privacy, screens, data model, integrations, and release criteria.
+- [Low-fidelity wireframes and user flows](docs/ux-wireframes.md): phone layouts, key journeys, error states, and Flowbite component mapping.
 - [Build plan](docs/superpowers/plans/2026-09-22-budget-app.md): delivery order, proposed files, checks, and expansion triggers.
 
 ## Agreed scope
 
 - A phone-first responsive web app: touch-friendly navigation and forms, readable charts, home-screen installation, and measured interaction performance across mobile and desktop browsers.
+- Use Flowbite/Tailwind components first. Establish low-fidelity layouts and user flows before visual polish; reuse existing components instead of recreating them.
 - Monthly and yearly spending, a chronological spending timeline, transaction search, and editable purchase details.
 - Automatic bank imports and a manual **Sync now** button.
 - Custom categories and merchant/name rules for existing and future transactions.

@@ -6,9 +6,11 @@
 
 **Architecture:** One modular server-rendered Django application, PostgreSQL, shared private object storage, and independently scalable web/operational/AI worker processes. Accounts belong to people; explicit account grants determine group visibility. Durable database jobs, sessions, leases, and quotas support multiple instances from the start.
 
-**Tech Stack:** Proposed Python 3.12+, Django 5.2 LTS, PostgreSQL, official Plaid Python SDK, native browser APIs, and maintained libraries for Web Push, cryptography, and one selected AI provider. Use k6 for the development-only load gate. The user has no AI-provider preference.
+**Tech Stack:** Proposed Python 3.12+, Django 5.2 LTS, PostgreSQL, official Plaid Python SDK, Flowbite HTML/JavaScript components with Tailwind CSS and a small Node asset build, native browser APIs, and maintained libraries for Web Push, cryptography, and one selected AI provider. Flowbite is user-selected; the user has no AI-provider preference. Use k6 for the development-only load gate.
 
 **Spec:** [Product and technical design](../specs/2026-09-22-budget-app-design.md).
+
+**UX reference:** [Low-fidelity wireframes and user flows](../../ux-wireframes.md).
 
 **Status:** Draft delivery plan for review, not executed. The workspace was empty when documentation began. File paths below are proposed. Expand each milestone into small executable changes against the actual code when implementation begins; this document deliberately does not pretend unbuilt functions or test fixtures already exist.
 
@@ -26,7 +28,8 @@
 - AI uses the requesting user's key and separate account-owner consent for the selected workspace/provider; ordinary sharing never grants AI consent.
 - Multiple web/worker processes must share sessions, leases, quotas, and file storage from the start.
 - Phone-first layouts must reflow from 320 CSS pixels, use at least 44 by 44 CSS-pixel hit areas, preserve zoom, and keep controls usable with the keyboard open.
-- Mobile performance targets: LCP <= 2.5 seconds, INP <= 200 ms, CLS <= 0.1; distinguish prelaunch lab measurements from field percentiles. Initial first-party JavaScript budget: 150 KiB compressed.
+- Mobile performance targets: LCP <= 2.5 seconds, INP <= 200 ms, CLS <= 0.1; distinguish prelaunch lab measurements from field percentiles. Initial app-delivered JavaScript budget including Flowbite/bundled dependencies: 150 KiB compressed.
+- Start with low-fidelity UX/user-flow review, then compose existing Flowbite components; no custom replacements for available components or a competing UI kit.
 - Proposed load gate: 1,000 users, 1 million transactions, 100 concurrent sessions, 25 requests/second for 15 minutes; interactive p95 below 750 ms and p99 below 2 seconds.
 
 ## Review focus
@@ -44,6 +47,8 @@ Additional gates from the revised scope: timeline/report equality in milestone 2
 ```text
 manage.py
 pyproject.toml
+package.json
+package-lock.json
 .env.example
 .gitignore
 config/
@@ -70,13 +75,25 @@ budget/
   management/commands/seed_load_data.py
   migrations/
   templates/budget/
+    components/
   static/budget/
+assets/
+  app.css
+  app.js
   tests/
 tests/load/budget.js
 tests/browser/mobile.spec.js
 ```
 
-Create files only when their milestone needs them. Framework-required package files are implicit. Reuse Django authentication/views/forms rather than building another authentication system. Tests use Django's included runner, not an additional test framework.
+Create files only when their milestone needs them. Framework-required package files are implicit. Reuse Django authentication/views/forms rather than building another authentication system. Server-side tests use Django's included runner; browser and load checks use the tools named in milestone 8.
+
+## UX first: low-fidelity review
+
+**Artifact:** [Wireframes and journeys](../../ux-wireframes.md), already drafted as documentation.
+
+- [ ] Walk through first connection, private-to-shared account choice, inspect/edit purchase, create/backfill a category rule, budget alert, and consented AI analysis using the low-fidelity screens.
+- [ ] Check that every screen has visible workspace context, a primary action, a clear Back/Cancel path, and loading/empty/error outcomes. Test understanding of past-history sharing and AI consent separately.
+- [ ] Correct confusing navigation or missing steps in the wireframes before visual polish. Reuse the Flowbite mappings in that document; adjust composition rather than replacing the library.
 
 ## Milestone 1: private users, groups, and account sharing
 
@@ -90,7 +107,8 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Write a failing access test covering personal/private, shared, unrelated-group, revoked-share, and removed-member cases. Assert both list exclusion and rejection of direct object access.
 - [ ] Centralize visible-account and editable-account queries; require the authenticated user and active workspace on every operation. Account owner may edit their transactions; group members may edit shared budgets/rules only within their group.
 - [ ] Build group creation, invite acceptance, explicit share/unshare, membership removal, and personal/group switching. Recheck access at mutation time; reject expired/reused/wrong-email invitations.
-- [ ] Establish the responsive app shell and shared design tokens from spec section 7: labeled bottom navigation on phones, side navigation at larger widths, visible workspace context, safe-area padding, zoom support, and native browser navigation. Keep financial state out of browser caches.
+- [ ] Configure pinned compatible Tailwind/Flowbite packages and local asset build scripts using the official Django integration as reference. Scan Django templates for CSS utilities, build optimized static assets, and initialize interactive components once. Use Flowbite HTML/JS, not a React rewrite or runtime CDN compiler.
+- [ ] Compose the shell from Flowbite bottom navigation/sidebar, dropdown, badge, form, and alert components according to the wireframes. Use template includes for repeated markup, system typography, and restrained default styling. Preserve visible workspace context, safe areas, zoom, browser navigation, and private-cache rules; do not create custom equivalents of provided widgets.
 - [ ] Test one user sharing different accounts in a partner group and a friend group, a friend contributing an account, and collaboration on shared budgets. Reject cross-group access; explicitly preview existing group history on invitation and preserve owner-only individual purchase edits.
 - [ ] Add workspace data/permission revision updates for mutations, shares, and membership changes; use these for derived-output invalidation in later milestones.
 - [ ] Add login throttling and password recovery using maintained framework-compatible mechanisms; do not hand-roll password handling.
@@ -112,6 +130,7 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Implement CSV mapping/preview/commit. Reject malformed dates and sub-cent values, detect an identical file, and preview possible overlap without silently merging equal-looking purchases.
 - [ ] Add tests for exact-file repeat, two valid identical-looking purchases, invalid-row all-or-nothing import, and export formula escaping. Verify personal notes never appear in a group export.
 - [ ] Implement phone transaction rows, full-screen purchase editing, responsive filters, and tap/keyboard chart drilldown with equivalent tabular data. Preserve list position/filter URLs on Back, typed values on save failure, and visible actions when the virtual keyboard opens. Cancel stale filter requests.
+- [ ] Reuse Flowbite timeline/list/table, forms, drawer/dialog, progress, and loading components. Choose its documented chart integration or a suitable maintained chart library and verify dependency compatibility/terms before installation. Keep custom code limited to finance-specific behavior, data binding, and accessible adaptation.
 - [ ] Run `python manage.py test budget.tests.test_reporting budget.tests.test_timeline budget.tests.test_imports`. Review phone/desktop screenshots and check 320/360/390/430/768/1024/1440 widths, keyboard use, chart-to-feed drilldown, and 200% text enlargement. Reuse this matrix for budgets, sharing, and Insights as they land.
 
 ## Milestone 3: Plaid sync and durable jobs
@@ -206,7 +225,7 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Verify graceful shutdown, readiness, bounded database pools, and backward-compatible migrations. Confirm each worker pool's configured concurrency stays within provider/database budgets when replicas are added.
 - [ ] Add Playwright browser checks for mobile navigation, viewport overflow, long transaction names/large amounts, purchase edit success/failure, filter Back navigation, sharing dialogs, and AI loading/error states. Use synthetic data; verify Chromium, Firefox, and WebKit, then run the actual-device Safari/Chrome checks in the spec. Review screenshots rather than treating screenshot generation as review.
 - [ ] Run `npx playwright test tests/browser/mobile.spec.js` after configuring the development-only browser runner. Record viewport/browser/device versions and manual VoiceOver/TalkBack, keyboard-open, safe-area, and text-zoom results. Automated WebKit coverage does not establish iOS device compatibility by itself.
-- [ ] Measure useful first render, key interaction latency, layout shift, and first-party compressed JavaScript under a documented mid-range Android/4G profile. Check spec section 7 targets and defer nonessential assets/Plaid loading. Record lab evidence separately from field metrics and server load-test results.
+- [ ] Measure useful first render, key interaction latency, layout shift, and compressed app-delivered JavaScript including Flowbite/dependencies under a documented mid-range Android/4G profile. Check spec section 7 targets and defer nonessential assets/Plaid loading. Record lab evidence separately from field metrics and server load-test results.
 - [ ] Run `python manage.py test budget.tests.test_concurrency`, followed by `k6 run tests/load/budget.js` against the isolated test deployment configured in the harness. Save the command, environment/hardware, dataset, results, and bottleneck fixes in operations docs. These commands are planned, not run in this documentation task.
 - [ ] Resolve failures before marking scalability verified; any revised target must be recorded explicitly. Rerun focused correctness tests for any performance change, then the release checks from milestone 7.
 
@@ -216,4 +235,4 @@ Milestones 1-2 yield collaborative finance sharing, CSV data, and the spending t
 
 Before connecting real accounts for partners or friends, pass the multi-group isolation and multi-instance checks and review remaining Plaid capacity. Friends can share finances in the first release. Multiple-worker correctness is a release requirement, not a future redesign. Paid Plaid, additional hosting capacity, public signup, and native apps remain separate operational/product decisions.
 
-Documentation self-review: every confirmed feature maps to a milestone; private sharing and monetary correctness have explicit checks; no implementation or test execution is claimed. The next work item after document review is milestone 1, executed inline by default unless the user requests a different workflow.
+Documentation self-review: every confirmed feature maps to a milestone; private sharing and monetary correctness have explicit checks; no implementation or test execution is claimed. The next work item is the low-fidelity flow review, followed by milestone 1 after design review, executed inline by default unless the user requests a different workflow.
