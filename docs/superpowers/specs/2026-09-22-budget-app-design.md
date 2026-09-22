@@ -22,6 +22,7 @@ Confirmed features:
 - Scalable code structure and concurrent-load handling from the first release.
 - API-key-based AI financial insights. The user has no provider preference.
 - A chronological timeline of money spent.
+- A polished phone-first web app with responsive layouts and fast interactions, while remaining fully usable on tablets and desktop.
 
 The user wants spending visibility and notifications, not the ability to decline card purchases.
 
@@ -33,7 +34,7 @@ These fill gaps in the conversation and can be changed during review.
 
 | Decision | First-version default |
 | --- | --- |
-| Platform | Responsive web app installable on a phone home screen. |
+| Platform | Phone-first responsive web app, usable in a browser and installable on a phone home screen; mobile interaction quality is a first-release requirement. |
 | Registration | Invite-only; no public sign-up. |
 | Views | Personal workspace plus explicitly joined group workspaces. |
 | Sharing | Account owner shares individual accounts with a group; all group members see those accounts' available transaction history. |
@@ -257,7 +258,39 @@ These are first-release requirements because financial correctness and selective
 9. Spending timeline with dated feed, daily totals, cumulative chart, and matching filters.
 10. Insights with payload preview, partial-coverage indicator, generate/status/result, provider/key configuration, usage ceilings, and per-account AI consent.
 
-Use native inputs, semantic tables, labeled controls, visible keyboard focus, sufficient contrast, and non-color-only budget states. Mobile layout must work at 360 CSS pixels. No decorative dashboard elements are required for the first version.
+### Phone-first UI and responsive behavior
+
+The main job of the phone UI is to answer what was spent, how much remains, and what needs attention, then let the user inspect or correct a purchase with few taps. Design core flows on a narrow screen first, then use additional space on tablet/desktop. Responsive means both fitting the screen and responding promptly to input.
+
+Proposed visual direction: a calm personal finance journal with a recognizable dated spending rail as the main visual signature. Use a restrained palette: canvas `#F5F7FA`, surface `#FFFFFF`, text `#17243A`, primary `#2454B8`, positive `#176B52`, and over-budget `#B42335`. Verify contrast for actual text/background combinations; don't use these colors as the sole way to communicate state. Use a compact Manrope heading face with system fallbacks, system UI body text, and tabular numerals for aligned amounts. Self-host at most one small font file with swap/fallback behavior; avoid decorative hero images and heavy animation. These are proposed design tokens, not an approved final brand.
+
+Layout and navigation requirements:
+
+- Phone navigation has five labeled destinations: Overview, Timeline, Budgets, Insights, and More. More contains accounts/sharing, statements, and settings; an always-reachable notification button opens the inbox. Show the active personal/group workspace prominently so edits cannot silently land in the wrong group.
+- Use a single primary content column on phones. At wider widths, move navigation to a side rail and allow summary/detail columns without changing labels or hiding functionality. Use content-driven CSS grid/flex breakpoints, not device-name checks.
+- Reflow from 320 CSS pixels through tablet and wide desktop without whole-page horizontal scrolling. Transaction rows become stacked labeled entries on phones and may become a semantic table on desktop. Long merchant names wrap; amounts, signs, and action buttons stay legible. Dense data gets an explicitly labeled local scroll region only where reflow would lose meaning. [W3C reflow guidance](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html)
+- Use at least 44 by 44 CSS-pixel hit areas for interactive controls, with spacing between destructive and common actions. Keep form text at least 16 CSS pixels; preserve pinch zoom and support 200% text enlargement. No functionality may depend only on hover, swiping, dragging, or color.
+- On phones, transaction editing is a dedicated full-screen page with labeled fields and an obvious Save changes action; filters use a compact accessible dialog or page. Preserve list position and filters when navigating back. Warn before discarding a dirty form. Larger screens may use an adjacent detail panel without changing the permission/save behavior.
+- Respect display cutouts and the home indicator with safe-area padding. Bottom navigation and sticky actions must not cover content or fields when the virtual keyboard opens; use dynamic viewport sizing with a fallback and test browser toolbar expansion/collapse. [WebKit safe-area guidance](https://webkit.org/blog/7929/designing-websites-for-iphone-x/)
+- Persist workspace, period, and filters in shareable/authenticated page URLs where appropriate. Native browser Back/Forward and reload must work. Never include API keys or sensitive raw purchase text in URLs.
+
+Charts, feedback, and accessibility:
+
+- Make timeline chart points selectable by tap and keyboard, with a visible selected-date summary and equivalent table/list. Reduce tick-label density on narrow screens; never shrink text until unreadable. Day/week/month aggregation may change presentation, but displayed totals always use the same accounting calculation.
+- Show an immediate pressed/loading state for sync, save, filter, and AI actions. Keep submitted form values after validation/network failure, identify errors beside fields, and announce status changes without stealing focus. Only show Saved or Sync complete after confirmed success; do not optimistically change financial totals.
+- Preserve reserved layout space while loading; use lightweight skeletons or progress text without flashing or indefinite unexplained spinners. Show actionable empty, offline, retry, reconnect-bank, and denied-notification states. Cancel outdated filter requests so late responses cannot overwrite the current selection.
+- Use semantic landmarks, real labels, visible focus, appropriate dialog focus/return behavior, and screen-reader descriptions. Respect reduced-motion preferences; motion is brief and functional. Verify keyboard, VoiceOver, and TalkBack paths for the core tasks.
+- Home-screen mode has the same navigation and permissions as browser mode. Provide platform-appropriate installation/push instructions only when relevant. Offline mode explains the connection requirement; it never pretends a bank sync or edit succeeded, and it does not persist private finance pages in the service-worker cache.
+
+### Mobile quality and performance gate
+
+Verify every core flow at 320, 360, 390, 430, 768, 1024, and 1440 CSS-pixel widths, including phone landscape, 200% text zoom, long names, large currency values, empty datasets, and keyboard-open forms. Review actual screenshots of Overview, Timeline, purchase editing, budgets, sharing, and Insights at phone and desktop sizes. Browser emulation supplements real-phone checks but does not replace them.
+
+Test current stable iOS Safari and Android Chrome on actual phones, plus desktop Safari, Chrome, Firefox, and Edge. Record browser/OS versions. Test installed home-screen mode where supported, invitation acceptance, bank-link return/cancellation, file upload, push permission, and notification deep links after login. Existing platform limits on Web Push still apply.
+
+Proposed performance targets: LCP at or below 2.5 seconds, INP at or below 200 ms, and CLS at or below 0.1 at the 75th percentile when field data is available. Before launch, use a documented mid-range Android/4G lab profile and measure key interactions directly; lab results are not field percentiles. These browser-experience targets complement, rather than replace, the server/load targets in section 5. [Core Web Vitals definitions](https://web.dev/articles/vitals)
+
+Prefer server-rendered useful content, minimal JavaScript, paginated feeds, compressed assets, and lazy loading of nonessential chart/AI UI. Proposed initial-route budget: at most 150 KiB compressed first-party JavaScript, with third-party Plaid assets loaded only when connecting/reconnecting. No chart or AI library should block viewing purchases. Measure the actual asset/network trace and investigate long main-thread tasks before adding dependencies.
 
 ## 8. Growth without a rewrite
 
@@ -298,6 +331,9 @@ Deferred: billing users, public signup, social feeds, settlements, card issuing/
 - AI failures, malicious labels, unsupported fact references, cost reservations, concurrent requests, and revocation during generation are covered by deterministic tests using a fake provider.
 - Core budgeting works without AI. AI output never changes the ledger or becomes the financial calculation source.
 - The documented multi-instance and load benchmark passes, with hardware and results recorded, before scalability is called verified.
+- Core flows pass the phone/tablet/desktop width matrix, real iOS/Android browser checks, keyboard-open and enlarged-text cases, and screenshot review without hidden controls or whole-page overflow.
+- Timeline charts, purchase editing, sharing, and notifications are touch/keyboard accessible; browser Back preserves context and slow-network errors preserve user input.
+- Mobile loading/interaction/layout-shift measurements and asset sizes are recorded against section 7 targets before mobile performance is called verified.
 
 ## 10. Review notes
 

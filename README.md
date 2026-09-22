@@ -13,6 +13,7 @@ Repository: [kah-eru/budget](https://github.com/kah-eru/budget).
 
 ## Agreed scope
 
+- A phone-first responsive web app: touch-friendly navigation and forms, readable charts, home-screen installation, and measured interaction performance across mobile and desktop browsers.
 - Monthly and yearly spending, a chronological spending timeline, transaction search, and editable purchase details.
 - Automatic bank imports and a manual **Sync now** button.
 - Custom categories and merchant/name rules for existing and future transactions.

@@ -25,6 +25,8 @@
 - Finance-sharing invitations, the spending timeline, and read-only API-key AI insights are first-release features.
 - AI uses the requesting user's key and separate account-owner consent for the selected workspace/provider; ordinary sharing never grants AI consent.
 - Multiple web/worker processes must share sessions, leases, quotas, and file storage from the start.
+- Phone-first layouts must reflow from 320 CSS pixels, use at least 44 by 44 CSS-pixel hit areas, preserve zoom, and keep controls usable with the keyboard open.
+- Mobile performance targets: LCP <= 2.5 seconds, INP <= 200 ms, CLS <= 0.1; distinguish prelaunch lab measurements from field percentiles. Initial first-party JavaScript budget: 150 KiB compressed.
 - Proposed load gate: 1,000 users, 1 million transactions, 100 concurrent sessions, 25 requests/second for 15 minutes; interactive p95 below 750 ms and p99 below 2 seconds.
 
 ## Review focus
@@ -71,6 +73,7 @@ budget/
   static/budget/
   tests/
 tests/load/budget.js
+tests/browser/mobile.spec.js
 ```
 
 Create files only when their milestone needs them. Framework-required package files are implicit. Reuse Django authentication/views/forms rather than building another authentication system. Tests use Django's included runner, not an additional test framework.
@@ -87,6 +90,7 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Write a failing access test covering personal/private, shared, unrelated-group, revoked-share, and removed-member cases. Assert both list exclusion and rejection of direct object access.
 - [ ] Centralize visible-account and editable-account queries; require the authenticated user and active workspace on every operation. Account owner may edit their transactions; group members may edit shared budgets/rules only within their group.
 - [ ] Build group creation, invite acceptance, explicit share/unshare, membership removal, and personal/group switching. Recheck access at mutation time; reject expired/reused/wrong-email invitations.
+- [ ] Establish the responsive app shell and shared design tokens from spec section 7: labeled bottom navigation on phones, side navigation at larger widths, visible workspace context, safe-area padding, zoom support, and native browser navigation. Keep financial state out of browser caches.
 - [ ] Test one user sharing different accounts in a partner group and a friend group, a friend contributing an account, and collaboration on shared budgets. Reject cross-group access; explicitly preview existing group history on invitation and preserve owner-only individual purchase edits.
 - [ ] Add workspace data/permission revision updates for mutations, shares, and membership changes; use these for derived-output invalidation in later milestones.
 - [ ] Add login throttling and password recovery using maintained framework-compatible mechanisms; do not hand-roll password handling.
@@ -107,7 +111,8 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Add initial account/date/ID and workspace/category indexes; cap pages, avoid per-row related queries, and aggregate in SQL. Add bounded-query-count assertions for 1 versus 100 rows; exports and large imports run in worker batches once milestone 3 supplies jobs.
 - [ ] Implement CSV mapping/preview/commit. Reject malformed dates and sub-cent values, detect an identical file, and preview possible overlap without silently merging equal-looking purchases.
 - [ ] Add tests for exact-file repeat, two valid identical-looking purchases, invalid-row all-or-nothing import, and export formula escaping. Verify personal notes never appear in a group export.
-- [ ] Run `python manage.py test budget.tests.test_reporting budget.tests.test_timeline budget.tests.test_imports`. Manually verify keyboard use, chart-to-feed drilldown, and 360-pixel layout.
+- [ ] Implement phone transaction rows, full-screen purchase editing, responsive filters, and tap/keyboard chart drilldown with equivalent tabular data. Preserve list position/filter URLs on Back, typed values on save failure, and visible actions when the virtual keyboard opens. Cancel stale filter requests.
+- [ ] Run `python manage.py test budget.tests.test_reporting budget.tests.test_timeline budget.tests.test_imports`. Review phone/desktop screenshots and check 320/360/390/430/768/1024/1440 widths, keyboard use, chart-to-feed drilldown, and 200% text enlargement. Reuse this matrix for budgets, sharing, and Insights as they land.
 
 ## Milestone 3: Plaid sync and durable jobs
 
@@ -153,6 +158,7 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Test member removal/share revocation after enqueue but before dispatch: no financial detail or unauthorized push can be sent. Test following an old notification URL after revocation.
 - [ ] Cache public assets only. Test that logout/another user's login cannot recover financial pages from a service-worker cache.
 - [ ] Run `python manage.py test budget.tests.test_notifications`; then verify actual push on both users' phones, installation guidance where required, denied permission, logout, and tapping an alert after session expiry.
+- [ ] Verify browser and installed home-screen navigation, safe areas, offline/retry copy, and keyboard-open forms on iOS Safari and Android Chrome. Record actual versions; simulate bank-link return/cancellation and permission denial without losing page context.
 
 ## Milestone 6: consented AI insights with a user API key
 
@@ -188,7 +194,7 @@ Create files only when their milestone needs them. Framework-required package fi
 
 ## Milestone 8: scalability and concurrency release gate
 
-**Files:** `budget/management/commands/seed_load_data.py`, `tests/load/budget.js`, `budget/tests/test_concurrency.py`, and `docs/operations.md` with measured results.
+**Files:** `budget/management/commands/seed_load_data.py`, `tests/load/budget.js`, `tests/browser/mobile.spec.js`, `budget/tests/test_concurrency.py`, and `docs/operations.md` with measured results.
 
 **Deliverable:** Recorded evidence that the first release meets its proposed capacity target and preserves access/accounting correctness across multiple processes.
 
@@ -198,6 +204,9 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] While the interactive scenario runs, enqueue 10 synthetic operational jobs/second with 20-100 ms mocked provider latency and measure operational queue start p95 under 30 seconds. Separately hold an AI mock call for 30 seconds and verify the interactive/operational targets still hold; record pool sizes so the result is reproducible.
 - [ ] Run two web replicas and at least two operational workers. Restart one replica and terminate a worker mid-job; assert session continuity, lease recovery, one committed purchase, preservation of edits, and correct cost reservations. Test simultaneous sharing revocation and timeline/AI/notification requests with zero unauthorized output after revocation commits.
 - [ ] Verify graceful shutdown, readiness, bounded database pools, and backward-compatible migrations. Confirm each worker pool's configured concurrency stays within provider/database budgets when replicas are added.
+- [ ] Add Playwright browser checks for mobile navigation, viewport overflow, long transaction names/large amounts, purchase edit success/failure, filter Back navigation, sharing dialogs, and AI loading/error states. Use synthetic data; verify Chromium, Firefox, and WebKit, then run the actual-device Safari/Chrome checks in the spec. Review screenshots rather than treating screenshot generation as review.
+- [ ] Run `npx playwright test tests/browser/mobile.spec.js` after configuring the development-only browser runner. Record viewport/browser/device versions and manual VoiceOver/TalkBack, keyboard-open, safe-area, and text-zoom results. Automated WebKit coverage does not establish iOS device compatibility by itself.
+- [ ] Measure useful first render, key interaction latency, layout shift, and first-party compressed JavaScript under a documented mid-range Android/4G profile. Check spec section 7 targets and defer nonessential assets/Plaid loading. Record lab evidence separately from field metrics and server load-test results.
 - [ ] Run `python manage.py test budget.tests.test_concurrency`, followed by `k6 run tests/load/budget.js` against the isolated test deployment configured in the harness. Save the command, environment/hardware, dataset, results, and bottleneck fixes in operations docs. These commands are planned, not run in this documentation task.
 - [ ] Resolve failures before marking scalability verified; any revised target must be recorded explicitly. Rerun focused correctness tests for any performance change, then the release checks from milestone 7.
 
