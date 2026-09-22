@@ -6,7 +6,7 @@ Updated: 2026-09-22 (project date). This is the current snapshot, not an append-
 
 Build a private budgeting web app for the user, their girlfriend, and invited friends who choose to share finances. Current stage: product/design documentation and low-fidelity UX wireframes only. No app code, dependencies, bank connections, AI integration, deployed site, or performance results exist yet.
 
-Latest request: create a skill that reads project docs at the beginning of every prompt, updates docs at the end, and maintains an AI handoff for the next steps.
+Latest request: commit and push the local repository work to GitHub. No product requirements or application code changed in this turn.
 
 ## Latest changes
 
@@ -14,6 +14,7 @@ Latest request: create a skill that reads project docs at the beginning of every
 - Added [AGENTS.md](AGENTS.md) to require the routine for each prompt, even if automatic skill selection does not trigger it.
 - Created this handoff and linked the workflow from [README.md](README.md).
 - Product implementation has not started; this turn changes the agent workflow only.
+- The project work through local commit `91961c3` is ready to publish; the handoff update for the requested Git operation still needs its own local commit and push.
 
 ## Confirmed user decisions
 
@@ -44,15 +45,16 @@ Latest request: create a skill that reads project docs at the beginning of every
 
 ## Next steps
 
-1. On the next prompt, read the skill, README, this handoff, and the three canonical documents above; inspect actual Git state and apply any new user direction.
-2. Continue the low-fidelity user-flow review. Preserve Flowbite reuse and the privacy boundaries; amend docs for any corrections.
-3. When the user asks to implement, use the reviewed design/plan and start milestone 1: project setup, identity, finance-sharing groups, account permissions, and Flowbite shell. Resolve runtime/provider choices as needed, without treating draft decisions as implemented facts.
-4. Complete all eight milestones before claiming the requested app is finished. Use Sandbox/synthetic data until the real-data release checks pass.
+1. Commit this handoff update and push `main` to `origin`; then verify the remote contains the resulting commit.
+2. On the next prompt, read the skill, README, this handoff, and the three canonical documents above; inspect actual Git state and apply any new user direction.
+3. Continue the low-fidelity user-flow review. Preserve Flowbite reuse and the privacy boundaries; amend docs for any corrections.
+4. When the user asks to implement, use the reviewed design/plan and start milestone 1: project setup, identity, finance-sharing groups, account permissions, and Flowbite shell. Resolve runtime/provider choices as needed, without treating draft decisions as implemented facts.
+5. Complete all eight milestones before claiming the requested app is finished. Use Sandbox/synthetic data until the real-data release checks pass.
 
 ## Git and external state
 
 - Repository: [kah-eru/budget](https://github.com/kah-eru/budget), local branch `main`, remote `origin` configured.
 - Verified baseline before this workflow change: `ad1a9ff` (Flowbite + UX wireframes). Earlier commits: `14c0c60` (phone UI), `71bc0f6` (initial docs).
-- This workflow snapshot is local to the repository. Use `git log -1 --oneline` and `git status --short` for its current commit/worktree state; no self-referential commit hash is embedded in this file.
-- No push was performed in this conversation. No hosting, paid plan, live-bank, or AI-provider setup has been performed.
+- This workflow snapshot is local to the repository until the pending Git operation succeeds. Use `git log -1 --oneline`, `git status --short`, and `git ls-remote origin refs/heads/main` for its current commit/worktree/publication state; no self-referential commit hash is embedded in this file.
+- No hosting, paid plan, live-bank, or AI-provider setup has been performed.
 - Windows sandbox may require escalation for Git index/commit writes; it was previously granted for local documentation commits. There is a nonfatal warning reading the user's global Git ignore file; preserve that configuration.
