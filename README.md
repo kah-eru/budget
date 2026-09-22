@@ -1,0 +1,26 @@
+# Budget app
+
+A private budgeting app for partners and friends who choose to share finances. Start with a small deployment, with collaboration and scalable code/data access designed into the first release.
+
+Status: documentation only. No application, bank connections, hosting, or paid services have been created.
+
+Repository: [kah-eru/budget](https://github.com/kah-eru/budget).
+
+## Project documents
+
+- [Product and technical design](docs/superpowers/specs/2026-09-22-budget-app-design.md): requirements, privacy, screens, data model, integrations, and release criteria.
+- [Build plan](docs/superpowers/plans/2026-09-22-budget-app.md): delivery order, proposed files, checks, and expansion triggers.
+
+## Agreed scope
+
+- Monthly and yearly spending, a chronological spending timeline, transaction search, and editable purchase details.
+- Automatic bank imports and a manual **Sync now** button.
+- Custom categories and merchant/name rules for existing and future transactions.
+- Merchant/category budgets with in-app and opt-in push notifications; no purchase blocking.
+- Each person chooses which accounts to share. Private accounts stay out of group views and totals.
+- Statements where supported, with manual PDF upload and CSV import as fallbacks.
+- Invite friends from the start to share selected accounts, budgets, and spending views; no automatic access to personal finances.
+- Optional API-key-based AI insights about spending patterns and budget progress, with separate consent for sending shared data to an AI provider.
+- Scalable module boundaries, multiple web/worker instances, bounded queries, and a measured load-test gate from the first release.
+
+The design uses explicit proposed defaults for decisions we have not discussed. The stack, shared-edit permissions, alert calculation, hosting approach, and numeric capacity targets are recommendations, not previously approved choices. The user has no AI-provider preference; select one provider/model during implementation after reviewing its API, data policy, and cost. Start with the design document before implementation.

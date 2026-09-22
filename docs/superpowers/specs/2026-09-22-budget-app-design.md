@@ -1,0 +1,304 @@
+# Budget app: product and technical design
+
+Date: 2026-09-22
+
+Status: draft for review; documentation requested by the user. No implementation approval is implied.
+
+Working name: Budget app.
+
+## 1. Purpose and confirmed requirements
+
+Build a budgeting app initially used by the user and their girlfriend in the USA. Each person controls which financial accounts they share with a partner or invited friends. Friends are finance-sharing collaborators, not merely future independent users. Invitations, shared budgets, and personal/group views belong in the first release. Keep the deployment small while designing and verifying code and load scalability from the start.
+
+Confirmed features:
+
+- Monthly and yearly spending views.
+- Automatic transaction integration and a manual sync button.
+- Editable purchase details, custom categories, and rules that apply to past, current, and future transactions by name.
+- Merchant/category spending thresholds and both in-app and push notifications.
+- Statements.
+- Selective account sharing, rather than automatically exposing all accounts to a partner.
+- Invite friends to collaborate on shared finances from the first release.
+- Scalable code structure and concurrent-load handling from the first release.
+- API-key-based AI financial insights. The user has no provider preference.
+- A chronological timeline of money spent.
+
+The user wants spending visibility and notifications, not the ability to decline card purchases.
+
+Known institutions: Wells Fargo, Marcus savings, Chase checking and credit, and Chime. The girlfriend's institutions and both users' phone platforms have not been supplied; neither blocks this design.
+
+## 2. Proposed defaults
+
+These fill gaps in the conversation and can be changed during review.
+
+| Decision | First-version default |
+| --- | --- |
+| Platform | Responsive web app installable on a phone home screen. |
+| Registration | Invite-only; no public sign-up. |
+| Views | Personal workspace plus explicitly joined group workspaces. |
+| Sharing | Account owner shares individual accounts with a group; all group members see those accounts' available transaction history. |
+| Group edits | Members manage shared budgets/categories/rules; only an account owner edits individual purchases from that account. |
+| Private annotations | Personal notes and category overrides are not copied into group views. |
+| Currency | USD only; flag and exclude unsupported currencies rather than silently converting. |
+| Time | Calendar months/years; workspace timezone initially America/Denver and editable. |
+| Budget thresholds | One positive dollar limit per budget per month or year; no rollover initially. |
+| Alert basis | Posted net spending strictly greater than the limit; pending shown separately. |
+| Push privacy | Generic lock-screen text; detailed amounts visible after opening the authenticated app. |
+| Expenses split across categories | Deferred; one category per purchase initially. This was an earlier suggestion, not a user requirement. |
+| Friends | Invite into an existing finance group or create a separate group with that person; explicit account sharing determines visibility. |
+| Timeline | Dated purchase feed plus daily net spending and a cumulative spending chart for the selected period. |
+| AI activation | Optional, off until a user adds a key and consents; request-driven insights rather than unattended periodic charges. |
+| AI credentials | Each requesting user supplies their own provider key; group membership never grants use of another member's key. |
+| AI provider | No user preference; choose one supported provider/model at implementation, not an arbitrary-endpoint or multi-provider framework. |
+| Capacity target | Proposed first-release benchmark: 1,000 registered users, 100 concurrent sessions, 1 million transactions. These are test targets, not measured claims. |
+
+## 3. Small first release
+
+### Accounts and sharing
+
+Every bank connection has one application owner. Connecting a bank never shares anything automatically. After connection, list the accounts returned by the bank and let the owner choose which to import and which to share with each group. Newly discovered accounts remain private until explicitly shared.
+
+The same user can share selected accounts with a partner in one group and different accounts with friends in another. A one-to-one friendship uses a two-person finance group; there is no separate social graph. Friends can view shared spending/timelines and manage that group's budgets, categories, and rules under the same permissions as any other member. They cannot modify bank connections or access unshared accounts. Payments and expense settlement are outside this feature.
+
+A group owner creates a group and can issue an expiring, single-use invitation bound to an intended email address. Use a seven-day expiry and store a hash of the random token. Joining requires authentication and verified control of the intended email address. Group membership grants access only to accounts already shared with that group. Adding a member shows a warning that the new member will see the group's existing shared history; account owners receive an in-app membership notice and can revoke their shares.
+
+Sharing includes transaction dates, amounts, bank merchant/description, account label, and group-specific annotations. It does not include credentials, connection tokens, private annotations, or statement PDFs. PDFs remain owner-only in the first release because they may contain other accounts and sensitive identifiers. Sharing confirmation explicitly says that past and future transactions will become visible.
+
+Revocation immediately removes the account from group queries, totals, exports, and future notifications. Previously downloaded exports or delivered notifications cannot be recalled. Account owners can revoke sharing; members can leave groups; group owners can remove members. Leaving/removal also revokes that member's account shares to the group. An owner must transfer ownership or delete the group before leaving.
+
+Avoid duplicate connections for a joint bank account: link once and share it. Detect likely overlaps using institution/account metadata, warn for review, and never merge accounts solely because their last four digits match.
+
+### Dashboard and transactions
+
+Choose a personal or group workspace, then a month or year. Show posted spending, income, pending spending, budget progress, and last successful sync. Filter by account, merchant, category, and account owner. Group totals cover only accounts shared with that group, never private accounts owned by its members.
+
+Transaction detail permits display-name, category, note, and classification overrides in the active workspace. Editable classification is expense, income, refund, or transfer. Preserve the bank's original amount/date/description; user changes do not modify the bank record. Do not offer arbitrary editing of imported amounts in this first release.
+
+Transfers between the user's accounts and credit-card repayments are excluded from spending and income totals. Merchant purchases count once. Bank-provided classification is a starting suggestion; permit correction and expose uncertain cases instead of pairing transactions by amount alone. Refunds reduce spending in their posted period and assigned category; do not silently rewrite the original purchase's period.
+
+Use integer cents for USD amounts, with exact decimal conversion at import. Validate positive budget limits and reject sub-cent input. Keep source date-only transaction dates as dates, not UTC timestamps; use the workspace timezone for selecting the current reporting period.
+
+### Spending timeline
+
+Provide a chronological feed grouped by transaction date with merchant, amount, category, account owner, and pending/posted status. Default newest-first with a stable `(date, transaction ID)` cursor, 50 rows per page, and a maximum of 100. Fetch another page on demand; never download all history to the browser. Do not invent times of day when the bank supplies only a date. Pending-to-posted replacement updates the same logical purchase rather than creating two spending events.
+
+Above the feed, show daily net spending and a cumulative chart across the selected month, year, or custom range. Use the same filters and reporting calculation as the dashboard. Fill missing days with zero; refunds may make a daily total negative and reduce the cumulative line. Keep pending estimates separate. Income and transfers can be shown as labeled feed entries when requested, but never increase spending totals. Cap interactive custom ranges at two years; older history remains accessible by changing the range or through a background export.
+
+Selecting a date or chart point filters the transaction feed to its contributing rows. Provide the chart values in a keyboard-accessible table as well. Show data freshness and refresh results after sync, edits, rule application, or access changes. A concurrent sync can alter the result set; invalidate the current cursor and offer Refresh when its workspace data revision changes rather than silently skipping/duplicating rows.
+
+### AI financial insights
+
+Add an Insights page where a user chooses a workspace and date range, previews what will be sent, and requests an analysis using their configured API key. Initial insights explain spending changes, top categories/merchants, budget progress, and unusual increases relative to a comparable period. Examples: where spending increased this month, which shared category is closest to its budget, or how daily spending has changed. These are read-only explanations, not autonomous money movement, bank actions, or investment recommendations.
+
+The app computes totals, percentages, comparison periods, and budget progress deterministically. AI receives a bounded structured summary with fact IDs, period boundaries, coverage/freshness indicators, and only necessary category/merchant totals. Default monthly comparisons use equal elapsed-day windows; mark incomplete history and never present unavailable history as zero. Predictions, if later added, must be separately labeled estimates. AI output is not the accounting source of truth.
+
+Data and permission rules:
+
+- Store each user's API key encrypted server-side; show only a masked identifier. Support replace/remove; never put keys in prompts, logs, browser storage, group settings, or exports. A user cannot spend another member's key by changing a request ID.
+- Viewing shared finances is not consent to send them to an external AI service. Each account owner separately opts in that account for AI analysis in that workspace and for the selected provider. Provider changes require fresh consent. Exclude accounts without consent and clearly label the analysis as partial; ordinary dashboard/timeline totals still include all visible accounts.
+- Category/merchant labels can also be sensitive. Preview the actual minimized payload; omit names of people, account numbers, account labels, credentials, notes, raw descriptions, individual purchases, and PDFs. Use aggregate counts and totals. Treat all labels as untrusted data, never as instructions.
+- Scope every request, queued job, result, and cache entry to the requesting user, workspace, selected provider/model, filters, permission/consent revision, data revision, and prompt version. Recheck access and consent immediately before dispatch, after completion, and on result access. Invalidate results after relevant revocation; do not expose stale summaries to former group members. Already dispatched data cannot be recalled from a provider; explain this when granting consent.
+- Results are private to the requesting user even when analyzing a shared group. Automatically sharing AI reports or using a pooled group key is deferred.
+
+Execution and cost rules:
+
+- Run inference in a background job, never in the dashboard request. No AI call is made just by opening the app or syncing a bank. The core app stays usable without a key or during provider failure.
+- Proposed limits: one in-flight request per user, ten generations per user per day, at most 200 aggregate rows, 8,000 input tokens, and 1,500 output tokens per request. Disclose truncation/Other aggregation and the covered population; apply limits before dispatch using the selected model's supported accounting.
+- Show provider/model, billable-use notice, estimated cost, and returned usage when available. Require a user-set daily dollar ceiling before enabling requests. Atomically reserve a conservative maximum charge using current configured model pricing and limits, then reconcile actual usage. Block if pricing is unknown, the daily ceiling would be exceeded, or ambiguous previous requests have exhausted the remaining reservation. This bounds app-issued requests, not other use of the same key or a provider's entire invoice.
+- Configure an allowlisted provider URL/model server-side. No arbitrary API base URLs from users. Limit provider concurrency independently of sync/push, enforce timeouts and response-size limits, and reject unknown model IDs.
+- A network timeout after dispatch may still be billable. Do not blindly retry ambiguous generations; retain the reservation and show a retry warning. Reuse a successful result only when its scope and data/consent revisions still match.
+- Require structured output with known fact references. Render amounts from the app's facts, validate referenced IDs and any numeric claims, and reject unsupported figures. Sanitize output; disable model tool execution and external URL fetching. Malformed output, instruction-like merchant labels, and unavailable data produce a safe error or clearly bounded summary, never changed ledger data.
+- Record status, latency, usage, cost estimate, and redacted error metadata. Default retention is 30 days for generated text; delete/expire stored payloads promptly, and purge relevant results on key removal or access revocation. Before enabling real-data AI, review the chosen provider's retention controls and terms; do not promise zero retention without verification.
+
+One concrete provider integration is enough initially. Keep the call in a focused module so a second provider can be added when requested, while leaving the financial aggregation and permissions independent of the model SDK.
+
+### Categories and rules
+
+Categories and rules belong to one workspace. Example: description contains `STARBUCKS` -> category `Coffee`; a separate Coffee budget has a $60 monthly limit.
+
+Support exact merchant matching or description-contains matching. Trim, collapse whitespace, and compare with Unicode case folding. Preserve the original text. Reject empty patterns. No regular expressions or AI categorization are needed initially.
+
+Precedence: manual workspace override, then first matching enabled rule in explicit priority order, then mapped bank category, then Uncategorized. Resolve equal priorities by stable rule ID. Match original bank fields, not edited display names. Archiving a category preserves history and disables rules that target it; offer reassignment instead of deleting referenced categories.
+
+Saving or changing a rule offers a preview of matching imported transactions and a checkbox to apply it to existing history. That operation preserves explicit manual overrides. New and bank-modified transactions use the current rules automatically. Disabling a rule stops future application; historical changes require a separate previewed reapplication. Historical coverage is limited to data actually imported.
+
+### Budgets and notifications
+
+A budget belongs to one workspace and targets either a category or a merchant/name match. Group budgets use all accounts shared to that group; personal budgets use the owner's imported accounts. Show spent, remaining, and overage, including negative net spending if refunds exceed purchases. Pending amounts appear as a separate estimate and do not trigger alerts.
+
+Evaluate active-period budgets after completed syncs, CSV imports, purchase edits, rule backfills, and sharing changes. On budget creation or editing, show current status and establish a baseline without issuing an immediate alert. New group members establish their own baseline and do not receive past threshold events.
+
+When posted net spending moves from at-or-below to above the limit, create one in-app alert per recipient, budget, and period. A refund followed by another crossing does not send a second alert in that period. Editing a budget does not reset its sent-alert record. A new month/year starts a new period. Backfilling closed periods updates reports without sending old alerts.
+
+In-app alerts have unread/read state and open the affected budget. Personal alerts go only to the owner; group alerts go to current group members. Recheck membership and sharing on display, opening, and immediately before push dispatch; obsolete alerts show no stored financial detail. Recompute detail from authorized data.
+
+Each user explicitly enables push on each device. Use generic push text such as `A budget needs your attention` and an opaque notification link. Use one in-app record plus a delivery record per device; retries do not create extra inbox alerts. Push delivery is best-effort and cannot guarantee exactly-once display. Use a stable notification tag to reduce visible duplicates, retry temporary failures, and remove expired subscriptions. In-app alerts work if push is unavailable or denied.
+
+On iPhone/iPad, the proposed web app requires home-screen installation and iOS/iPadOS 16.4+ for Web Push. Request permission only after the user taps Enable notifications. Verify both actual devices before release. [WebKit platform guidance](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/)
+
+### Statements and imports
+
+Provide original bank PDFs where available, owner-only PDF uploads, and printable spending reports clearly labeled as app reports. A generated spending report is not an official bank statement. Do not parse uploaded PDFs in the initial version.
+
+CSV import supports date, description, amount, and optional category, with a mapping/preview step and an explicit sign convention. Import into an owned account only. Record a file hash and source row number to make exact-file reimport idempotent; overlapping files and Plaid overlap require candidate review rather than deleting legitimate same-day/same-amount purchases. Reject invalid rows with row-specific messages before committing the batch. Escape formula-leading cells in CSV exports.
+
+PDF uploads have a 10 MiB limit, PDF content checks, randomized storage keys, and authenticated attachment downloads. Store outside public static/media paths. Do not publish permanent public PDF URLs.
+
+## 4. Plaid feasibility and integration
+
+Facts checked on 2026-09-22; recheck the account agreement and coverage before connecting real accounts.
+
+The current US/Canada Trial supports ten lifetime-created Production Items and includes Transactions, Transactions Refresh, and Statements. Removing an Item does not restore capacity. Calls on existing Items have no overall Trial usage cap, but endpoint rate limits still apply. Sandbox uses synthetic data. These are provider terms, not a promise of permanent free service. Hosting/storage remain separate costs. [Trial details](https://support.plaid.com/hc/en-us/articles/39994173227159-What-is-the-Plaid-Trial-plan)
+
+The user's institutions likely need four Items if Chase checking and credit share a login. This is an estimate, not a verified connection count. Wells Fargo and Chase are listed for Trial OAuth access. Chime has a documented OAuth integration. Marcus has historical Plaid support, but current product coverage must be verified in the authenticated dashboard/Link flow. [OAuth guide](https://plaid.com/docs/link/oauth/) · [Historical Marcus announcement](https://plaid.com/blog/changelog-june-2018/)
+
+Statements currently supports depository accounts, not credit-card PDFs. Wells Fargo is listed; Chase requires early-availability access. Marcus/Chime PDF coverage is unverified. Make Statements optional so missing PDF support never blocks transaction linking. [Statements documentation](https://plaid.com/docs/statements/)
+
+Transactions can request up to 730 initial days; available bank history varies. Regular refreshes are typically one to four times daily, and manual refresh cannot force a bank to expose a purchase instantly. Keep local history as it accumulates. [Transactions documentation](https://plaid.com/docs/transactions/)
+
+Integration requirements:
+
+1. Develop with Sandbox. Persist Production tokens securely; reconnect using update mode when supported instead of creating replacement Items unnecessarily.
+2. Create Link sessions server-side for the authenticated owner. Exchange public tokens server-side; never send access tokens or the Plaid secret to the browser.
+3. Store account IDs under their owning Item and request the desired initial history explicitly.
+4. Process `/transactions/sync` added, modified, and removed records. Unique source IDs prevent duplicate imports. Preserve workspace overrides and reconcile pending-to-posted replacement using provider linkage; flag ambiguous cases for review.
+5. Stage all sync pages and atomically commit data plus cursor only after the complete batch succeeds. Restart from the original cursor if the provider reports mutation during pagination. Failure must not advance the cursor or leave half a batch visible.
+6. Verify Plaid webhook signatures and freshness against the raw request body using its documented verification procedure; durably enqueue work before acknowledging. Webhooks and manual requests use the same sync path.
+7. The manual button calls Refresh, then syncs when data becomes available. Show queued, syncing, waiting for bank, reconnect required, or failed state. Distinguish last successful app sync from bank-data freshness. Only the Item owner can refresh its connection.
+8. Coalesce duplicate jobs per Item, serialize work for that Item, impose a proposed 60-second manual-refresh cooldown, and honor provider throttling. Add periodic catch-up sync every six hours for missed webhooks, without issuing unnecessary forced Refresh calls.
+9. Evaluate budgets after the transaction commit. Persist notification/delivery work so process restarts cannot silently lose alerts.
+
+API behavior must be checked against the official SDK/reference during implementation: [sync integration](https://plaid.com/docs/transactions/) and [webhook verification](https://plaid.com/docs/api/webhooks/webhook-verification/).
+
+## 5. Architecture recommendation
+
+Use one Django application with server-rendered templates, modest vanilla JavaScript, PostgreSQL, and a web manifest/service worker for push. Django supplies authentication, forms, database migrations, and testing in one framework. Use supported security patch releases; proposed baseline is Python 3.12+ and Django 5.2 LTS. [Django documentation](https://docs.djangoproject.com/en/5.2/)
+
+Use the official Plaid Python SDK, a maintained Web Push library, and established encryption/JWT libraries where required. Do not implement cryptography or push protocols from scratch. Verify compatibility and pin concrete versions when scaffolding.
+
+Deploy a modular Django application with separately scalable web and background-worker processes, PostgreSQL, and shared private object storage for PDFs/exports from the start. A small installation can run one web instance, but must also pass multi-instance checks before release. Use database-backed sessions and shared database authorization/rate-limit state; no correctness-critical state or locks may exist only in a process's memory. [Django session backends](https://docs.djangoproject.com/en/5.2/topics/http/sessions/)
+
+Use durable database jobs with retry counts, next-attempt timestamps, deduplication keys, and expiring leases. Claim jobs with short row-locking transactions and `SKIP LOCKED`; perform provider/network work outside those transactions. Recover abandoned leases and serialize sync per Item with a shared lease. Separate sync/push and AI worker pools so a slow generation cannot occupy all operational workers. Use bounded per-user/provider concurrency and shared quotas. [PostgreSQL locking clauses](https://www.postgresql.org/docs/current/sql-select.html)
+
+Web handlers validate and enqueue long syncs, imports, exports, rule backfills, and AI work, returning a status reference for polling. Small interactive edits remain synchronous. Persist all state in PostgreSQL/shared storage so adding a web replica or worker requires configuration, not a permission or job-processing rewrite. No microservices or separate mobile codebase is required to meet this first-release design.
+
+Alternatives considered: a separate SPA/API would add another application to maintain; native mobile apps would duplicate UI work. Reconsider native apps only when a required device capability cannot be delivered reliably through the web app.
+
+### Core records
+
+| Record | Purpose / important constraint |
+| --- | --- |
+| User | Individual login, verified email, personal preferences. |
+| Workspace / Membership | Personal or group context; unique membership, owner/member role; personal workspace has exactly its owner. |
+| Invitation | Group, intended email, hashed token, expiry, accepted/revoked state. |
+| BankConnection | Owner, provider Item ID, encrypted token, committed cursor, sync state. |
+| Account / AccountShare | Account belongs to a connection; unique explicit account-to-group grant. |
+| Transaction | Original bank fields, integer cents, date, state, source ID; unique provider ID per connection or CSV source row identity. |
+| Category / Rule | Workspace-scoped labels and ordered matching instructions. |
+| TransactionAnnotation | Unique transaction/workspace overlay for display name, category, note, and classification; provenance manual/rule/bank. |
+| Budget / BudgetState | Workspace, target, period, limit; per-budget/recipient/period baseline and notification marker. |
+| Notification / PushSubscription / PushDelivery | Recipient-scoped inbox, device subscriptions, durable per-device delivery attempts. |
+| Statement / ImportBatch | Owned account document metadata and private storage key; import identity and preview/commit status. |
+| Job | Durable sync/evaluation/delivery work with deduplication key, schedule, and expiring lease. |
+| AIConfiguration | Owner, allowlisted provider/model, encrypted credential, daily request/dollar ceilings. |
+| AccountAIConsent | Account owner approval for a particular account, workspace, and provider; revocable. |
+| InsightRequest / AIUsage | Requester/scope, revisions, minimized input identity, status/result, reserved and actual usage/cost, retention timestamp. |
+| Workspace revisions | Data and permission/consent versions for invalidating timeline cursors, derived reports, and AI results. |
+
+Use foreign keys and unique constraints for ownership relationships and deduplication. Scope IDs alone are not authorization: every read/write must validate current membership and account access. Never store a combined global transaction list in a shared browser cache.
+
+Recommended source boundaries: one Django project configuration plus a `budget` app with focused domain modules for sharing/permissions, ledger/imports, rules, reporting/timeline, jobs, notifications, statements, and insights. Keep views thin. Centralize spending arithmetic and authorization rather than reimplementing them in charts, alerts, and prompts. Isolate Plaid and the selected AI SDK at integration boundaries; do not let either dictate domain models. Add database migrations and independent permission/calculation tests as each feature lands. This is a modular application, not one large view/model file or a premature service fleet.
+
+### Capacity and load requirements from the first release
+
+Proposed acceptance targets, subject to hardware benchmarking:
+
+| Dimension | Initial benchmark target |
+| --- | --- |
+| Dataset | 1,000 users, 1 million transactions over two years, multiple isolated groups, and one 100,000-transaction workspace. |
+| Interactive load | 100 authenticated concurrent sessions; sustained 25 requests/second for 15 minutes after warm-up. |
+| Server response | Dashboard, timeline page, and filters: p95 under 750 ms and p99 under 2 seconds; unexpected HTTP error rate below 1%. Measure each route, not just the overall average. |
+| Operational queue | Sync/push job start delay p95 under 30 seconds at the documented arrival rate; measure provider latency separately. |
+| Isolation under load | Zero unauthorized responses, duplicate committed purchases, lost edits, or quota overrun across two web replicas and at least two operational workers. |
+| AI interference | The same interactive latency target holds while a separate AI worker waits on a deliberately slow provider mock. |
+
+These are release gates to measure, not claims that code exists or a particular cheap hosting plan can sustain them. Record CPU/RAM, database size, worker count, connection limits, benchmark commands, and results. If a target fails, address the bottleneck or explicitly revise the target; do not describe scalability as verified without evidence.
+
+Create initial indexes for account/date/transaction-ID traversal, workspace/category lookups, membership and shares, notification recipient/read state, and runnable-job scheduling. Enforce source-ID uniqueness. Bound date ranges/page sizes and use database aggregation, bulk import/upsert, and eager related-object loading; a page must not issue a query per purchase. Run query-plan inspection on the seeded dataset before adding summary caches. Stream/export in worker batches rather than materializing all history in web memory.
+
+Use shared object storage, bounded database connection pools, readiness/health endpoints, graceful worker shutdown, and additive/backward-compatible migrations. Rate-limit expensive operations per user/workspace and cap each worker pool so adding replicas cannot exceed database/provider capacity. Persist minimal mutation metadata for sharing/consent changes and integration status to support diagnosis without logging financial content.
+
+Keep a repeatable load harness with synthetic records and mocked providers; never spend real Plaid/AI quota or load-test user bank accounts. Record a two-replica restart/failover exercise, an interrupted worker lease recovery, and access revocation while requests are in flight. k6 thresholds can turn latency/error targets into a failing command. [k6 threshold documentation](https://grafana.com/docs/k6/latest/using-k6/thresholds/)
+
+## 6. Privacy, security, and operations
+
+- Enforce workspace/account authorization on lists, detail pages, mutations, exports, timeline aggregates, AI requests/results, jobs, and statement downloads. Return a consistent not-found response for inaccessible object IDs. Never rely on hidden UI controls.
+- Group owners are not entitled to members' private bank accounts. Server operators technically administer the database; this is application access control, not end-to-end encryption.
+- Use framework authentication, password hashing, CSRF protection, secure HTTP-only cookies, HTTPS, login throttling, and verified-email recovery. An invitation grants group membership only, never access to another user's identity.
+- Keep bank credentials out of the app. Encrypt Plaid tokens at rest using a key stored separately from the database; redact credentials, bank payloads, and push endpoints from logs.
+- Service workers cache only public app assets, never account pages, statements, API responses, or session data. Financial responses use private/no-store caching. Unsubscribe a shared device on logout where possible.
+- Validate push endpoints and defend server-side delivery against requests to private/internal addresses; use a documented endpoint validation policy and disable arbitrary redirect following.
+- Disconnect stops syncing and revokes the Item with Plaid; allow the owner to retain local history or explicitly delete it. Deletion removes related annotations, shares, AI consent/results, PDFs, and derived alerts, then recomputes affected totals and timeline data. Show a confirmation and optional export first.
+- Use daily encrypted database/document backups with a proposed 30-day retention, record the retention policy, and rehearse restore before real-data use. On restore, reapply deletions/revocations since the backup before reopening access; retain a minimal deletion/revocation journal for the backup window.
+- Track sync success/failures, reconnect needs, stale data, failed push jobs, and backup age. Keep logs free of transaction details.
+
+These are first-release requirements because financial correctness and selective sharing cannot be deferred to a later scale-up.
+
+## 7. Screens
+
+1. Sign in / invitation acceptance and account recovery.
+2. Dashboard with workspace switcher, month/year selector, category totals, and budget progress.
+3. Transactions with filters, purchase editor, rule creation, and historical match preview.
+4. Budgets and categories with merchant/category targets and monthly/yearly periods.
+5. Accounts with bank connection state, Sync now, and explicit sharing controls.
+6. Reports and owner-only statements with CSV import/export and PDF upload/download.
+7. Notifications with unread state and device push setup.
+8. Group/settings page with invitations, membership, timezone, and personal preferences.
+9. Spending timeline with dated feed, daily totals, cumulative chart, and matching filters.
+10. Insights with payload preview, partial-coverage indicator, generate/status/result, provider/key configuration, usage ceilings, and per-account AI consent.
+
+Use native inputs, semantic tables, labeled controls, visible keyboard focus, sufficient contrast, and non-color-only budget states. Mobile layout must work at 360 CSS pixels. No decorative dashboard elements are required for the first version.
+
+## 8. Growth without a rewrite
+
+The first release supports finance sharing with partners and friends. A friend can be invited into a chosen group and share selected accounts there; they receive no access to other groups or private finances. Use the same membership/permission system at two users or a thousand. Initial enrollment may still be just the couple. Public registration remains disabled.
+
+The ten-Item Trial cap applies to the whole Plaid team/application, not ten per user or group. Adding friends may require paid access even when the app itself handles the traffic. Pay-as-you-go currently has no minimum commitment, but exact product prices must be checked in the dashboard; upgrading is a separate owner decision. [Pricing documentation](https://plaid.com/docs/account/billing/)
+
+| Trigger | Smallest next change |
+| --- | --- |
+| More than ten created Production Items | Review paid Plaid pricing and obtain an explicit spending decision before upgrade. |
+| Queue delay approaches the tested limit | Increase the relevant worker pool within provider/database limits; use a queue service only if database queue contention is measured. |
+| Report latency approaches the tested limit | Inspect query plans; add measured indexes or revision-aware summaries with immediate permission invalidation. |
+| More interactive capacity needed | Increase web replicas using the already shared storage/session state; repeat the load gate. |
+| AI quota or cost ceiling reached | Show the limit and allow the key owner to change it explicitly; never borrow another member's key or silently increase spending. |
+| Required mobile capability is missing | Evaluate a native wrapper/app for that concrete requirement. |
+| Public launch instead of invited friends | Separate work for onboarding, operational support, abuse controls, provider requirements, and legal/privacy review. |
+
+Deferred: billing users, public signup, social feeds, settlements, card issuing/blocking, investments, multiple currencies, arbitrary custom fields, autonomous AI rule/ledger edits, scheduled AI generation, multiple AI providers, OCR, and microservices. Read-only AI insights, finance-sharing invitations, and the spending timeline are in the first release.
+
+## 9. Release acceptance
+
+- Two users connect Sandbox accounts; personal data is isolated until a specific account is shared.
+- A third user in another group cannot discover records through IDs, search, totals, exports, notifications, or files.
+- Share revocation and member removal remove access immediately, including pending push delivery.
+- Repeating sync/webhook jobs produces one purchase; pending-to-posted replacement preserves edits without double counting.
+- Failed paginated sync leaves the old cursor/data intact; retry completes correctly.
+- A purchase, credit-card repayment, internal transfer, refund, and pending item produce independently verified totals.
+- Manual edits survive bank corrections; rule preview/backfill preserves manual overrides and respects workspace boundaries.
+- A threshold crossing produces one inbox alert and eligible device deliveries; retries and recrossing do not duplicate inbox alerts.
+- Sync now displays honest completion/failure/reconnect states and does not imply live bank data.
+- CSV reimport and overlap review preserve legitimate duplicate purchases; malformed files fail before partial import.
+- PDF access remains owner-only even if its account is shared.
+- Push works on both users' actual phones, and denied permission leaves the inbox usable.
+- HTTPS deployment, redacted logs, token encryption, and backup restoration are verified before connecting real accounts.
+- A friend joins a shared group, contributes chosen accounts, and collaborates on its budgets without seeing either person's private accounts or other groups.
+- Timeline daily totals and cumulative values match reports through refunds, zero-spend days, pending replacement, year boundaries, paging, and concurrent updates.
+- AI key ownership and separate per-account/provider consent are enforced at dispatch and result access; missing consent yields a clearly labeled partial analysis.
+- AI failures, malicious labels, unsupported fact references, cost reservations, concurrent requests, and revocation during generation are covered by deterministic tests using a fake provider.
+- Core budgeting works without AI. AI output never changes the ledger or becomes the financial calculation source.
+- The documented multi-instance and load benchmark passes, with hardware and results recorded, before scalability is called verified.
+
+## 10. Review notes
+
+The requested documentation is complete enough to review the product boundaries. The defaults in section 2 and architecture in section 5 are proposals, not statements about existing code. Hosting provider, domain, exact package versions, and production credentials will be selected or supplied at implementation/deployment time; no cost or provider enrollment is authorized by this document.

@@ -1,0 +1,210 @@
+# Budget App Implementation Plan
+
+> **For agentic workers:** Use `superpowers:executing-plans` for inline implementation, or `superpowers:subagent-driven-development` if the user selects delegated execution. Steps use checkbox syntax for tracking.
+
+**Goal:** Deliver a private budgeting app with finance-sharing friends, bank sync, editable categorization, a spending timeline, AI insights, in-app/push alerts, and tested load scalability from the first release.
+
+**Architecture:** One modular server-rendered Django application, PostgreSQL, shared private object storage, and independently scalable web/operational/AI worker processes. Accounts belong to people; explicit account grants determine group visibility. Durable database jobs, sessions, leases, and quotas support multiple instances from the start.
+
+**Tech Stack:** Proposed Python 3.12+, Django 5.2 LTS, PostgreSQL, official Plaid Python SDK, native browser APIs, and maintained libraries for Web Push, cryptography, and one selected AI provider. Use k6 for the development-only load gate. The user has no AI-provider preference.
+
+**Spec:** [Product and technical design](../specs/2026-09-22-budget-app-design.md).
+
+**Status:** Draft delivery plan for review, not executed. The workspace was empty when documentation began. File paths below are proposed. Expand each milestone into small executable changes against the actual code when implementation begins; this document deliberately does not pretend unbuilt functions or test fixtures already exist.
+
+## Global constraints
+
+- Registration is invite-only; no public sign-up.
+- USD only; flag and exclude unsupported currencies rather than silently converting.
+- Store money as integer cents, preserving original bank fields separately from editable annotations.
+- Private accounts and personal annotations never contribute to group output.
+- Statements are owner-only in the first release.
+- No real bank credentials, provider enrollment, paid upgrades, or deployment are part of the documentation task.
+- Use Sandbox until financial correctness, access control, and operations checks pass.
+- Keep one application and one database; add services only for measured needs.
+- Finance-sharing invitations, the spending timeline, and read-only API-key AI insights are first-release features.
+- AI uses the requesting user's key and separate account-owner consent for the selected workspace/provider; ordinary sharing never grants AI consent.
+- Multiple web/worker processes must share sessions, leases, quotas, and file storage from the start.
+- Proposed load gate: 1,000 users, 1 million transactions, 100 concurrent sessions, 25 requests/second for 15 minutes; interactive p95 below 750 ms and p99 below 2 seconds.
+
+## Review focus
+
+1. A guessed ID or indirect total must not reveal private accounts; test in milestone 1 and repeat on each new entry point.
+2. A sync retry or pending replacement must not duplicate spending or lose edits; test in milestone 3.
+3. Transfers, refunds, and date boundaries must produce correct monthly/yearly totals; test in milestone 2.
+4. Share revocation between alert creation and delivery must suppress access and delivery; test in milestone 5.
+5. Browser installation/permission differences must not make the app unusable; verify on both actual phones in milestone 5.
+
+Additional gates from the revised scope: timeline/report equality in milestone 2; AI consent/key/cost isolation in milestone 6; concurrent load and worker restart correctness in milestone 8.
+
+## Proposed files
+
+```text
+manage.py
+pyproject.toml
+.env.example
+.gitignore
+config/
+  settings.py
+  urls.py
+  wsgi.py
+budget/
+  models.py
+  forms.py
+  views.py
+  urls.py
+  permissions.py
+  reporting.py
+  timeline.py
+  imports.py
+  rules.py
+  plaid.py
+  jobs.py
+  notifications.py
+  statements.py
+  insights.py
+  ai_provider.py
+  management/commands/run_jobs.py
+  management/commands/seed_load_data.py
+  migrations/
+  templates/budget/
+  static/budget/
+  tests/
+tests/load/budget.js
+```
+
+Create files only when their milestone needs them. Framework-required package files are implicit. Reuse Django authentication/views/forms rather than building another authentication system. Tests use Django's included runner, not an additional test framework.
+
+## Milestone 1: private users, groups, and account sharing
+
+**Files:** project configuration; `budget/models.py`, `permissions.py`, `forms.py`, `views.py`, `urls.py`; authentication/settings templates; `budget/tests/test_access.py`.
+
+**Deliverable:** Partners and invited friends can log in, create/join finance-sharing groups, and explicitly share accounts while unrelated groups remain isolated.
+
+- [ ] Initialize the Django project with PostgreSQL, environment-based configuration, migration support, built-in authentication, secure session defaults, and a custom user model established before the first migration.
+- [ ] Configure database-backed sessions/shared throttling, shared private object storage, health/readiness checks, and bounded connection settings. Verify session continuity while alternating requests between two web processes; no in-memory ownership or lock state.
+- [ ] Implement workspace/membership, invitation, account, and account-share records from the spec. Use one-time email verification for invitation acceptance; local development uses the console mail backend, and deployment uses a configured mail provider.
+- [ ] Write a failing access test covering personal/private, shared, unrelated-group, revoked-share, and removed-member cases. Assert both list exclusion and rejection of direct object access.
+- [ ] Centralize visible-account and editable-account queries; require the authenticated user and active workspace on every operation. Account owner may edit their transactions; group members may edit shared budgets/rules only within their group.
+- [ ] Build group creation, invite acceptance, explicit share/unshare, membership removal, and personal/group switching. Recheck access at mutation time; reject expired/reused/wrong-email invitations.
+- [ ] Test one user sharing different accounts in a partner group and a friend group, a friend contributing an account, and collaboration on shared budgets. Reject cross-group access; explicitly preview existing group history on invitation and preserve owner-only individual purchase edits.
+- [ ] Add workspace data/permission revision updates for mutations, shares, and membership changes; use these for derived-output invalidation in later milestones.
+- [ ] Add login throttling and password recovery using maintained framework-compatible mechanisms; do not hand-roll password handling.
+- [ ] Run `python manage.py test budget.tests.test_access` and `python manage.py check`. Expected: access cases pass and the framework reports no configuration errors.
+
+## Milestone 2: useful budgeting with manual imports
+
+**Files:** transaction/category/annotation models and migrations; `reporting.py`, `timeline.py`, `imports.py`; dashboard/transaction/timeline/report templates; `budget/tests/test_reporting.py`, `test_timeline.py`, `test_imports.py`.
+
+**Deliverable:** A user can import/edit purchases and inspect accurate personal/group reports and a chronological timeline before a bank connection exists.
+
+- [ ] Add transaction source fields and workspace-specific annotations. Validate cents, USD currency, dates, and classification; preserve original data.
+- [ ] Use this independent arithmetic fixture in reporting tests: $100 posted purchase + $20 posted purchase - $15 refund = $105 net spending; exclude a $100 card repayment and $200 internal transfer; display a $30 pending purchase separately. Expected cents are `10500` posted and `3000` pending.
+- [ ] Add a Jan 31 / Feb 1 boundary case and an unrelated private-account purchase. Assert calendar reports place rows correctly and group totals omit the private row.
+- [ ] Implement search, account/person/category/date filters, pagination, transaction editing, personal/group dashboard, yearly aggregation, and accessible empty states.
+- [ ] Build the timeline feed with `(date, ID)` cursor pagination (50 default/100 maximum rows), a two-year interactive range cap, daily totals, zero-day filling, and a cumulative chart with an accessible table. Reuse reporting arithmetic; label income/transfers separately and keep pending estimates out of posted totals.
+- [ ] Test $100 spend on day one, zero on day two, and a $15 refund on day three: daily cents `[10000, 0, -1500]`, cumulative `[10000, 10000, 8500]`. Test stable same-date ordering, permission filters, date boundaries, and cursor invalidation after a sync revision changes.
+- [ ] Add initial account/date/ID and workspace/category indexes; cap pages, avoid per-row related queries, and aggregate in SQL. Add bounded-query-count assertions for 1 versus 100 rows; exports and large imports run in worker batches once milestone 3 supplies jobs.
+- [ ] Implement CSV mapping/preview/commit. Reject malformed dates and sub-cent values, detect an identical file, and preview possible overlap without silently merging equal-looking purchases.
+- [ ] Add tests for exact-file repeat, two valid identical-looking purchases, invalid-row all-or-nothing import, and export formula escaping. Verify personal notes never appear in a group export.
+- [ ] Run `python manage.py test budget.tests.test_reporting budget.tests.test_timeline budget.tests.test_imports`. Manually verify keyboard use, chart-to-feed drilldown, and 360-pixel layout.
+
+## Milestone 3: Plaid sync and durable jobs
+
+**Files:** `plaid.py`, `jobs.py`, `management/commands/run_jobs.py`; connection/job models; account templates; `budget/tests/test_sync.py`, `test_jobs.py`.
+
+**Deliverable:** Sandbox accounts import automatically and through Sync now, with honest freshness/error indicators and safe retries.
+
+- [ ] Add encrypted connection tokens, cursors, sync status, and leased jobs. Configure encryption keys separately from the database. Store no secrets in source or logs.
+- [ ] Implement short database transactions for `SKIP LOCKED` job claims, shared per-Item leases, and bounded worker concurrency. Keep provider calls outside locks; separate operational and AI job pools. Atomically publish downstream evaluation work with committed source changes, then safely retry consumers.
+- [ ] Write sync tests using synthetic provider responses: added/modified/removed records; pending replacement; duplicate job; a failure on page two; mutation-during-pagination; and an expired worker lease. Assert cursor/data atomicity and preservation of manual annotations.
+- [ ] Implement Link token creation and public-token exchange for the authenticated owner. Use explicit imported-account selection; keep all accounts private initially.
+- [ ] Implement paginated sync with provider-ID uniqueness and serialized work per Item. Stage full batches before committing the cursor and changes together.
+- [ ] Verify webhook signatures/freshness before enqueueing. Test invalid signatures, duplicate valid delivery, and acknowledgement only after durable enqueue.
+- [ ] Implement manual Refresh with the 60-second cooldown, coalescing, provider retry handling, and queued/waiting/success/reconnect/failure UI. Only owners refresh their Items.
+- [ ] Add six-hour catch-up sync scheduling and durable post-sync budget evaluation. Retry transient failures with capped exponential backoff; surface persistent failures without discarding jobs.
+- [ ] Wire large imports/exports and historical rule backfills to bounded jobs. Test two operational workers, lost lease recovery, overlapping manual/webhook jobs, and no partially published source batch. Advance data revisions when completed writes change timeline/report results.
+- [ ] Run `python manage.py test budget.tests.test_sync budget.tests.test_jobs`. Exercise a Sandbox initial import, refresh, and reconnect scenario; verify the UI never reports a failed sync as successful.
+
+## Milestone 4: custom categories, rules, and budgets
+
+**Files:** `rules.py`, `reporting.py`; rule/budget/state models; category/rule/budget forms and templates; `budget/tests/test_rules.py`, `test_budgets.py`.
+
+**Deliverable:** Users can create categories, preview/backfill name rules, and inspect monthly/yearly merchant/category budget progress.
+
+- [ ] Write rule tests for case/whitespace normalization, missing merchant, empty pattern rejection, explicit priority, stable tie-break, manual override precedence, and workspace isolation.
+- [ ] Implement exact-merchant and description-contains rules against bank source fields. Track annotation provenance; preserve manual edits on sync/backfill.
+- [ ] Add matching-history previews and explicit backfill. Archive categories safely and disable rules targeting them; never delete referenced history.
+- [ ] Add positive-dollar budgets targeting one category or one merchant/name match, with monthly/yearly period selection and no rollover.
+- [ ] Test the boundary: a $100 budget with $100 posted spending is not exceeded; $100.01 is exceeded; pending spending does not trigger; refunds reduce current-period spending.
+- [ ] Test baseline establishment after create/edit/join, recalculation after share changes, and no retroactive alerts for closed periods. Keep the baseline update and any event creation atomic under concurrent evaluations.
+- [ ] Run `python manage.py test budget.tests.test_rules budget.tests.test_budgets`. Verify a Starbucks rule backfills only authorized history and leaves manual categories unchanged.
+
+## Milestone 5: notification inbox and phone push
+
+**Files:** `notifications.py`; notification/subscription/delivery models; notification/settings templates; `static/budget/manifest.webmanifest`, `static/budget/push.js`, service-worker source served at `/sw.js`; `budget/tests/test_notifications.py`.
+
+**Deliverable:** A posted-spending crossing creates an inbox notification and an optional push on each subscribed device.
+
+- [ ] Enforce one alert per recipient/budget/period in the database. Test duplicate evaluation, concurrent workers, refund/recrossing, month rollover, and device retry without duplicate inbox rows.
+- [ ] Add unread/read inbox state and budget links. Recompute financial details from currently authorized records rather than storing stale amounts in notification text.
+- [ ] Add device-specific push subscription/unsubscription and endpoint validation against SSRF. Request browser permission only on an explicit action.
+- [ ] Use a maintained Web Push library and server-held VAPID keys. Persist per-device attempts, retry temporary failure, expire invalid subscriptions, and use a stable browser notification tag.
+- [ ] Test member removal/share revocation after enqueue but before dispatch: no financial detail or unauthorized push can be sent. Test following an old notification URL after revocation.
+- [ ] Cache public assets only. Test that logout/another user's login cannot recover financial pages from a service-worker cache.
+- [ ] Run `python manage.py test budget.tests.test_notifications`; then verify actual push on both users' phones, installation guidance where required, denied permission, logout, and tapping an alert after session expiry.
+
+## Milestone 6: consented AI insights with a user API key
+
+**Files:** `insights.py`, `ai_provider.py`; configuration/consent/request/usage models; insights and key/consent forms/templates; `budget/tests/test_insights.py`, `test_ai_usage.py`.
+
+**Deliverable:** A user can request a grounded spending analysis using their own key, with separate consent for shared data and bounded billable usage.
+
+- [ ] Select one provider/model after checking its official API, structured-output capability, pricing, and retention controls. Record the selection and configured prices; no arbitrary endpoint field and no multiple-provider framework. Keep provider SDK calls in `ai_provider.py`; use a deterministic fake in tests.
+- [ ] Add encrypted per-user keys, masked display, replace/remove, and account/workspace/provider AI consent controlled by the account owner. Test that group membership never permits borrowing another user's key or bypassing consent.
+- [ ] Build minimized aggregate facts from the shared reporting calculation: dates, coverage, category/merchant totals, comparable-period differences, and budget progress with stable fact IDs. Exclude private/nonconsenting accounts, notes, descriptions, PDFs, identifiers, and transaction-level rows. Preview the payload and label partial coverage.
+- [ ] Test unequal history windows, incomplete bank history, zero comparison spend, negative refund totals, mixed-consent group accounts, and malicious merchant/category labels. The same scope must produce the same monetary facts as the deterministic report.
+- [ ] Implement one in-flight request per user, ten daily generations, a 200-row/8,000-input-token/1,500-output-token ceiling, a user-set daily dollar cap, and transactional cost reservation using current model pricing. Test concurrent requests cannot exceed reserved limits; block unknown pricing.
+- [ ] Enqueue AI jobs in the separate pool; enforce timeout/response limits and authorize again before dispatch. No automatic call on sync/page load. Keep reservations for ambiguous timeouts and warn before a potentially duplicate charged retry.
+- [ ] Validate structured output and fact IDs/numbers, sanitize text, and render monetary facts from app calculations. Test unsupported figures, malformed output, provider refusal, timeout, rate limiting, and no ledger writes/tool execution.
+- [ ] Scope saved results by requester/workspace/provider/model/filters and data/consent/prompt revisions. Recheck access on completion/read; invalidate on revocation or source changes, purge on key removal, and expire text after 30 days. Test revocation while inference is in flight.
+- [ ] Run `python manage.py test budget.tests.test_insights budget.tests.test_ai_usage`. Verify the app remains fully usable with no key, denied consent, or a failed provider. Real-data/billable calls are a separate user action through configured settings.
+
+## Milestone 7: statements and private deployment setup
+
+**Files:** `statements.py`, statement models/forms/templates; `budget/tests/test_statements.py`; deployment configuration and `docs/operations.md` created for the selected host.
+
+**Deliverable:** Owner-only statement access, tested data recovery, and a deployment ready for the two users' real accounts.
+
+- [ ] Add optional Plaid Statements access for supported accounts without blocking Transactions linking. Test an institution that does not support Statements and one that requires additional access.
+- [ ] Implement owner-only PDF upload/download with the 10 MiB limit, content checks, randomized private storage, and safe attachment headers. Reject non-PDF and oversized content.
+- [ ] Test that a group member cannot list or download PDFs for an otherwise shared account, and that direct storage URLs are inaccessible.
+- [ ] Provide printable app reports clearly distinguished from official statements. Complete CSV import/export and account data export before exposing deletion.
+- [ ] Implement disconnect, retained-history choice, and confirmed deletion. Test provider revocation failure is surfaced/retried and that deleted accounts cannot be revived by delayed jobs/webhooks.
+- [ ] Choose the host and domain with an explicit cost review. Configure HTTPS, secrets, independently scalable web/operational/AI workers, shared private object storage, transactional email, redacted logs, and daily encrypted backups. Verify a second replica uses the same sessions/permissions/files without application changes.
+- [ ] Document deployment/update/rollback, key rotation, worker recovery, reconnect support, provider costs, data deletion, and a restore rehearsal including reapplication of deletion/revocation records.
+- [ ] Run `python manage.py test`, `python manage.py check --deploy`, and `python manage.py makemigrations --check --dry-run`; resolve failures and relevant deployment warnings. Restore a backup into an isolated environment and verify access and totals before production use.
+- [ ] Verify current Trial eligibility and institution coverage, especially Marcus and statement support. Real linking happens through each user's own Plaid flow; do not request passwords in chat. Track consumed Item capacity before inviting additional users.
+
+## Milestone 8: scalability and concurrency release gate
+
+**Files:** `budget/management/commands/seed_load_data.py`, `tests/load/budget.js`, `budget/tests/test_concurrency.py`, and `docs/operations.md` with measured results.
+
+**Deliverable:** Recorded evidence that the first release meets its proposed capacity target and preserves access/accounting correctness across multiple processes.
+
+- [ ] Add a synthetic-data seeder guarded against production databases: 1,000 users, multiple overlapping/isolated groups, one million transactions over two years, and one 100,000-transaction workspace. Use a fixed random seed and record hardware and indexes; never use real credentials/data.
+- [ ] Add a k6 scenario running 100 authenticated sessions at 25 requests/second for 15 minutes after warm-up, mixing dashboard (30%), timeline pages (40%), filtered/yearly reports (20%), and authorized small edits/job enqueue (10%). Keep provider calls mocked and record per-route metrics. Fail on dropped iterations as well as route latency/error thresholds so insufficient load generation cannot appear to pass.
+- [ ] Set thresholds to per-route p95 under 750 ms/p99 under 2 seconds and unexpected HTTP failures below 1%. Record actual throughput, database connection peak, memory, query counts, and CPU; inspect slow-query plans before adding caches.
+- [ ] While the interactive scenario runs, enqueue 10 synthetic operational jobs/second with 20-100 ms mocked provider latency and measure operational queue start p95 under 30 seconds. Separately hold an AI mock call for 30 seconds and verify the interactive/operational targets still hold; record pool sizes so the result is reproducible.
+- [ ] Run two web replicas and at least two operational workers. Restart one replica and terminate a worker mid-job; assert session continuity, lease recovery, one committed purchase, preservation of edits, and correct cost reservations. Test simultaneous sharing revocation and timeline/AI/notification requests with zero unauthorized output after revocation commits.
+- [ ] Verify graceful shutdown, readiness, bounded database pools, and backward-compatible migrations. Confirm each worker pool's configured concurrency stays within provider/database budgets when replicas are added.
+- [ ] Run `python manage.py test budget.tests.test_concurrency`, followed by `k6 run tests/load/budget.js` against the isolated test deployment configured in the harness. Save the command, environment/hardware, dataset, results, and bottleneck fixes in operations docs. These commands are planned, not run in this documentation task.
+- [ ] Resolve failures before marking scalability verified; any revised target must be recorded explicitly. Rerun focused correctness tests for any performance change, then the release checks from milestone 7.
+
+## Delivery and expansion gates
+
+Milestones 1-2 yield collaborative finance sharing, CSV data, and the spending timeline. Milestones 3-5 add sync, rules, and notifications. Milestone 6 adds requested AI insights. Milestone 7 supplies statements and deployment setup; milestone 8 verifies concurrent-load readiness. All eight are first-release scope; interim milestones do not count as the full requested app.
+
+Before connecting real accounts for partners or friends, pass the multi-group isolation and multi-instance checks and review remaining Plaid capacity. Friends can share finances in the first release. Multiple-worker correctness is a release requirement, not a future redesign. Paid Plaid, additional hosting capacity, public signup, and native apps remain separate operational/product decisions.
+
+Documentation self-review: every confirmed feature maps to a milestone; private sharing and monetary correctness have explicit checks; no implementation or test execution is claimed. The next work item after document review is milestone 1, executed inline by default unless the user requests a different workflow.
