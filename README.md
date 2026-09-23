@@ -2,7 +2,9 @@
 
 A private budgeting app for partners and friends who choose to share finances. Start with a small deployment, with collaboration and scalable code/data access designed into the first release.
 
-Status: documentation only. No application, bank connections, hosting, or paid services have been created.
+Status: milestone 1 is in progress. A local Django foundation implements sign-in, private/manual accounts, groups, explicit sharing and member removal. This is not a finished budgeting app or a real-data-ready deployment.
+
+Active implementation: `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation`, branch `feat/project-foundation`. The original checkout remains on `main`; run application commands inside the worktree.
 
 Repository: [kah-eru/budget](https://github.com/kah-eru/budget).
 
@@ -15,13 +17,15 @@ This is repository guidance, not a background hook. The skill is stored in Codex
 ## Project documents
 
 - [Product and technical design](docs/superpowers/specs/2026-09-22-budget-app-design.md): requirements, privacy, screens, data model, integrations, and release criteria.
-- [Low-fidelity wireframes and user flows](docs/ux-wireframes.md): phone layouts, key journeys, error states, and Flowbite component mapping.
+- [Low-fidelity wireframes and user flows](docs/ux-wireframes.md): phone layouts, key journeys, error states, and frontend component mapping.
 - [Build plan](docs/superpowers/plans/2026-09-22-budget-app.md): delivery order, proposed files, checks, and expansion triggers.
+- [Development setup and verification](docs/development.md): local startup, dependencies, checks, and current limitations.
 
 ## Agreed scope
 
 - A phone-first responsive web app: touch-friendly navigation and forms, readable charts, home-screen installation, and measured interaction performance across mobile and desktop browsers.
-- Use Flowbite/Tailwind components first. Establish low-fidelity layouts and user flows before visual polish; reuse existing components instead of recreating them.
+- Use Flowbite/Tailwind for standard controls, Motion (motion.dev) for animation, Bklit UI for charts, and Kokonut UI for selected interactive components. Establish low-fidelity layouts and user flows before visual polish; reuse existing components instead of recreating them.
+- Keep Django as the backend and use Manus.im for SEO tracking of public pages only. Private finance pages stay authenticated and excluded from indexing/tracking.
 - Monthly and yearly spending, a chronological spending timeline, transaction search, and editable purchase details.
 - Automatic bank imports and a manual **Sync now** button.
 - Custom categories and merchant/name rules for existing and future transactions.
@@ -32,4 +36,4 @@ This is repository guidance, not a background hook. The skill is stored in Codex
 - Optional API-key-based AI insights about spending patterns and budget progress, with separate consent for sending shared data to an AI provider.
 - Scalable module boundaries, multiple web/worker instances, bounded queries, and a measured load-test gate from the first release.
 
-The design uses explicit proposed defaults for decisions we have not discussed. The stack, shared-edit permissions, alert calculation, hosting approach, and numeric capacity targets are recommendations, not previously approved choices. The user has no AI-provider preference; select one provider/model during implementation after reviewing its API, data policy, and cost. Start with the design document before implementation.
+The design uses explicit proposed defaults for decisions we have not discussed. Django, the frontend tools above, and Manus for SEO only are user-confirmed. PostgreSQL is the configured deployment backend; local checks currently use opt-in SQLite. Mounted React components, shared-edit permissions, alert calculation, hosting and numeric capacity targets are still unverified. Bklit/Kokonut registries are configured, but their components await charts/Insights. Manus, banks and AI remain disconnected; no provider costs or deployment are authorized.

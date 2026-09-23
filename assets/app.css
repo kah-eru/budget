@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@plugin "flowbite/plugin";
+@source "../budget/templates";
+@source "./**/*.{ts,tsx}";
+@source "../node_modules/flowbite";
+
+@layer base {
+  body { font-family: ui-sans-serif, system-ui, sans-serif; }
+  a, button, input { touch-action: manipulation; }
+  a, button { overflow-wrap: anywhere; }
+  input:not([type="hidden"]):not([type="checkbox"]) {
+    @apply block min-h-11 w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-base text-gray-900;
+  }
+  input[type="checkbox"] {
+    @apply mt-1 size-5 shrink-0 rounded border-gray-300 accent-gray-900;
+  }
+  #id_accounts label { @apply flex min-h-11 cursor-pointer items-center gap-3 py-2; }
+  :focus-visible { outline: 3px solid #1d4ed8; outline-offset: 3px; }
+}
+
+@layer components {
+  .primary { @apply inline-flex min-h-11 items-center justify-center rounded-lg bg-gray-900 px-5 py-3 text-center text-base font-medium text-white hover:bg-gray-800; }
+  .secondary { @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium hover:bg-gray-100; }
+  .workspace-link { @apply inline-flex min-h-11 items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium; }
+  .workspace-link[aria-current="page"] { @apply border-gray-900 bg-gray-900 text-white; }
+  .nav-link { @apply flex min-h-14 items-center justify-center rounded-lg px-2 py-3 text-center text-sm font-medium hover:bg-gray-100; }
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .skip-link { @apply sr-only; }
+  .skip-link:focus { @apply not-sr-only fixed top-2 left-2 z-50 rounded bg-white p-3; }
+}

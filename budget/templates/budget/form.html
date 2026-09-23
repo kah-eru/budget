@@ -1,0 +1,10 @@
+{% extends 'budget/base.html' %}
+{% block content %}
+<section class="max-w-xl rounded-lg border border-gray-200 bg-white p-6">
+  <h1 class="mb-2 text-2xl font-semibold">{{ title }}</h1>
+  <p class="mb-6 text-gray-600">{{ help }}</p>
+  <form method="post">{% csrf_token %}{% include 'budget/components/form_fields.html' %}
+    <div class="flex flex-wrap gap-3"><button class="primary" type="submit">{{ action }}</button><a class="secondary" href="{% url 'home' %}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}

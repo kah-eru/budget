@@ -2,7 +2,19 @@
 
 Date: 2026-09-22
 
-Status: draft for review; documentation requested by the user. No implementation approval is implied.
+Updated: 2026-09-23 for Motion, Bklit UI, Kokonut UI, and Manus SEO direction.
+
+Status: implementation authorized on 2026-09-23; milestone 1 foundation is in progress. This document defines the full intended release, not a claim that every feature exists.
+
+## Implementation snapshot — 2026-09-23
+
+Implemented locally: custom Django user, personal/group workspaces, memberships, owned manual accounts, account grants, centralized access queries, explicit share/unshare, member removal/leave, database-backed sign-in throttling/sessions, private response headers, health/readiness endpoints, and a low-fidelity server-rendered shell.
+
+Manual accounts belong directly to users; bank-connection metadata will be added in milestone 3. Group ownership is stored on Workspace, with Membership rows for additional members. Personal access is owner-only even if an erroneous membership row exists. Sharing/removal services lock the workspace before rechecking permissions; concurrency guarantees still require PostgreSQL tests.
+
+PostgreSQL is the deployment configuration. SQLite is an explicit DEBUG-only synthetic-data fallback, not a scalability substitute. Flowbite/Tailwind and Motion assets build locally; React is pinned but not mounted yet. Bklit/Kokonut registry addresses are configured; actual components and their accessibility/interoperability checks remain pending.
+
+Invitations/email verification/recovery, transactions, budgets, banks, jobs, AI, statements, deployment and live Manus SEO are not implemented. Current evidence and known issues are in [development setup and verification](../../development.md).
 
 Working name: Budget app.
 
@@ -23,7 +35,8 @@ Confirmed features:
 - API-key-based AI financial insights. The user has no provider preference.
 - A chronological timeline of money spent.
 - A polished phone-first web app with responsive layouts and fast interactions, while remaining fully usable on tablets and desktop.
-- Use Flowbite UI components rather than recreating existing controls. Start design with low-fidelity wireframes focused on UX and user flow.
+- Use Flowbite/Tailwind standard controls alongside Motion (motion.dev), Bklit UI, and Kokonut UI. Start design with low-fidelity wireframes focused on UX and user flow.
+- Keep Django as the backend; use Manus.im for SEO tracking only, as explicitly clarified on 2026-09-23.
 
 The user wants spending visibility and notifications, not the ability to decline card purchases.
 
@@ -174,9 +187,40 @@ API behavior must be checked against the official SDK/reference during implement
 
 ## 5. Architecture recommendation
 
-Use one Django application with server-rendered templates, Tailwind CSS and Flowbite's HTML/JavaScript components, PostgreSQL, and a web manifest/service worker for push. Add only application-specific JavaScript around the existing components. Django supplies authentication, forms, database migrations, and testing in one framework. Use supported security patch releases; proposed baseline is Python 3.12+ and Django 5.2 LTS. [Django documentation](https://docs.djangoproject.com/en/5.2/) and [Flowbite's Django integration](https://flowbite.com/docs/getting-started/django/).
+Proposed integration: one Django application with server-rendered pages and bounded React components mounted for Bklit UI charts and selected Kokonut UI interactions. Use Tailwind CSS, Flowbite standard controls, Motion animation, PostgreSQL, and a web manifest/service worker for push. Django supplies authentication, forms, database migrations, and testing. Use supported security patch releases; proposed baseline is Python 3.12+ and Django 5.2 LTS. Django is now user-confirmed; the component integration and remaining infrastructure are proposed. [Django documentation](https://docs.djangoproject.com/en/5.2/) and [Flowbite's Django integration](https://flowbite.com/docs/getting-started/django/).
 
-Flowbite is an explicit user choice. Use its standard open-source components with Django template includes; Flowbite React is unnecessary for this stack. Pin compatible Flowbite/Tailwind versions at implementation and build local production assets with a small Node-based asset pipeline. Include template/component paths in Tailwind's source scanning. Do not use a runtime CDN/playground compiler in production. Reuse existing components and behaviors before adding custom controls or a second UI kit. [Flowbite source and component catalog](https://github.com/themesberg/flowbite)
+### Frontend tools and integration
+
+The 2026-09-23 request adds Motion, Bklit UI, and Kokonut UI to the earlier Flowbite selection. It supersedes the blanket restriction on additional UI libraries. The initial Flowbite/Tailwind/Motion build exists; the full React/chart/Insights integration below remains planned and unbenchmarked.
+
+| Tool | Proposed role | Integration boundary |
+| --- | --- | --- |
+| Flowbite + Tailwind | Navigation, forms, sharing controls, tables, alerts, and ordinary buttons. | Django template includes outside React-owned elements. |
+| Bklit UI | Timeline daily/cumulative charts and category-spending charts. | Selected React chart components; server-calculated series plus an accessible HTML table. |
+| Kokonut UI | Selected interactive components, initially the Insights request/status action. | Choose a suitable existing component after flow review; preserve its labels, focus, and pending/error behavior. |
+| Motion | Brief chart/component transitions and interaction feedback. | Shared animation dependency for React components; honor reduced motion and show confirmed monetary values immediately. |
+
+Documentation reviewed on 2026-09-23: Bklit provides React chart components through a shadcn registry; Kokonut documents React/Next.js installation and Tailwind v4. Motion supports React and plain JavaScript. These libraries do not require replacing Django with Next.js. The proposed React integration is an architectural inference from their component requirements; runtime compatibility has not been tested. [Bklit source and installation](https://github.com/bklit/bklit-ui), [Kokonut installation](https://kokonutui.com/docs), and [Motion documentation](https://motion.dev/docs/react-motion-component).
+
+Build selected component source locally with a Node asset build supporting React/TypeScript; pin compatible React, Tailwind, Flowbite, Motion, and component dependencies at implementation. Scan both Django templates and TSX for Tailwind utilities. Keep one shared theme and React runtime. Registry tooling supplies components; it is not another complete app shell. Use open-source components; premium templates or tools are not assumed. Bklit's chart components are MIT licensed, while its Studio is proprietary. Verify licenses for the specific copied components.
+
+Mount each React component in a dedicated container; Flowbite's DOM initialization must not mutate that subtree. Pass only authorized, bounded data using safely encoded JSON or same-origin authenticated endpoints; retain Django session/CSRF enforcement and server-side permission checks. No frontend library calculates authoritative money totals. Server-rendered values, transaction lists, and chart tables remain useful if enhancement loading fails. Lazy-load charts and share dependencies across components. This approach keeps Django routing and the current deployment model; a separate SPA/SSR service is not required by the tool selection.
+
+Use Motion's reduced-motion configuration and adapt any copied component animations that need additional handling. Avoid count-up effects on financial values, blocking entrance animations, and perpetual decorative motion in core tasks. [Motion accessibility](https://motion.dev/docs/react-accessibility).
+
+### Manus SEO tracking
+
+User clarification on 2026-09-23: "Manus for SEO tracking only; keep Django backend." Manus is the operator tool for SEO audits and tracking on public pages. This does not select the in-app spending-insights provider.
+
+Manus documents SEO workflows using connected data sources for audits, keywords, and rankings. Its website builder separately offers backend/database generation and built-in analytics; its built-in SEO feature applies to websites built and published on Manus. That is not evidence of a drop-in SEO SDK for Django or verified suitability for this app's financial backend. [Manus SEO workflows](https://manus.im/solutions/seo), [website builder](https://www.manus.im/features/webapp), and [built-in SEO documentation](https://manus.im/docs/website-builder/seo).
+
+Proposed scope: an operator connects the chosen public domain and appropriate SEO data source to Manus, records a baseline audit, and reviews changes in indexing, target-keyword visibility, and available organic traffic metrics. Each report records source, reporting window, and collection time; unavailable metrics remain unavailable. Start with manual reports; select an automated cadence only after confirming connector access and costs. A Manus SEO health score is distinct from measured search rankings or traffic.
+
+Only explicitly public informational pages may be indexed or included in SEO tracking. Authenticated workspaces, purchases, reports, statements, invites, and account/AI settings remain access-controlled, carry noindex directives, and are excluded from sitemaps and SEO payloads. Do not send account identifiers, amounts, notes, session tokens, or invitation URLs to Manus or analytics. Robots rules are not access control. Keep SEO work outside the budgeting request path.
+
+There is currently no public domain or public-page scope. Prepare the indexing boundary during implementation; live Manus tracking requires a public surface, connected SEO sources, and any applicable service setup. The current documentation change does not create a Manus project, publish finance pages, or authorize charges. Manus backend generation/hosting is outside the confirmed scope; retain Django and its finance, permission, job, and load-test requirements.
+
+### Backend runtime and jobs
 
 Use the official Plaid Python SDK, a maintained Web Push library, and established encryption/JWT libraries where required. Do not implement cryptography or push protocols from scratch. Verify compatibility and pin concrete versions when scaffolding.
 
@@ -196,7 +240,7 @@ Alternatives considered: a separate SPA/API would add another application to mai
 | Workspace / Membership | Personal or group context; unique membership, owner/member role; personal workspace has exactly its owner. |
 | Invitation | Group, intended email, hashed token, expiry, accepted/revoked state. |
 | BankConnection | Owner, provider Item ID, encrypted token, committed cursor, sync state. |
-| Account / AccountShare | Account belongs to a connection; unique explicit account-to-group grant. |
+| Account / AccountShare | Account belongs to a user; manual accounts need no bank connection. Bank imports will also reference their owned connection. Unique explicit account-to-group grant. |
 | Transaction | Original bank fields, integer cents, date, state, source ID; unique provider ID per connection or CSV source row identity. |
 | Category / Rule | Workspace-scoped labels and ordered matching instructions. |
 | TransactionAnnotation | Unique transaction/workspace overlay for display name, category, note, and classification; provenance manual/rule/bank. |
@@ -267,7 +311,7 @@ The main job of the phone UI is to answer what was spent, how much remains, and 
 
 Design starts with the [low-fidelity wireframes and user flows](../../ux-wireframes.md). Validate navigation, workspace context, action order, disclosure of sharing, and recovery paths before choosing decorative styling. Use neutral grayscale boxes and plain text for this stage; the earlier custom palette/font proposal is superseded. During implementation start with Flowbite defaults and system typography, making small consistent theme changes only after the flows work. Reuse Flowbite's timeline, navigation, cards, forms, progress indicators, dialogs/drawers, tables, alerts, and loading states; do not build an independent design system.
 
-Keep repeated component markup in simple Django template includes. Preserve the library's documented behavior, then verify keyboard, focus, touch, and responsive behavior in our actual composition. If a required behavior is missing, document the gap and add the smallest adaptation; do not recreate an available component. Charts should use the existing Flowbite chart integration or a suitable maintained chart package, with a separate accessible data table; never hand-build a chart engine. [Flowbite charts](https://flowbite.com/docs/plugins/charts/)
+Keep repeated server markup in Django template includes and selected interactive components in React modules. Follow the frontend mapping in section 5 and verify keyboard, focus, touch, and responsive behavior in the actual composition. Use Bklit UI for charts with a separate accessible data table, Kokonut UI for the selected interactive action, and Motion for brief transitions. Document any accessibility adaptation; do not recreate an available component or load a second chart engine for the same view.
 
 Layout and navigation requirements:
 
@@ -295,7 +339,7 @@ Test current stable iOS Safari and Android Chrome on actual phones, plus desktop
 
 Proposed performance targets: LCP at or below 2.5 seconds, INP at or below 200 ms, and CLS at or below 0.1 at the 75th percentile when field data is available. Before launch, use a documented mid-range Android/4G lab profile and measure key interactions directly; lab results are not field percentiles. These browser-experience targets complement, rather than replace, the server/load targets in section 5. [Core Web Vitals definitions](https://web.dev/articles/vitals)
 
-Prefer server-rendered useful content, minimal JavaScript, paginated feeds, compressed assets, and lazy loading of nonessential chart/AI UI. Proposed initial-route budget: at most 150 KiB compressed app-delivered JavaScript, including Flowbite and other bundled dependencies, with third-party Plaid assets loaded only when connecting/reconnecting. No chart or AI library should block viewing purchases. Measure the actual asset/network trace and investigate long main-thread tasks before adding dependencies. Use selective supported component imports/builds where practical, while preserving Flowbite behavior.
+Prefer server-rendered useful content, minimal JavaScript, paginated feeds, compressed assets, and lazy loading of nonessential chart/AI UI. Proposed initial-route budget remains at most 150 KiB compressed app-delivered JavaScript, including any loaded React, Flowbite, Motion, Bklit, Kokonut, and transitive dependencies. Record initial and deferred bytes separately; the expanded frontend makes this target a specific measurement risk, not a verified result. Load third-party Plaid assets only when connecting/reconnecting. No chart or AI library should block viewing purchases. Measure the actual asset/network trace and long main-thread tasks, use selected component imports, and explicitly revise the target if evidence requires it.
 
 ## 8. Growth without a rewrite
 
@@ -339,8 +383,9 @@ Deferred: billing users, public signup, social feeds, settlements, card issuing/
 - Core flows pass the phone/tablet/desktop width matrix, real iOS/Android browser checks, keyboard-open and enlarged-text cases, and screenshot review without hidden controls or whole-page overflow.
 - Timeline charts, purchase editing, sharing, and notifications are touch/keyboard accessible; browser Back preserves context and slow-network errors preserve user input.
 - Mobile loading/interaction/layout-shift measurements and asset sizes are recorded against section 7 targets before mobile performance is called verified.
-- The low-fidelity journeys are reviewed before visual polish; each implemented UI pattern is mapped to a reused Flowbite component or a documented genuine gap.
+- The low-fidelity journeys are reviewed before visual polish; implemented UI patterns follow the Flowbite/Bklit/Kokonut/Motion mapping. Reduced-motion behavior, React/Flowbite ownership boundaries, and chart-table equivalence are checked.
+- Private finance routes remain authenticated, excluded from public sitemaps, and absent from Manus/SEO payloads. When a public site is available, record a Manus baseline report and verify its actual connected sources before claiming tracking works.
 
 ## 10. Review notes
 
-The requested documentation is complete enough to review the product boundaries. The defaults in section 2 and architecture in section 5 are proposals, not statements about existing code. Hosting provider, domain, exact package versions, and production credentials will be selected or supplied at implementation/deployment time; no cost or provider enrollment is authorized by this document.
+The defaults in section 2 and unimplemented architecture in section 5 remain proposals. The implementation snapshot distinguishes current code from full-release requirements. Installed foundation versions are recorded in requirements.txt/package-lock.json and the development guide. Hosting, domain and production credentials remain unselected; no cost or provider enrollment is authorized by this document.

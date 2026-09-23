@@ -1,6 +1,14 @@
 # Low-fidelity wireframes and user flows
 
-Status: first draft for UX review, not a working app or final visual design. All names/amounts below are illustrative. These wireframes implement the user's direction: Flowbite components first, low fidelity, and attention to user journeys before decoration.
+Status: full-release wireframes remain a UX draft; a low-fidelity foundation subset now exists. Updated 2026-09-23. All names/amounts below are illustrative.
+
+## Current foundation subset
+
+Implemented journey: sign in -> Personal accounts -> add a manual account -> create/select a group -> Manage sharing -> choose owned accounts and confirm past/future history -> Save sharing. Members can leave; owners can remove members. Account detail is an empty-state page, not a transaction report.
+
+Temporary navigation exposes only working destinations: Accounts, Add account, New group. Workspace links show the active context. It will become the five-destination navigation below as those screens land; no dead dashboard/chart buttons are presented as working.
+
+Neutral grayscale, system typography, Flowbite-style forms/cards/navigation, local Tailwind CSS and a brief Motion confirmation highlight implement the low-fidelity direction. No global Flowbite DOM initializer or React mounts exist yet. Invitations, separate added/removed sharing review, unsaved-form protection and remaining full-release journeys are pending. Browser checks and screenshot review status are tracked in [development verification](development.md).
 
 Read alongside the [product spec](superpowers/specs/2026-09-22-budget-app-design.md) and [build plan](superpowers/plans/2026-09-22-budget-app.md). Permissions and financial calculations remain defined by the spec.
 
@@ -10,17 +18,23 @@ The active workspace stays visible: Personal, Partner group, or a named Friends 
 
 Phone destinations: Overview, Timeline, Budgets, Insights, More. More opens a page containing Accounts, Sharing & people, Statements & imports, Notifications, and Settings. A notification button is also available in the header. Desktop uses the same destinations in a sidebar.
 
-| UI need | Reuse from Flowbite | App-specific work |
+| UI need | Selected component source | App-specific work |
 | --- | --- | --- |
-| Phone/desktop shell | Bottom navigation, sidebar, dropdown | Routes and current workspace. |
-| Overview | Cards, badges, progress bars, buttons | Authorized totals, budget status, freshness. |
-| Spending history | Timeline, list group, table, pagination controls | Dates, cursor paging, amounts, transaction links. |
-| Filters/editors | Forms, select, checkbox, drawer/modal | Validation, permissions, save/back behavior. |
-| Sharing | List group, checkbox/toggle, alert, modal | Who sees which account and confirmation. |
-| Alerts/results | Alerts, toast, badge, skeleton, spinner | Job state, retry action, inbox persistence. |
-| Charts | Documented chart integration | Financial series, selection, equivalent data table. |
+| Phone/desktop shell | Flowbite bottom navigation, sidebar, dropdown | Routes and current workspace. |
+| Overview | Flowbite cards, badges, progress bars, buttons | Authorized totals, budget status, freshness. |
+| Spending history | Flowbite timeline, list group, table, pagination | Dates, cursor paging, amounts, transaction links. |
+| Filters/editors | Flowbite forms, select, checkbox, drawer/modal | Validation, permissions, save/back behavior. |
+| Sharing | Flowbite list group, checkbox/toggle, alert, modal | Who sees which account and confirmation. |
+| Alerts/results | Flowbite alerts, toast, badge, skeleton, spinner | Job state, retry action, inbox persistence. |
+| Charts | Bklit UI React charts | Daily/cumulative/category series, touch/keyboard selection, equivalent HTML table. |
+| Insights request/status action | Selected Kokonut UI interactive component | Existing generate/status workflow, clear labels, focus, and failure recovery. |
+| Component transitions | Motion | Brief feedback; honor reduced motion and display confirmed values immediately. |
 
-References: [Flowbite catalog](https://github.com/themesberg/flowbite), [Django integration](https://flowbite.com/docs/getting-started/django/), [bottom navigation](https://flowbite.com/docs/components/bottom-navigation/), [timeline](https://flowbite.com/docs/components/timeline/), and [charts](https://flowbite.com/docs/plugins/charts/). Use the standard open-source catalog first; paid templates are not assumed. Implement missing finance logic, not a replacement widget library.
+References: [Flowbite catalog](https://github.com/themesberg/flowbite), [Django integration](https://flowbite.com/docs/getting-started/django/), [Bklit UI](https://github.com/bklit/bklit-ui), [Kokonut UI](https://kokonutui.com/docs), and [Motion accessibility](https://motion.dev/docs/react-accessibility). Use selected open-source components and a shared Tailwind theme; paid templates are not assumed. React owns only its mounted component containers; Flowbite controls the surrounding server-rendered UI. Exact Kokonut component selection follows flow review and compatibility checks.
+
+Animation does not change these journeys: keep workspace context, Back/Cancel, status text, and monetary values visible without waiting for transitions. Reduced-motion mode retains every action. Charts keep an accessible server-rendered table and selected-date summary even if their JavaScript fails to load.
+
+Manus SEO is an operator workflow for public pages, not a destination in the finance app. No authenticated workspace, chart payload, purchase, or insight is sent to SEO tracking. Django remains the backend. Public-page scope and the tracked domain are still to be selected; no public landing-page design or live tracking is claimed here.
 
 ## 1. First use: connect privately, then choose sharing
 
@@ -228,7 +242,7 @@ The ellipsis is a wireframe position for the user's actual configured allowance,
 +------------+----------------------------------------------+
 ```
 
-Use the same Flowbite components, routes, labels, and permissions across breakpoints. Additional width permits a second column; it does not introduce a separate workflow. The main page scrolls naturally; keyboard focus and screen-reader reading order follow the meaningful content order.
+Use the same selected components, routes, labels, and permissions across breakpoints. Additional width permits a second column; it does not introduce a separate workflow. The main page scrolls naturally; keyboard focus and screen-reader reading order follow the meaningful content order.
 
 Review by walking through these tasks, then amend the wireframes before polishing screens:
 
@@ -238,5 +252,6 @@ Review by walking through these tasks, then amend the wireframes before polishin
 4. Identify which workspace and which people an edit or sharing action affects.
 5. Generate an insight, explaining which accounts are omitted and whose key pays.
 6. Recover from cancelled bank linking, failed save, denied push, revoked sharing, and offline mode.
+7. Repeat chart selection and the Insights action with reduced motion enabled and with enhancement loading unavailable; keep financial values and recovery paths usable.
 
-Success means users can identify their next action, current scope, consequence, and recovery path. These are reviewable low-fidelity artifacts; no usability testing or working UI is claimed yet.
+Success means users can identify their next action, current scope, consequence, and recovery path. The full-release flows remain reviewable artifacts; the foundation subset is implemented. Automated browser checks do not replace user usability testing, which has not been performed.

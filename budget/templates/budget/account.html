@@ -1,0 +1,9 @@
+{% extends 'budget/base.html' %}
+{% block content %}
+<a class="secondary mb-5" href="{% url 'workspace' workspace.pk %}">Back to {{ workspace.name }}</a>
+<section class="rounded-lg border border-gray-200 bg-white p-6">
+  <h1 class="mb-2 break-words text-2xl font-semibold">{{ account.name }}</h1>
+  <p class="mb-6 text-gray-600">Owned by {{ account.owner.username }} · Manual account</p>
+  <p>No transactions imported. CSV imports, bank connections, and spending reports are coming in the next milestones.</p>
+</section>
+{% endblock %}
