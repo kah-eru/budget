@@ -4,7 +4,7 @@ Updated 2026-09-23. Development-only foundation, not ready for real financial da
 
 ## Where to work
 
-Use `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on branch `feat/project-foundation`. The original checkout is on `main`; existing documentation edits were preserved and copied into the worktree. The foundation is committed locally. A push to `origin` was rejected by automated security review because remote ownership and destination authorization could not be verified; nothing was pushed, merged, or deployed.
+Use `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on branch `feat/project-foundation`, tracking `origin/feat/project-foundation`. Commit `7f2a4e6` is pushed. The original checkout is on `main` and retains its existing uncommitted documentation edits. No merge, pull request, or deployment has occurred.
 
 ## Setup (PowerShell)
 

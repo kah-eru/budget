@@ -2,7 +2,7 @@
 
 Updated: 2026-09-23. Current checkpoint; read docs and verify Git before resuming.
 
-Latest request: user asked to commit and push the project. Created a local foundation commit on `feat/project-foundation`. Push to `origin` (`https://github.com/kah-eru/budget.git`) was rejected by automated security review because remote ownership and destination authorization could not be verified. Nothing was pushed; explicit approval of that destination is needed to retry. No code changed in this turn. Application tests were not rerun; prior checkpoint evidence remains as recorded below.
+Latest request: user confirmed `https://github.com/kah-eru/budget` as the intended destination. Foundation commit `7f2a4e6` was pushed to `origin/feat/project-foundation`, and upstream tracking is configured. No product code changed in this turn. Application tests were not rerun; prior checkpoint evidence remains as recorded below.
 
 ## Active workspace and objective
 
@@ -50,6 +50,6 @@ Minor deferred finding: account creation does not increment personal workspace d
 
 ## Git and persistence
 
-Base HEAD: e85ead9. Foundation and docs are committed locally on `feat/project-foundation`; the branch has not been pushed, merged, or deployed. Existing six dirty docs copied into worktree; original edits preserved. Original checkout has a new .gitignore excluding generated/worktree paths. GitHub push was blocked by automated review pending destination authorization.
+Base HEAD: e85ead9. Foundation and docs are committed and pushed on `feat/project-foundation`, tracking `origin/feat/project-foundation`. No merge, pull request, or deployment occurred. Existing six dirty docs copied into worktree; original edits preserved. Original checkout has a new .gitignore excluding generated/worktree paths. The original `main` checkout retains its existing uncommitted documentation changes.
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored, retained while milestone is incomplete). One read-only review agent completed; important label finding is fixed, minor revision finding is recorded. Root and worktree canonical docs/handoff are synchronized so the original root points to current work. No commits, pushes, merges, paid services or deployment.
