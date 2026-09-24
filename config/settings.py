@@ -93,3 +93,11 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Private user files (statements, later). No URL route serves this directory; downloads go through
+# authorized views. ponytail: local disk until a host is chosen; every replica must mount the same
+# path (or swap in an object-store backend) before a second web process handles uploads.
+BUDGET_PRIVATE_STORAGE_ROOT = os.environ.get("BUDGET_PRIVATE_STORAGE_ROOT") or str(BASE_DIR / ".local" / "private-files")
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "OPTIONS": {"location": BUDGET_PRIVATE_STORAGE_ROOT}},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
