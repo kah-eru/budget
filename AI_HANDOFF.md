@@ -8,6 +8,8 @@ Follow-up request (same day): install the `apple-design` skill for frontend work
 
 Latest request (evening): "do the next steps listed." Done: handoff step 0 (apple-design pass over existing screens, `cf529f6`) and step 1 (per-workspace `TransactionAnnotation`, `b6947b9`). Local commits only; no push.
 
+Latest question (evening): user wants a hosted (not on this PC), free-to-start, scalable PostgreSQL. Recommended Neon (free: 0.5 GB, 100 CU-hours/month, scales to zero; usage-based paid plans), Supabase as the alternative (free 500 MB, pauses after 7 idle days). Awaiting the user to create the Neon project and set PG* env vars themselves; no account created, no credentials seen, no code changed. Use the direct (non-pooler) host and `PGSSLMODE=require`; synthetic data only until release gates pass.
+
 ## Active workspace and objective
 
 Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code commit `cf529f6` (docs commits follow). Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
@@ -48,7 +50,7 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 1. Transaction list with search, account/person/date filters, pagination, and a yearly view reusing `spending()`.
 2. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
 3. UX: collapse the workspace switcher on phones (long list with many groups); apply apple-design springs once Motion drives real transitions (sheets/drawers).
-4. Before real data: user creates a dedicated PostgreSQL dev DB/role (they type the password), then run the two-process session/revocation/invitation checks. Also email delivery, real-device UX and release gates.
+4. Before real data: user creates a hosted Neon dev database (they enter the password in their own shell), then run the two-process session/revocation/invitation checks. Also email delivery, real-device UX and release gates.
 
 ## Git and documentation state
 
