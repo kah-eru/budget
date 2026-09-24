@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
 
 from .invitations import claim_email_send
-from .models import Account, Transaction, User, Workspace
+from .models import Account, Transaction, TransactionAnnotation, User, Workspace
 
 
 class AccountForm(forms.ModelForm):
@@ -31,6 +31,19 @@ class TransactionForm(forms.ModelForm):
     def save(self, commit=True):
         self.instance.amount_cents = int(self.cleaned_data["amount"] * 100)
         return super().save(commit)
+
+
+class AnnotationForm(forms.ModelForm):
+    class Meta:
+        model = TransactionAnnotation
+        fields = ["display_name", "classification", "note"]
+        labels = {"classification": "Type"}
+
+    def __init__(self, *args, source, personal, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["display_name"].help_text = f"Leave blank to show the original: {source.description or '(no description)'}"
+        self.fields["classification"].choices = [("", f"Original ({source.get_classification_display()})"), *Transaction.CLASSIFICATIONS]
+        self.fields["note"].label = "Personal note (only you)" if personal else "Group note (everyone in this group)"
 
 
 class GroupForm(forms.ModelForm):

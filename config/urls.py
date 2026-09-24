@@ -29,6 +29,7 @@ urlpatterns = [
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/", views.account_detail, name="account_detail"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/new/", views.transaction_edit, name="transaction_create"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/<int:transaction_id>/", views.transaction_edit, name="transaction_edit"),
+    path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/<int:transaction_id>/annotate/", views.annotation_edit, name="annotation_edit"),
     path("workspaces/<int:workspace_id>/sharing/", views.sharing, name="sharing"),
     path("workspaces/<int:workspace_id>/members/<int:member_id>/remove/", views.member_remove, name="member_remove"),
 ]

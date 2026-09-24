@@ -85,3 +85,15 @@ class Transaction(models.Model):
             models.CheckConstraint(condition=Q(amount_cents__gt=0), name="transaction_amount_positive"),
             models.CheckConstraint(condition=Q(currency="USD"), name="transaction_usd_only"),
         ]
+
+
+class TransactionAnnotation(models.Model):
+    # Per-workspace overlay; the source Transaction is never modified. Null classification = use source.
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="annotations")
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="annotations")
+    display_name = models.CharField(max_length=200, blank=True)
+    classification = models.CharField(max_length=10, choices=Transaction.CLASSIFICATIONS, null=True, blank=True)
+    note = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["transaction", "workspace"], name="annotation_one_per_workspace")]

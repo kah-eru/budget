@@ -12,9 +12,9 @@
   <ul class="divide-y divide-gray-200">
     {% for row in transactions %}
     <li class="flex min-h-16 flex-wrap items-center justify-between gap-2 py-3">
-      <span class="min-w-0 break-words"><span class="font-medium">{{ row.description|default:"(no description)" }}</span><br><span class="text-sm text-gray-600">{{ row.posted_on }} · {{ row.get_classification_display }}{% if row.pending %} · Pending{% endif %}</span></span>
-      <span class="flex items-center gap-3"><span class="font-medium tabular-nums">{% if row.classification == 'refund' %}−{% endif %}{{ row.amount_cents|dollars }}</span>
-      {% if account.owner_id == user.pk %}<a class="secondary" href="{% url 'transaction_edit' workspace.pk account.pk row.pk %}" aria-label="Edit {{ row.description|default:'transaction' }} on {{ row.posted_on }}">Edit</a>{% endif %}</span>
+      <span class="min-w-0 break-words"><span class="font-medium">{{ row.ann_name|default:row.description|default:"(no description)" }}</span><br><span class="text-sm text-gray-600">{{ row.posted_on }} · {{ row.effective_label }}{% if row.pending %} · Pending{% endif %}{% if row.ann_name %} · Original: {{ row.description|default:"(none)" }}{% endif %}</span>{% if row.ann_note %}<br><span class="text-sm text-gray-600">{% if workspace.is_personal %}Personal note{% else %}Group note{% endif %}: {{ row.ann_note }}</span>{% endif %}</span>
+      <span class="flex items-center gap-3"><span class="font-medium tabular-nums">{% if row.effective == 'refund' %}−{% endif %}{{ row.amount_cents|dollars }}</span>
+      {% if account.owner_id == user.pk %}<a class="secondary" href="{% url 'annotation_edit' workspace.pk account.pk row.pk %}" aria-label="Edit {{ row.ann_name|default:row.description|default:'transaction' }} on {{ row.posted_on }}">Edit</a>{% endif %}</span>
     </li>
     {% empty %}
     <li class="py-5 text-gray-600">No transactions yet.{% if account.owner_id == user.pk %} Add one manually; CSV imports and bank connections come later.{% endif %}</li>

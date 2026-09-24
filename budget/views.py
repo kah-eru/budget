@@ -2,16 +2,17 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, connection, transaction
+from django.db.models import F
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
-from .forms import AccountForm, GroupForm, SharingForm, TransactionForm
-from .models import Membership, MembershipNotice, Transaction
+from .forms import AccountForm, AnnotationForm, GroupForm, SharingForm, TransactionForm
+from .models import Membership, MembershipNotice, Transaction, TransactionAnnotation, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import spending
+from .reporting import annotated, spending
 from .sharing import bump_account_data, remove_member, replace_shares
 
 
@@ -59,7 +60,10 @@ def account_detail(request, workspace_id, account_id):
     workspace = get_workspace(request.user, workspace_id)
     account = get_object_or_404(visible_accounts(request.user, workspace), pk=account_id)
     # ponytail: newest 100 only; the timeline slice adds (date, id) cursor paging.
-    transactions = account.transactions.order_by("-posted_on", "-pk")[:100]
+    transactions = list(annotated(account.transactions.order_by("-posted_on", "-pk"), workspace)[:100])
+    labels = dict(Transaction.CLASSIFICATIONS)
+    for row in transactions:
+        row.effective_label = labels[row.effective]
     return render(request, "budget/account.html", {**page_context(request.user, workspace), "account": account, "transactions": transactions})
 
 
@@ -79,6 +83,27 @@ def transaction_edit(request, workspace_id, account_id, transaction_id=None):
         return redirect(back)
     title = "Edit transaction" if transaction_id else f"Add a transaction to {account.name}"
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": title, "action": "Save transaction", "cancel_url": back, "help": "Manual entry. Transfers and card payments never count as spending."}, status=400 if request.method == "POST" else 200)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def annotation_edit(request, workspace_id, account_id, transaction_id):
+    workspace = get_workspace(request.user, workspace_id)
+    account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
+    row = get_object_or_404(Transaction, account=account, pk=transaction_id)
+    instance = TransactionAnnotation.objects.filter(transaction=row, workspace=workspace).first() or TransactionAnnotation(transaction=row, workspace=workspace)
+    form = AnnotationForm(request.POST if request.method == "POST" else None, instance=instance, source=row, personal=workspace.is_personal)
+    back = reverse("account_detail", args=[workspace.pk, account.pk])
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            form.save()
+            Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
+        messages.success(request, "Changes saved for this workspace only.")
+        return redirect(back)
+    where = "your personal view" if workspace.is_personal else workspace.name
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": row.description or "Transaction", "action": "Save changes", "cancel_url": back,
+                  "help": f"{row.posted_on} · {row.amount_cents / 100:,.2f} USD original. Changes here apply to {where} only; the original entry stays as recorded.",
+                  "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit original entry"}, status=400 if request.method == "POST" else 200)
 
 
 @login_required
