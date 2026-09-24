@@ -7,12 +7,14 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import AccountForm, AnnotationForm, GroupForm, SharingForm, TransactionForm
 from .models import Membership, MembershipNotice, Transaction, TransactionAnnotation, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import annotated, spending
+from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
 
 
@@ -102,7 +104,7 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
         return redirect(back)
     where = "your personal view" if workspace.is_personal else workspace.name
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": row.description or "Transaction", "action": "Save changes", "cancel_url": back,
-                  "help": f"{row.posted_on} · {row.amount_cents / 100:,.2f} USD original. Changes here apply to {where} only; the original entry stays as recorded.",
+                  "help": f"{date_format(row.posted_on)} · {dollars(row.amount_cents)} original. Changes here apply to {where} only; the original entry stays as recorded.",
                   "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit original entry"}, status=400 if request.method == "POST" else 200)
 
 
