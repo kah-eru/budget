@@ -1,55 +1,48 @@
 # AI handoff
 
-Updated: 2026-09-24. Safe stopping point requested by the user; read current docs and inspect Git before resuming.
+Updated: 2026-09-24 (afternoon). Read current docs and inspect Git before resuming.
 
-Latest request: check yesterday's commit and all project Markdown, continue, then find a good stopping point and update docs. Confirmed September 23 commits `7f2a4e6` (foundation) and `26d5722` (publication documentation). Continued the invitation/verification/recovery slice, verified it, and stopped before PostgreSQL/storage work. No new commit, push, merge, PR or deployment in this turn.
+Latest request: "there should be ai handoff file and context files for what to do next. can you do it." User decisions this turn: **skip PostgreSQL for now** (no dedicated DB/credentials exist; do not guess them) and **commit the verified invitation slice locally first**. Done: committed it, fixed the deferred account-revision bug, configured private file storage, and started milestone 2 with manual transactions and a monthly spending summary. Local commits only; no push, PR, merge or deployment.
 
 ## Active workspace and objective
 
-Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, HEAD `26d5722`. Original checkout remains on `main` with synchronized docs and its prior uncommitted edits. Continue implementation only in the existing worktree.
+Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, HEAD `5c54c56`. Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
 
-Milestone 1 remains partial. Invitations/recovery now work locally; PostgreSQL concurrency, shared private storage and remaining UX gates are unfinished. Milestones 2-8 remain unimplemented. No real financial data, bank/AI/SEO connections or paid services.
+Milestone 1 is functionally complete locally except the PostgreSQL two-process gate (deferred by the user; still required before real data), full responsive navigation and mounted React components. Milestone 2 has its first slice. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
 
-## Implemented checkpoint
+## Commits this turn (local only)
 
-- Existing foundation: custom Django user, personal/group workspaces, owned manual accounts, explicit grants, central authorization, sharing/removal/leave, login throttling and private/no-store/noindex responses.
-- Owner-only invitation creation/revocation with seven-day single-use hashed tokens, intended-email binding, history warning and paginated pending list (20/page).
-- New invitees receive a separate one-hour setup email before choosing credentials. Only its bearer can create the verified identity; normal login and explicit Join group remain required. Existing users verify their current email separately. Accepting never shares the joining user's own accounts.
-- Django password reset for verified current emails only, one-hour tokens, generic response and shared database send cooldown. Nonempty emails are case-insensitively unique. Existing unverified users with forgotten passwords require operator assistance.
-- Membership notices for affected account owners on the accessible group page. Removal revokes that member's shares and pending invitations. Full unread inbox/push remains milestone 5.
-- Local console email, synthetic in-memory test email, and environment-configured production SMTP defaults; no actual email provider configured or contacted.
-
-Main paths: `budget/invitations.py`, `budget/invitation_views.py`, models/forms/sharing/views, migrations 0002/0003, invitation/registration templates, `config/settings.py`, `config/urls.py`, `.env.example`, `budget/tests/test_invitations.py`, and `tests/browser/{invitations.spec.ts,server.py}`.
+- `ed793ee` invitations, mailbox verification, password recovery (previously uncommitted work; 40/40 tests at commit).
+- `79450be` fix: `sharing.bump_account_data(account)` bumps `data_revision` on the owner's personal workspace and every workspace the account is shared into; called on account creation.
+- `11976e8` private default storage: `STORAGES["default"]` FileSystemStorage at `BUDGET_PRIVATE_STORAGE_ROOT` (default ignored `.local/private-files`); no URL route serves it. Local disk only until a host is chosen (milestone 7).
+- `5c54c56` `Transaction` model (migration 0004): positive integer cents, DB constraints for amount > 0 and USD-only, classification expense/refund/income/transfer (card payments = transfer), pending flag, description; index (account, posted_on, id). Owner-only add/edit at `workspaces/<ws>/accounts/<acc>/transactions/new/` and `.../<id>/`. `budget/reporting.py::spending()` is the single spending calculation over `visible_accounts`. Workspace page shows this month's posted/pending/income. `budget/templatetags/money.py` `dollars` filter.
 
 ## Verification actually completed
 
-- Baseline 27 Django tests passed. Final suite: **40/40 pass** with `manage.py test --settings=config.test_settings --noinput`.
-- Initial nine invitation tests failed on missing routes, then passed. Independent reviewer reproduced an email-squatting flaw and missing email-length validation; each regression failed before its fix. Mailbox proof now precedes identity creation, and both form/service enforce email length. An additional failing regression drove pagination so older pending invitations remain revocable.
-- **3/3 Chrome browser checks pass**; after final pagination/screenshot changes, invitation check reran **1/1 pass**. Covers existing sharing/reduced motion, JavaScript-disabled account creation, and JavaScript-disabled invitation setup/signup/login/join/leave. Invitation owner screens checked at 320/360/390/430/768/1024/1440px. Phone and desktop invitation screenshots opened and reviewed.
-- Asset build passes: JS 15.42 kB / 4.96 kB gzip; CSS 58.08 kB / 11.29 kB gzip. No new runtime dependency.
-- Framework check, migration drift check and production-mode `check --deploy` pass. The production check validates settings only, not PostgreSQL connectivity or SMTP delivery.
-- Browser helper uses a separate ignored `.local/browser.sqlite3`, generated ephemeral secret and console-only mail logs. Server stopped and local port closure confirmed. Earlier browser attempts hit a Windows Start-Process environment collision and browser-runner startup/teardown issues; the documented direct Python helper produced the passing runs.
-- No PostgreSQL/two-process test, real SMTP, actual-phone/screen-reader check or load benchmark ran. Previous dependency audit evidence is dated September 23 and was not rerun.
-
-See [development guide](docs/development.md) for startup and browser commands. Run migrations before normal local startup; the isolated browser DB has both new migrations, while ordinary development db.sqlite3 may still need 0003.
+- Each new test observed failing first, then passing. Full suite **51/51** (`manage.py test --settings=config.test_settings --noinput`); `check` and `makemigrations --check` clean; asset build passes (CSS 11.43 kB gzip, JS 4.96 kB gzip).
+- Plan fixture verified: $100 + $20 − $15 refund, excluding $100 card payment and $200 transfer → 10500 posted cents; $30 pending → 3000. Jan 31/Feb 1 boundary and private-account exclusion from group totals tested. Member cannot add/edit another owner's transactions (404). Sub-cent, zero and negative amounts rejected.
+- **3/3 Chrome browser checks pass** (rerun after template changes, on a restarted server). Transaction form, account list and month summary checked at 360px: no horizontal overflow; screenshots reviewed (`.local/txn-*.png` in worktree). Found and fixed: unstyled Type select, Type defaulting to blank. Test server stopped.
+- Not run: PostgreSQL, multi-process, real SMTP, actual phones, screen readers, load.
 
 ## Decisions and remaining limits
 
-Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts and Kokonut interactions; Manus for public SEO only. Preserve phone UX, selective sharing, integer-cents finance and first-release load gates. React is installed but not mounted; chart/Insights components await their milestones.
+Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut interactions; Manus for public SEO only; phone UX, selective sharing, integer cents, load gates. React installed but not mounted.
 
-SQLite remains DEBUG-only and synthetic-only. Existing PostgreSQL 17 service and credentials were not touched. Production delivery uses configurable Django SMTP; setup/recovery/verification email has initial database cooldowns, not a verified production abuse/capacity model. Unique-email migration deliberately refuses duplicates rather than merging identities.
-
-Deferred foundation finding remains: manual-account creation does not increment personal workspace data_revision; fix before derived reports consume it. No unfixed Important/Critical finding remains from this slice's review. In-flight read/revocation guarantees still require the PostgreSQL concurrency gate.
+- Classification currently lives on `Transaction` as the source classification. Spec requires workspace-specific annotations (display name, category, note, classification override) — next slice; reporting must then read the annotation for the active workspace.
+- Account page shows newest 100 transactions only (`ponytail:` note in `views.account_detail`); cursor paging arrives with the timeline.
+- Manual transactions are user-originated, so owners may edit amounts; imported (CSV/Plaid) amounts must stay read-only per spec.
+- Pre-existing UX issue: workspace switcher list grows long on phones with many groups.
+- SQLite remains DEBUG/synthetic-only. PostgreSQL 17 service untouched; no credentials read.
 
 ## Ordered next steps
 
-1. Resume in the existing worktree; read docs, inspect the uncommitted changes and current Git state. Do not rebuild the working foundation/invitation flow.
-2. Continue milestone 1 with a dedicated PostgreSQL development/test database, two-process session/revocation/invitation checks, shared private storage and remaining UX details. No existing database credentials have been read or guessed.
-3. Fix account-creation revision coverage before milestone 2 reporting. Then implement transactions/CSV/timeline; milestones 3-8 remain in the plan.
-4. Configure and verify real email delivery, production services, real-device UX and release gates before real-data usage. Manus still needs public pages/domain and source decisions.
+1. Milestone 2: `TransactionAnnotation` (per transaction/workspace overlay; private notes never in group views) and switch `reporting.spending()` to the effective classification.
+2. Transaction list with search, account/person/date filters, pagination, and a yearly view reusing `spending()`.
+3. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
+4. Before real data: user creates a dedicated PostgreSQL dev DB/role (they type the password), then run the two-process session/revocation/invitation checks. Also email delivery, real-device UX and release gates.
 
 ## Git and documentation state
 
-HEAD remains `26d5722`, tracking local `origin/feat/project-foundation`; remote was not contacted this turn. Invitation/recovery code, migrations, tests and docs are **uncommitted and unpushed**, including new untracked files; preserve them. Root `main` retains existing dirty docs and .gitignore. Canonical docs/handoff are synchronized between root and worktree. No merge, PR or deployment.
+Worktree branch `feat/project-foundation` is 4 commits ahead of local `origin/feat/project-foundation` (`26d5722`); remote not contacted, nothing pushed. Worktree clean except this doc update. Root `main` retains its prior uncommitted doc edits plus synchronized copies of these canonical docs. See [development guide](docs/development.md).
 
-Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored; retain while the milestone is incomplete). It records prior foundation work, review findings, fixes and this stopping point. Python is worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8. PATH python aliases remain unsuitable.
+Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.

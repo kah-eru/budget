@@ -23,9 +23,11 @@
 - [x] Pinned local Flowbite/Tailwind/Motion build, React/TypeScript dependencies and Bklit/Kokonut registry configuration.
 - [x] Fix browser referrer/CSRF and sharing account labels with observed failing regressions, then pass 27 Django checks and 2 Chrome browser tests; inspect phone/desktop screenshots.
 - [x] Invitations with verified email, expiration/single-use/wrong-email tests, recovery and membership notices. On 2026-09-24, added separate mailbox proof before signup, verified-current-email recovery, and local console delivery; production delivery remains a deployment gate.
-- [ ] PostgreSQL concurrency/two-process checks, shared private storage, full responsive navigation and actual mounted components.
+- [x] 2026-09-24: account creation bumps personal data_revision (`sharing.bump_account_data`, also used by transaction writes). Private default file storage configured outside served paths (`BUDGET_PRIVATE_STORAGE_ROOT`; local disk until a host is chosen).
+- [ ] PostgreSQL concurrency/two-process checks — **deferred by the user on 2026-09-24** (no dedicated database/credentials exist yet); must pass before real data. Also pending: full responsive navigation and actual mounted components.
+- [x] Milestone 2 first slice (2026-09-24): `Transaction` (integer cents, USD-only constraint, expense/refund/income/transfer, pending flag), owner-only manual add/edit, `reporting.spending()` over visible accounts, this-month workspace summary. Plan fixture (10500/3000 cents), Jan 31/Feb 1 boundary and private-account exclusion tested.
 
-This is not milestone 1 completion. Account-creation data-revision coverage is a deferred minor review finding; complete it before derived reports consume revisions.
+This is not milestone 1 completion. Milestone 2 remaining: workspace annotations, filters/search/pagination, yearly view, timeline, CSV import/export, charts.
 
 ## Global constraints
 

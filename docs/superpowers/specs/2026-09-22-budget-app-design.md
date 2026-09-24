@@ -16,7 +16,7 @@ PostgreSQL is the deployment configuration. SQLite is an explicit DEBUG-only syn
 
 Invitations now use seven-day single-use hashed tokens, owner-only issuance/revocation, and explicit history disclosure. New users must open a separate one-hour email setup link before their identity is created; existing users must verify their current email before joining. Joining shares none of the new member's accounts. Affected account owners receive a group-page membership notice. Removal also revokes pending invitations for that email. Django password recovery is restricted to verified current email addresses. Local email uses the console; real delivery is not configured or verified.
 
-Transactions, budgets, banks, jobs, AI, statements, deployment and live Manus SEO are not implemented. PostgreSQL concurrency remains unverified. Current evidence and known issues are in [development setup and verification](../../development.md).
+Manual transactions (integer cents, USD, expense/refund/income/transfer, pending) and a this-month spending summary exist; workspace annotations, imports, timeline and reports do not. Budgets, banks, jobs, AI, statements, deployment and live Manus SEO are not implemented. PostgreSQL concurrency remains unverified (deferred by user decision on 2026-09-24). Current evidence and known issues are in [development setup and verification](../../development.md).
 
 Working name: Budget app.
 
