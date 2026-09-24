@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.http import Http404
 from django.utils import timezone
 
@@ -13,6 +13,13 @@ def bump_permissions(workspace):
         permission_revision=F("permission_revision") + 1,
         data_revision=F("data_revision") + 1,
     )
+
+
+def bump_account_data(account):
+    """Invalidate derived output everywhere this account's data is visible."""
+    Workspace.objects.filter(
+        Q(owner_id=account.owner_id, is_personal=True) | Q(account_shares__account=account)
+    ).update(data_revision=F("data_revision") + 1)
 
 
 @transaction.atomic

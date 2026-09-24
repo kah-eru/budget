@@ -158,3 +158,9 @@ class AccessTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(AccountShare.objects.filter(account=self.bobs, workspace=self.group).exists())
         self.assertEqual(self.client.post(f"/workspaces/{self.group.pk}/sharing/", {"accounts": [self.bobs.pk], "confirm": "on"}).status_code, 404)
+
+    def test_account_creation_bumps_personal_data_revision(self):
+        personal = Workspace.objects.get(owner=self.bob, is_personal=True)
+        self.assertEqual(self.client.post("/accounts/new/", {"name": "New card"}).status_code, 302)
+        personal.refresh_from_db()
+        self.assertEqual(personal.data_revision, 1)

@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db import DatabaseError, connection
+from django.db import DatabaseError, connection, transaction
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from .forms import AccountForm, GroupForm, SharingForm
 from .models import Membership, MembershipNotice
 from .permissions import get_workspace, visible_accounts, visible_workspaces
-from .sharing import remove_member, replace_shares
+from .sharing import bump_account_data, remove_member, replace_shares
 
 
 def health(request):
@@ -63,7 +63,9 @@ def account_create(request):
     if request.method == "POST" and form.is_valid():
         account = form.save(commit=False)
         account.owner = request.user
-        account.save()
+        with transaction.atomic():
+            account.save()
+            bump_account_data(account)
         messages.success(request, "Account created. It is private until you choose to share it.")
         return redirect("home")
     return render(request, "budget/form.html", {**page_context(request.user), "form": form, "title": "Add a manual account", "action": "Create private account", "help": "Use a label, not an account number. Bank connections and CSV imports are not available yet."}, status=400 if request.method == "POST" else 200)
