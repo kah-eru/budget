@@ -1,16 +1,18 @@
 # AI handoff
 
-Updated: 2026-09-24 (afternoon). Read current docs and inspect Git before resuming.
+Updated: 2026-09-24 (evening). Read current docs and inspect Git before resuming.
 
 Latest request: "there should be ai handoff file and context files for what to do next. can you do it." User decisions this turn: **skip PostgreSQL for now** (no dedicated DB/credentials exist; do not guess them) and **commit the verified invitation slice locally first**. Done: committed it, fixed the deferred account-revision bug, configured private file storage, and started milestone 2 with manual transactions and a monthly spending summary. Local commits only; no push, PR, merge or deployment.
 
-Follow-up request (same day): install the `apple-design` skill for frontend work and check the ChatGPT/Codex superpowers. Installed Emil Kowalski's `apple-design` (MIT, commit `d16ebe6`, read in full before install) at `~/.claude/skills/apple-design`; AGENTS.md now requires it for UI work, applied through the existing Flowbite/Tailwind/Motion stack. Superpowers: Codex and Claude Code both run the same `superpowers` plugin v6.4.1, which was already in use here, so nothing to install. No product code changed. Not yet done: an apple-design pass over the existing screens (next UI step).
+Follow-up request (same day): install the `apple-design` skill for frontend work and check the ChatGPT/Codex superpowers. Installed Emil Kowalski's `apple-design` (MIT, commit `d16ebe6`, read in full before install) at `~/.claude/skills/apple-design`; AGENTS.md now requires it for UI work, applied through the existing Flowbite/Tailwind/Motion stack. Superpowers: Codex and Claude Code both run the same `superpowers` plugin v6.4.1, which was already in use here, so nothing to install. No product code changed. (Correction: an earlier chat reply also cited skillselion.com; that page was never fetched. The only verified source is https://github.com/emilkowalski/skills.)
+
+Latest request (evening): "do the next steps listed." Done: handoff step 0 (apple-design pass over existing screens, `cf529f6`) and step 1 (per-workspace `TransactionAnnotation`, `b6947b9`). Local commits only; no push.
 
 ## Active workspace and objective
 
-Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code commit `5c54c56` (docs commits follow). Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
+Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code commit `cf529f6` (docs commits follow). Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
 
-Milestone 1 is functionally complete locally except the PostgreSQL two-process gate (deferred by the user; still required before real data), full responsive navigation and mounted React components. Milestone 2 has its first slice. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
+Milestone 1 is functionally complete locally except the PostgreSQL two-process gate (deferred by the user; still required before real data), full responsive navigation and mounted React components. Milestone 2 has manual transactions, monthly summary and workspace annotations. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
 
 ## Commits this turn (local only)
 
@@ -19,7 +21,12 @@ Milestone 1 is functionally complete locally except the PostgreSQL two-process g
 - `11976e8` private default storage: `STORAGES["default"]` FileSystemStorage at `BUDGET_PRIVATE_STORAGE_ROOT` (default ignored `.local/private-files`); no URL route serves it. Local disk only until a host is chosen (milestone 7).
 - `5c54c56` `Transaction` model (migration 0004): positive integer cents, DB constraints for amount > 0 and USD-only, classification expense/refund/income/transfer (card payments = transfer), pending flag, description; index (account, posted_on, id). Owner-only add/edit at `workspaces/<ws>/accounts/<acc>/transactions/new/` and `.../<id>/`. `budget/reporting.py::spending()` is the single spending calculation over `visible_accounts`. Workspace page shows this month's posted/pending/income. `budget/templatetags/money.py` `dollars` filter.
 
+- `b6947b9` `TransactionAnnotation` (migration 0005): unique per (transaction, workspace); display name, classification override (null = original), note. `reporting.annotated(qs, workspace)` joins only the active workspace's overlay (`FilteredRelation`); `spending()` uses the effective classification. Owner-only annotation page at `.../transactions/<id>/annotate/` (account rows' Edit link), which links to "Edit original entry". Category deferred to milestone 4.
+- `cf529f6` apple-design pass: `:active` press scale (removed under reduced motion), row press background, h1/h2 negative tracking, `prefers-contrast: more` token overrides, bottom-nav `aria-current`, app-formatted date/amount on the annotation page.
+
 ## Verification actually completed
+
+- Evening: **54/54** Django tests (two new annotation tests red on missing route first; member-denied test guards the route). Migration drift clean. Build: CSS 11.60 kB gzip. **3/3 Chrome checks** on a restarted server; 360px annotation form/list screenshots (incl. `prefers-contrast: more`) reviewed; no overflow; pressed transform measured 0.97. Server stopped.
 
 - Each new test observed failing first, then passing. Full suite **51/51** (`manage.py test --settings=config.test_settings --noinput`); `check` and `makemigrations --check` clean; asset build passes (CSS 11.43 kB gzip, JS 4.96 kB gzip).
 - Plan fixture verified: $100 + $20 − $15 refund, excluding $100 card payment and $200 transfer → 10500 posted cents; $30 pending → 3000. Jan 31/Feb 1 boundary and private-account exclusion from group totals tested. Member cannot add/edit another owner's transactions (404). Sub-cent, zero and negative amounts rejected.
@@ -30,7 +37,7 @@ Milestone 1 is functionally complete locally except the PostgreSQL two-process g
 
 Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut interactions; Manus for public SEO only; phone UX, selective sharing, integer cents, load gates. React installed but not mounted.
 
-- Classification currently lives on `Transaction` as the source classification. Spec requires workspace-specific annotations (display name, category, note, classification override) — next slice; reporting must then read the annotation for the active workspace.
+- Annotations are per workspace: personal overrides/notes never reach group totals or pages (tested). Only the account owner annotates. No category yet (milestone 4 adds Category; annotation gains a category FK then).
 - Account page shows newest 100 transactions only (`ponytail:` note in `views.account_detail`); cursor paging arrives with the timeline.
 - Manual transactions are user-originated, so owners may edit amounts; imported (CSV/Plaid) amounts must stay read-only per spec.
 - Pre-existing UX issue: workspace switcher list grows long on phones with many groups.
@@ -38,10 +45,9 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 
 ## Ordered next steps
 
-0. Optional: apple-design review of current screens (press feedback, Motion spring defaults, typography tracking, reduced transparency/contrast) before more UI lands.
-1. Milestone 2: `TransactionAnnotation` (per transaction/workspace overlay; private notes never in group views) and switch `reporting.spending()` to the effective classification.
-2. Transaction list with search, account/person/date filters, pagination, and a yearly view reusing `spending()`.
-3. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
+1. Transaction list with search, account/person/date filters, pagination, and a yearly view reusing `spending()`.
+2. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
+3. UX: collapse the workspace switcher on phones (long list with many groups); apply apple-design springs once Motion drives real transitions (sheets/drawers).
 4. Before real data: user creates a dedicated PostgreSQL dev DB/role (they type the password), then run the two-process session/revocation/invitation checks. Also email delivery, real-device UX and release gates.
 
 ## Git and documentation state

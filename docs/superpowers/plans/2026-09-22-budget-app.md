@@ -27,7 +27,9 @@
 - [ ] PostgreSQL concurrency/two-process checks — **deferred by the user on 2026-09-24** (no dedicated database/credentials exist yet); must pass before real data. Also pending: full responsive navigation and actual mounted components.
 - [x] Milestone 2 first slice (2026-09-24): `Transaction` (integer cents, USD-only constraint, expense/refund/income/transfer, pending flag), owner-only manual add/edit, `reporting.spending()` over visible accounts, this-month workspace summary. Plan fixture (10500/3000 cents), Jan 31/Feb 1 boundary and private-account exclusion tested.
 
-This is not milestone 1 completion. Milestone 2 remaining: workspace annotations, filters/search/pagination, yearly view, timeline, CSV import/export, charts.
+- [x] 2026-09-24: `TransactionAnnotation` per (transaction, workspace): display name, classification override (blank = original), note. `reporting.annotated()` attaches only the active workspace's overlay; `spending()` uses the effective classification. Personal overrides/notes proven absent from group totals and pages; source entry unchanged; only the account owner annotates. Category field waits for milestone 4 categories.
+
+This is not milestone 1 completion. Milestone 2 remaining: filters/search/pagination, yearly view, timeline, CSV import/export, charts.
 
 ## Global constraints
 

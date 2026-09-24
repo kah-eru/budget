@@ -2,7 +2,7 @@
 
 A private budgeting app for partners and friends who choose to share finances. Start with a small deployment, with collaboration and scalable code/data access designed into the first release.
 
-Status: milestone 1 is in progress. A local Django foundation implements sign-in, private/manual accounts, groups, explicit sharing, invitations with mailbox verification, password recovery, membership notices and member removal. Milestone 2 has started with manual USD transactions and a this-month spending summary. PostgreSQL/concurrency checks are deferred by user decision (2026-09-24) and release checks remain pending; this is not a finished budgeting app or a real-data-ready deployment.
+Status: milestone 1 is in progress. A local Django foundation implements sign-in, private/manual accounts, groups, explicit sharing, invitations with mailbox verification, password recovery, membership notices and member removal. Milestone 2 has started with manual USD transactions, per-workspace transaction annotations and a this-month spending summary. PostgreSQL/concurrency checks are deferred by user decision (2026-09-24) and release checks remain pending; this is not a finished budgeting app or a real-data-ready deployment.
 
 Active implementation: `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation`, branch `feat/project-foundation`. The original checkout remains on `main`; run application commands inside the worktree.
 
