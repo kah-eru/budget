@@ -4,6 +4,8 @@ Updated: 2026-09-24 (afternoon). Read current docs and inspect Git before resumi
 
 Latest request: "there should be ai handoff file and context files for what to do next. can you do it." User decisions this turn: **skip PostgreSQL for now** (no dedicated DB/credentials exist; do not guess them) and **commit the verified invitation slice locally first**. Done: committed it, fixed the deferred account-revision bug, configured private file storage, and started milestone 2 with manual transactions and a monthly spending summary. Local commits only; no push, PR, merge or deployment.
 
+Follow-up request (same day): install the `apple-design` skill for frontend work and check the ChatGPT/Codex superpowers. Installed Emil Kowalski's `apple-design` (MIT, commit `d16ebe6`, read in full before install) at `~/.claude/skills/apple-design`; AGENTS.md now requires it for UI work, applied through the existing Flowbite/Tailwind/Motion stack. Superpowers: Codex and Claude Code both run the same `superpowers` plugin v6.4.1, which was already in use here, so nothing to install. No product code changed. Not yet done: an apple-design pass over the existing screens (next UI step).
+
 ## Active workspace and objective
 
 Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code commit `5c54c56` (docs commits follow). Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
@@ -36,6 +38,7 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 
 ## Ordered next steps
 
+0. Optional: apple-design review of current screens (press feedback, Motion spring defaults, typography tracking, reduced transparency/contrast) before more UI lands.
 1. Milestone 2: `TransactionAnnotation` (per transaction/workspace overlay; private notes never in group views) and switch `reporting.spending()` to the effective classification.
 2. Transaction list with search, account/person/date filters, pagination, and a yearly view reusing `spending()`.
 3. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
