@@ -6,9 +6,9 @@
 
 @layer base {
   body { font-family: ui-sans-serif, system-ui, sans-serif; }
-  a, button, input { touch-action: manipulation; }
+  a, button, input, select { touch-action: manipulation; }
   a, button { overflow-wrap: anywhere; }
-  input:not([type="hidden"]):not([type="checkbox"]) {
+  input:not([type="hidden"]):not([type="checkbox"]), select {
     @apply block min-h-11 w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-base text-gray-900;
   }
   input[type="checkbox"] {

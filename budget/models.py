@@ -66,3 +66,22 @@ class MembershipNotice(models.Model):
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     member_name = models.CharField(max_length=150)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Transaction(models.Model):
+    # Positive cents; classification decides whether it adds to or reduces spending.
+    CLASSIFICATIONS = [("expense", "Expense"), ("refund", "Refund"), ("income", "Income"), ("transfer", "Transfer or card payment")]
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="transactions")
+    posted_on = models.DateField()
+    amount_cents = models.BigIntegerField()
+    currency = models.CharField(max_length=3, default="USD", editable=False)
+    classification = models.CharField(max_length=10, choices=CLASSIFICATIONS, default="expense")
+    pending = models.BooleanField(default=False)
+    description = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["account", "posted_on", "id"])]
+        constraints = [
+            models.CheckConstraint(condition=Q(amount_cents__gt=0), name="transaction_amount_positive"),
+            models.CheckConstraint(condition=Q(currency="USD"), name="transaction_usd_only"),
+        ]

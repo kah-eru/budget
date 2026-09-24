@@ -1,14 +1,36 @@
+from decimal import Decimal
+
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
 
 from .invitations import claim_email_send
-from .models import Account, User, Workspace
+from .models import Account, Transaction, User, Workspace
 
 
 class AccountForm(forms.ModelForm):
     class Meta:
         model = Account
         fields = ["name"]
+
+
+class TransactionForm(forms.ModelForm):
+    amount = forms.DecimalField(label="Amount (USD)", min_value=Decimal("0.01"), max_digits=12, decimal_places=2,
+                                help_text="Enter a positive amount; the type decides whether it counts as spending.")
+
+    class Meta:
+        model = Transaction
+        fields = ["posted_on", "amount", "classification", "pending", "description"]
+        labels = {"posted_on": "Date", "classification": "Type", "pending": "Pending (not yet posted)"}
+        widgets = {"posted_on": forms.DateInput(attrs={"type": "date"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.initial["amount"] = Decimal(self.instance.amount_cents) / 100
+
+    def save(self, commit=True):
+        self.instance.amount_cents = int(self.cleaned_data["amount"] * 100)
+        return super().save(commit)
 
 
 class GroupForm(forms.ModelForm):
