@@ -10,11 +10,13 @@ Latest request (evening): "do the next steps listed." Done: handoff step 0 (appl
 
 Latest question (evening): user wants a hosted (not on this PC), free-to-start, scalable PostgreSQL. Recommended Neon (free: 0.5 GB, 100 CU-hours/month, scales to zero; usage-based paid plans), Supabase as the alternative (free 500 MB, pauses after 7 idle days). Awaiting the user to create the Neon project and set PG* env vars themselves; no account created, no credentials seen, no code changed. Use the direct (non-pooler) host and `PGSSLMODE=require`; synthetic data only until release gates pass. Follow-up: told user to leave Neon Auth off (Django already handles sign-in, sessions, invitations); Neon account login method is their choice, with 2FA advised. User has created Neon project `dry-sea-53765016` (branch `production`). Advised against Neon's onboarding script (global CLI, agent skills, MCP, `neon.ts`, `neon deploy`): not needed for a Django app and `neon deploy` is a deployment. Only the direct connection parameters are needed, set by the user in their own shell. Consider a separate `dev` branch for synthetic data. User pasted a direct (non-pooler) connection string into chat (us-west-2, db `budgetdb`); it was not used or saved, and the user was told to reset that password. Next: user puts the new URL in ignored `.local/neon.env` (single line `DATABASE_URL=...`); then migrate and run the two-process checks without printing it.
 
+Latest request (night): "lets do the database" — hosted, free, scalable. Done: Neon dev database connected (user reset the chat-exposed password; new credentials only in ignored `.local/neon.env`, loaded via `. .local/neon-env.sh`), migrations 0001-0005 applied, full suite 58/58 on PostgreSQL 17.11, and the long-deferred row-locking gate now has `budget/tests/test_concurrency.py` (4 tests; the 3 locking ones fail with locks removed). Moved the user's `env.txt` out of the root checkout into ignored `.local/neon.env` so it cannot be committed.
+
 ## Active workspace and objective
 
 Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code commit `cf529f6` (docs commits follow). Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
 
-Milestone 1 is functionally complete locally except the PostgreSQL two-process gate (deferred by the user; still required before real data), full responsive navigation and mounted React components. Milestone 2 has manual transactions, monthly summary and workspace annotations. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
+Milestone 1 is functionally complete except full responsive navigation and mounted React components; PostgreSQL row-locking checks pass on Neon. Milestone 2 has manual transactions, monthly summary and workspace annotations. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
 
 ## Commits this turn (local only)
 
@@ -43,14 +45,14 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 - Account page shows newest 100 transactions only (`ponytail:` note in `views.account_detail`); cursor paging arrives with the timeline.
 - Manual transactions are user-originated, so owners may edit amounts; imported (CSV/Plaid) amounts must stay read-only per spec.
 - Pre-existing UX issue: workspace switcher list grows long on phones with many groups.
-- SQLite remains DEBUG/synthetic-only. PostgreSQL 17 service untouched; no credentials read.
+- Neon holds synthetic data only. SQLite remains a DEBUG-only fast path. Local PostgreSQL 17 service unused. Neon free plan: 0.5 GB, 100 CU-hours/month, scales to zero (first request after idle is slower).
 
 ## Ordered next steps
 
 1. Transaction list with search, account/person/date filters, pagination, and a yearly view reusing `spending()`.
 2. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
 3. UX: collapse the workspace switcher on phones (long list with many groups); apply apple-design springs once Motion drives real transitions (sheets/drawers).
-4. Before real data: user creates a hosted Neon dev database (they enter the password in their own shell), then run the two-process session/revocation/invitation checks. Also email delivery, real-device UX and release gates.
+4. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
 
 ## Git and documentation state
 

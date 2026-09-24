@@ -31,7 +31,7 @@ Apply migrations 0002-0005 (`manage.py migrate`) before using invitations and tr
 
 Production defaults to Django's SMTP backend, configured through `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, and `DEFAULT_FROM_EMAIL`. `DJANGO_EMAIL_BACKEND` can explicitly select another Django backend. No SMTP credentials or provider are configured here. Invitations expire after seven days; setup, email verification and password recovery links after one hour. Sending auth email has a shared database cooldown of one minute per user, setup mail one minute per invitation, and new invitations one per address/minute plus twenty/group/hour. These are initial abuse bounds, not a measured delivery-capacity claim.
 
-For PostgreSQL, unset BUDGET_LOCAL_SQLITE, configure PG variables from .env.example and use a dedicated development database/user. No existing database credentials were read or guessed. SQLite is rejected with DEBUG off; passing SQLite checks do not prove row-locking or multi-instance correctness.
+For PostgreSQL, unset BUDGET_LOCAL_SQLITE and set the PG variables from .env.example. The development database is hosted on Neon (free plan, project `dry-sea-53765016`, us-west-2, database `budgetdb`, direct non-pooler host, `PGSSLMODE=require`). The user keeps `PGUSER`/`PGPASSWORD` in ignored `.local/neon.env`; `.local/neon-env.sh` (ignored, Git Bash: `. .local/neon-env.sh`) loads it, sets host/database/SSL and a throwaway secret without printing credentials. Synthetic data only until release gates pass. The local PostgreSQL 17 service is not used. SQLite is rejected with DEBUG off; passing SQLite checks do not prove row-locking or multi-instance correctness.
 
 ## Checks
 
@@ -96,6 +96,13 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 - Checked in Chrome at 360px: annotation form and list screenshots (`.local/annot-*.png`, including contrast-more) reviewed; no horizontal overflow; pressed transform measured `matrix(0.97…)`; 3/3 browser tests pass on a restarted server (which was then stopped). Asset build: CSS 11.60 kB gzip, JS 4.96 kB.
 - Still open: the workspace switcher list grows long on phones (visible in the screenshots after many synthetic groups).
 
+## Hosted PostgreSQL — September 24 (night)
+
+- User chose Neon over hosting locally. A password pasted in chat was reset by the user before use; the new one lives only in ignored `.local/neon.env`.
+- `migrate` applied 0001-0005 to `budgetdb`. Full suite on Neon (PostgreSQL 17.11): **58/58** in ~71 s; the test database is created and dropped automatically. On SQLite: 58 run, 4 PostgreSQL-only tests skipped.
+- `budget/tests/test_concurrency.py` (threads = separate DB sessions, the same isolation two web processes get; not separate OS processes): share-vs-removal, parallel invites, parallel accepts, session read across sessions. With the workspace locks removed, three of the four failed (leaked share, two invitations, two accepts); restored code passes.
+- Not measured: load, latency (the database is in Oregon), multiple app instances, connection pooling.
+
 ## Next
 
-PostgreSQL two-process checks are deferred by user decision; they still gate real data. Continue milestone 2: filters/search/pagination and yearly view, then timeline, CSV import/export and Bklit charts. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+Continue milestone 2: filters/search/pagination and yearly view, then timeline, CSV import/export and Bklit charts. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
