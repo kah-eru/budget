@@ -6,7 +6,7 @@ Latest request: "there should be ai handoff file and context files for what to d
 
 ## Active workspace and objective
 
-Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, HEAD is the docs commit after `5c54c56`. Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
+Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code commit `5c54c56` (docs commits follow). Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
 
 Milestone 1 is functionally complete locally except the PostgreSQL two-process gate (deferred by the user; still required before real data), full responsive navigation and mounted React components. Milestone 2 has its first slice. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
 
@@ -43,6 +43,6 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 
 ## Git and documentation state
 
-Worktree branch `feat/project-foundation` is 5 commits ahead of local `origin/feat/project-foundation` (`26d5722`); remote not contacted, nothing pushed. Worktree clean. Root `main` retains its prior uncommitted doc edits plus synchronized copies of these canonical docs. See [development guide](docs/development.md).
+Worktree branch `feat/project-foundation` is ahead of local `origin/feat/project-foundation` (`26d5722`) by the September 24 commits (`git log origin/feat/project-foundation..HEAD`); remote not contacted, nothing pushed. Worktree clean. Root `main` retains its prior uncommitted doc edits plus synchronized copies of these canonical docs. See [development guide](docs/development.md).
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.
