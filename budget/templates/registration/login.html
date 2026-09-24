@@ -10,6 +10,7 @@
     <input type="hidden" name="next" value="{{ next }}">
     <button type="submit" class="primary w-full">Sign in</button>
   </form>
-  <p class="mt-4 text-sm text-gray-600">Development access only. Ask the operator to create your account; public sign-up is disabled.</p>
+  <a class="secondary mt-4" href="{% url 'password_reset' %}">Forgot your password?</a>
+  <p class="mt-4 text-sm text-gray-600">Use your invitation to create an account, or ask the operator for access. Public sign-up is disabled.</p>
 </section>
 {% endblock %}

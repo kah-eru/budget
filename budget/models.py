@@ -2,10 +2,15 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Lower
 
 
 class User(AbstractUser):
-    pass
+    verified_email = models.EmailField(blank=True, editable=False)
+    email_last_sent_at = models.DateTimeField(null=True, editable=False)
+
+    class Meta(AbstractUser.Meta):
+        constraints = [models.UniqueConstraint(Lower("email"), condition=~Q(email=""), name="unique_nonempty_email")]
 
 
 class Workspace(models.Model):
@@ -42,3 +47,22 @@ class AccountShare(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["account", "workspace"], name="unique_account_share")]
+
+
+class Invitation(models.Model):
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="invitations")
+    email = models.EmailField()
+    token_hash = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True)
+    revoked_at = models.DateTimeField(null=True)
+    signup_token_hash = models.CharField(max_length=64, blank=True)
+    signup_sent_at = models.DateTimeField(null=True)
+
+
+class MembershipNotice(models.Model):
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    member_name = models.CharField(max_length=150)
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F
 from django.http import Http404
+from django.utils import timezone
 
 from .models import Account, AccountShare, Membership, Workspace
 from .permissions import get_workspace
@@ -39,5 +40,7 @@ def remove_member(user, workspace_id, member_id):
     if not membership.exists():
         raise Http404
     AccountShare.objects.filter(workspace=workspace, account__owner_id=member_id).delete()
+    member = membership.select_related("user").get().user
+    workspace.invitations.filter(email__iexact=member.email, accepted_at__isnull=True, revoked_at__isnull=True).update(revoked_at=timezone.now())
     membership.delete()
     bump_permissions(workspace)

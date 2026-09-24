@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import AccountForm, GroupForm, SharingForm
-from .models import Membership
+from .models import Membership, MembershipNotice
 from .permissions import get_workspace, visible_accounts, visible_workspaces
 from .sharing import remove_member, replace_shares
 
@@ -45,6 +45,7 @@ def workspace_detail(request, workspace_id):
     context = page_context(request.user, workspace)
     context["accounts"] = visible_accounts(request.user, workspace).select_related("owner").order_by("name", "pk")
     context["memberships"] = Membership.objects.filter(workspace=workspace).select_related("user").exclude(user=workspace.owner)
+    context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
     return render(request, "budget/workspace.html", context)
 
 
@@ -78,7 +79,7 @@ def group_create(request):
         workspace.save()
         messages.success(request, "Group created. No accounts are shared automatically.")
         return redirect("workspace", workspace_id=workspace.pk)
-    return render(request, "budget/form.html", {**page_context(request.user), "form": form, "title": "Create a group", "action": "Create group", "help": "Keep a separate group for each set of people you want to share with. Invitations are coming next."}, status=400 if request.method == "POST" else 200)
+    return render(request, "budget/form.html", {**page_context(request.user), "form": form, "title": "Create a group", "action": "Create group", "help": "Keep a separate group for each set of people you want to share with. Invite people after creating the group."}, status=400 if request.method == "POST" else 200)
 
 
 @login_required

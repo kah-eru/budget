@@ -1,6 +1,6 @@
 # Low-fidelity wireframes and user flows
 
-Status: full-release wireframes remain a UX draft; a low-fidelity foundation subset now exists. Updated 2026-09-23. All names/amounts below are illustrative.
+Status: full-release wireframes remain a UX draft; a low-fidelity foundation subset now exists. Updated 2026-09-24. All names/amounts below are illustrative.
 
 ## Current foundation subset
 
@@ -8,7 +8,9 @@ Implemented journey: sign in -> Personal accounts -> add a manual account -> cre
 
 Temporary navigation exposes only working destinations: Accounts, Add account, New group. Workspace links show the active context. It will become the five-destination navigation below as those screens land; no dead dashboard/chart buttons are presented as working.
 
-Neutral grayscale, system typography, Flowbite-style forms/cards/navigation, local Tailwind CSS and a brief Motion confirmation highlight implement the low-fidelity direction. No global Flowbite DOM initializer or React mounts exist yet. Invitations, separate added/removed sharing review, unsaved-form protection and remaining full-release journeys are pending. Browser checks and screenshot review status are tracked in [development verification](development.md).
+Neutral grayscale, system typography, Flowbite-style forms/cards/navigation, local Tailwind CSS and a brief Motion confirmation highlight implement the low-fidelity direction. No global Flowbite DOM initializer or React mounts exist yet. Invitations and recovery were added on 2026-09-24. Separate added/removed sharing review, unsaved-form protection and remaining full-release journeys are pending. Browser checks and screenshot review status are tracked in [development verification](development.md).
+
+Invitation journey: group owner -> Invite someone -> intended email plus existing-history confirmation -> send/revoke pending invitation. Recipient -> invitation -> Sign in, or Create invited account -> request separate setup email -> open one-hour setup link -> choose username/password -> sign in -> explicitly Join group. Existing accounts use Email verification -> request email -> open link while signed in -> confirm -> return to invitation. Joining shows a notice to existing account owners with a Review your sharing link. It never shares the joining person's accounts. The login page offers password recovery for verified email addresses; expired recovery links offer another request.
 
 Read alongside the [product spec](superpowers/specs/2026-09-22-budget-app-design.md) and [build plan](superpowers/plans/2026-09-22-budget-app.md). Permissions and financial calculations remain defined by the spec.
 

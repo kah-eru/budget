@@ -6,7 +6,7 @@ Updated: 2026-09-23 for Motion, Bklit UI, Kokonut UI, and Manus SEO direction.
 
 Status: implementation authorized on 2026-09-23; milestone 1 foundation is in progress. This document defines the full intended release, not a claim that every feature exists.
 
-## Implementation snapshot — 2026-09-23
+## Implementation snapshot — 2026-09-24
 
 Implemented locally: custom Django user, personal/group workspaces, memberships, owned manual accounts, account grants, centralized access queries, explicit share/unshare, member removal/leave, database-backed sign-in throttling/sessions, private response headers, health/readiness endpoints, and a low-fidelity server-rendered shell.
 
@@ -14,7 +14,9 @@ Manual accounts belong directly to users; bank-connection metadata will be added
 
 PostgreSQL is the deployment configuration. SQLite is an explicit DEBUG-only synthetic-data fallback, not a scalability substitute. Flowbite/Tailwind and Motion assets build locally; React is pinned but not mounted yet. Bklit/Kokonut registry addresses are configured; actual components and their accessibility/interoperability checks remain pending.
 
-Invitations/email verification/recovery, transactions, budgets, banks, jobs, AI, statements, deployment and live Manus SEO are not implemented. Current evidence and known issues are in [development setup and verification](../../development.md).
+Invitations now use seven-day single-use hashed tokens, owner-only issuance/revocation, and explicit history disclosure. New users must open a separate one-hour email setup link before their identity is created; existing users must verify their current email before joining. Joining shares none of the new member's accounts. Affected account owners receive a group-page membership notice. Removal also revokes pending invitations for that email. Django password recovery is restricted to verified current email addresses. Local email uses the console; real delivery is not configured or verified.
+
+Transactions, budgets, banks, jobs, AI, statements, deployment and live Manus SEO are not implemented. PostgreSQL concurrency remains unverified. Current evidence and known issues are in [development setup and verification](../../development.md).
 
 Working name: Budget app.
 

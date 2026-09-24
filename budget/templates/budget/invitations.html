@@ -1,0 +1,24 @@
+{% extends 'budget/base.html' %}
+{% block content %}
+<section class="max-w-xl rounded-lg border border-gray-200 bg-white p-6">
+  <h1 class="mb-2 break-words text-2xl font-semibold">Invite someone to {{ workspace.name }}</h1>
+  <p class="mb-6 text-gray-600">They will see existing shared history and future transactions from accounts shared with this group. Account owners receive a notice when someone joins. Use a separate group to share with different people.</p>
+  <form method="post">{% csrf_token %}{% include 'budget/components/form_fields.html' %}
+    <div class="flex flex-wrap gap-3"><button class="primary" type="submit">Send invitation</button><a class="secondary" href="{% url 'workspace' workspace.pk %}">Back to group</a></div>
+  </form>
+</section>
+<section class="mt-6 max-w-xl rounded-lg border border-gray-200 bg-white p-6">
+  <h2 class="mb-3 text-xl font-semibold">Pending invitations</h2>
+  <ul class="divide-y divide-gray-200">
+    {% for invitation in invitations %}
+    <li class="py-3"><p class="break-all">{{ invitation.email }}</p><p class="mb-2 text-sm text-gray-600">Expires {{ invitation.expires_at|date:'M j, Y' }}</p>
+      <form method="post" action="{% url 'invitation_revoke' workspace.pk invitation.pk %}">{% csrf_token %}<button class="secondary" type="submit">Revoke invitation</button></form>
+    </li>
+    {% empty %}<li>No pending invitations.</li>{% endfor %}
+  </ul>
+  <nav aria-label="Invitation pages" class="mt-4 flex flex-wrap gap-3">
+    {% if invitations.has_previous %}<a class="secondary" href="?page={{ invitations.previous_page_number }}">Newer invitations</a>{% endif %}
+    {% if invitations.has_next %}<a class="secondary" href="?page={{ invitations.next_page_number }}">Older invitations</a>{% endif %}
+  </nav>
+</section>
+{% endblock %}

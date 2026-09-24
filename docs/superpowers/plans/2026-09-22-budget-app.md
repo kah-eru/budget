@@ -22,7 +22,7 @@
 - [x] Framework sign-in/logout, database-backed Axes throttling/sessions, no-store/noindex responses, health/readiness.
 - [x] Pinned local Flowbite/Tailwind/Motion build, React/TypeScript dependencies and Bklit/Kokonut registry configuration.
 - [x] Fix browser referrer/CSRF and sharing account labels with observed failing regressions, then pass 27 Django checks and 2 Chrome browser tests; inspect phone/desktop screenshots.
-- [ ] Invitations with verified email, expiration/single-use/wrong-email tests, recovery and membership notices.
+- [x] Invitations with verified email, expiration/single-use/wrong-email tests, recovery and membership notices. On 2026-09-24, added separate mailbox proof before signup, verified-current-email recovery, and local console delivery; production delivery remains a deployment gate.
 - [ ] PostgreSQL concurrency/two-process checks, shared private storage, full responsive navigation and actual mounted components.
 
 This is not milestone 1 completion. Account-creation data-revision coverage is a deferred minor review finding; complete it before derived reports consume revisions.

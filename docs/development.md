@@ -1,10 +1,10 @@
 # Local development and verification
 
-Updated 2026-09-23. Development-only foundation, not ready for real financial data.
+Updated 2026-09-24. Development-only foundation, not ready for real financial data.
 
 ## Where to work
 
-Use `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on branch `feat/project-foundation`, tracking `origin/feat/project-foundation`. Commit `7f2a4e6` is pushed. The original checkout is on `main` and retains its existing uncommitted documentation edits. No merge, pull request, or deployment has occurred.
+Use `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on branch `feat/project-foundation`, tracking `origin/feat/project-foundation`. Foundation commit `7f2a4e6` and docs commit `26d5722` are in the local remote-tracking history from September 23. The September 24 invitation/recovery continuation is uncommitted. The original checkout is on `main` and retains its existing uncommitted documentation edits. No merge, pull request, or deployment has occurred.
 
 ## Setup (PowerShell)
 
@@ -25,7 +25,11 @@ $env:DJANGO_SECRET_KEY = & .venv/Scripts/python.exe -c 'import secrets; print(se
 .venv/Scripts/python.exe manage.py runserver 127.0.0.1:8000
 ```
 
-Open `http://127.0.0.1:8000/`. No admin route or public registration exists; the operator-created user signs in through the app. Invitations/recovery are unfinished. Do not expose runserver publicly. Supply a stable secret through the environment to persist sessions across restarts; never commit it. .env.example is a reference, not auto-loaded.
+Open `http://127.0.0.1:8000/`. No admin route or public registration exists. The operator-created user signs in, creates a group and uses Invite someone. In DEBUG mode, invitation/setup/verification/recovery email prints to the server console; no message leaves the machine. New invitees request a separate setup email and open its link before choosing a username/password; then sign in and explicitly join. Existing users verify their current email through the header link. Password recovery is available for verified addresses only. Do not expose runserver publicly. Supply a stable secret through the environment to persist sessions across restarts; never commit it. .env.example is a reference, not auto-loaded.
+
+Apply migrations 0002 and 0003 before using invitations. Nonempty user emails become case-insensitively unique; resolve any duplicate existing emails deliberately before migration (none were found in the synthetic local database). Existing accounts are not automatically marked verified. Accounts with no email or a forgotten password before verification need operator assistance; invitation-created accounts now prove mailbox control before creation.
+
+Production defaults to Django's SMTP backend, configured through `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, and `DEFAULT_FROM_EMAIL`. `DJANGO_EMAIL_BACKEND` can explicitly select another Django backend. No SMTP credentials or provider are configured here. Invitations expire after seven days; setup, email verification and password recovery links after one hour. Sending auth email has a shared database cooldown of one minute per user, setup mail one minute per invitation, and new invitations one per address/minute plus twenty/group/hour. These are initial abuse bounds, not a measured delivery-capacity claim.
 
 For PostgreSQL, unset BUDGET_LOCAL_SQLITE, configure PG variables from .env.example and use a dedicated development database/user. No existing database credentials were read or guessed. SQLite is rejected with DEBUG off; passing SQLite checks do not prove row-locking or multi-instance correctness.
 
@@ -40,16 +44,15 @@ npm.cmd run build
 
 config.test_settings is synthetic-test-only: public test secret and fast password hashing. Never use it for personal data/deployment.
 
-Browser checks require locally installed Google Chrome, the development server above and a disposable local database. Seed the synthetic browser user once:
+Browser checks require locally installed Google Chrome. Stop the ordinary development server first, then start the test-only server in one terminal:
 
 ```powershell
-.venv/Scripts/python.exe manage.py shell -c "from budget.models import User; User.objects.create_user('browser-check', password='synthetic-browser-check-only')"
-npm.cmd run test:browser
+.venv/Scripts/python.exe tests/browser/server.py
 ```
 
-These deliberately public synthetic credentials are not production credentials. Browser tests add synthetic accounts/groups per run. Screenshots/results go to ignored .local/. Never use this test user with private records.
+Run `npm.cmd run test:browser` in another terminal, then stop the server with Ctrl+C. The helper migrates a separate `.local/browser.sqlite3`, seeds the existing synthetic browser account, generates an ephemeral secret and forces console-only email. It redirects console email to `.local/browser-server.log` and request/error logs to `.local/browser-server-errors.log`; the invitation browser test reads only these local synthetic emails. Tests add synthetic accounts/groups per run. All databases, mail tokens, screenshots and results stay in ignored `.local/`. Never use these deliberately public synthetic credentials or this server with private records.
 
-## Verified /compact checkpoint
+## Previous foundation checkpoint — September 23
 
 - 27 Django tests passed; initial access tests and the later sharing-label regression were observed failing before their fixes. Framework check and migration drift check passed.
 - 2 Playwright tests passed in Google Chrome 153.0.8010.53 on Windows: sign-in/account creation/sharing, reflow at 320/360/390/430/768/1024/1440px, reduced motion, and JavaScript-disabled login/account creation. Phone (390px) and desktop (1440px) screenshots were opened and reviewed. This is not actual-phone or full accessibility certification.
@@ -68,6 +71,15 @@ Installed Flowbite, Tailwind, Motion, React/React DOM and Vite package metadata 
 
 There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connection. Application responses carry private/no-store and noindex headers; robots.txt disallows crawling. These supplement authentication, never replace it. Only login and minimal health/readiness are public; no analytics payload is sent.
 
+## Invitation continuation — September 24
+
+- 40 Django tests pass, including thirteen new invitation/recovery checks. Initial nine tests failed on absent routes before implementation. The review-found signup email-squatting regression and overlong-email regression each failed before their fixes, then passed. A further regression showed that older pending invites were unreachable; the owner list now uses Django pagination (20/page). Framework and migration drift checks pass.
+- Fresh read-only review independently ran the then-current 36 tests and identified both issues above. Mailbox proof now precedes identity creation; invitation emails are validated against the model's 254-character bound. Fixes were verified by tests rather than a second review.
+- Membership notices appear only for their recipient in a currently accessible group; full unread inbox/push remains milestone 5. Inviting/joining does not share a new member's accounts. Member removal revokes their shares and pending invitations for that email.
+- Frontend build passes with unchanged JS at 4.96 kB gzip and CSS at 11.29 kB gzip. All three Chrome browser tests pass, including mailbox setup, invited registration, explicit join and leaving with JavaScript disabled, plus the existing sharing/reduced-motion checks. Invitation owner screens reflow at 320/360/390/430/768/1024/1440px. No new runtime dependency was added.
+- All email checks use synthetic in-memory or console delivery. No real messages, SMTP delivery, PostgreSQL row locking, actual-phone testing, or load measurements are claimed.
+- Final invitation browser rerun passed after pagination; phone and desktop screenshots were opened and reviewed. Production-mode `check --deploy` passed (settings only). Test server was stopped. Initial Windows process-launch/automatic browser-server lifecycle attempts failed; the direct Python helper documented above was used for successful checks.
+
 ## Next
 
-Resume milestone 1 with invitations/email verification/recovery, then PostgreSQL concurrency checks before milestone 2 transactions/CSV/reporting. Complete the deferred account-creation revision update before derived outputs use it. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets and production security still require release verification.
+Continue milestone 1 with PostgreSQL concurrency/two-process checks and shared private storage before milestone 2 transactions/CSV/reporting. Complete the deferred account-creation revision update before derived outputs use it. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

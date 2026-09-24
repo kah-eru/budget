@@ -1,6 +1,8 @@
 from django import forms
+from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
 
-from .models import Account, Workspace
+from .invitations import claim_email_send
+from .models import Account, User, Workspace
 
 
 class AccountForm(forms.ModelForm):
@@ -26,3 +28,25 @@ class SharingForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["accounts"].queryset = Account.objects.filter(owner=user).order_by("name", "pk")
         self.initial["accounts"] = Account.objects.filter(owner=user, shares__workspace=workspace)
+
+
+class InvitationForm(forms.Form):
+    email = forms.EmailField(label="Their email address", max_length=254)
+    confirm = forms.BooleanField(label="I understand that this person will see the group's existing shared history and future shared transactions.")
+
+
+class AcceptInvitationForm(forms.Form):
+    confirm = forms.BooleanField(label="I want to join this group. My own accounts will remain private until I choose to share them.")
+
+
+class InvitedUserForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ["username"]
+
+
+class VerifiedPasswordResetForm(PasswordResetForm):
+    def get_users(self, email):
+        for user in super().get_users(email):
+            if user.verified_email == user.email.lower() and claim_email_send(user):
+                yield user
