@@ -129,6 +129,14 @@ class Rule(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="rules")
     priority = models.PositiveIntegerField(default=100)
     enabled = models.BooleanField(default=True)
+    # Optional two-way split template: split_percent of the amount to split_category, the rest to category.
+    # ponytail: two lines only; add a template-lines table if someone needs three-way rule splits.
+    split_category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True, related_name="split_rules")
+    split_percent = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    @property
+    def first_percent(self):
+        return 100 - self.split_percent
 
 
 class Budget(models.Model):
@@ -176,6 +184,7 @@ class SplitLine(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="split_lines")
     category = models.ForeignKey(Category, on_delete=models.RESTRICT, related_name="split_lines")
     amount_cents = models.BigIntegerField()
+    from_rule = models.BooleanField(default=False)  # written by a rule's split template; hand-made splits are never touched by rules
 
     class Meta:
         indexes = [models.Index(fields=["workspace", "transaction"])]

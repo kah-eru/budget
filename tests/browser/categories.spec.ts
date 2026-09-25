@@ -54,7 +54,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await expect(page.getByRole("status")).toContainText("Market " + suffix);
   await page.setViewportSize({ width: 360, height: 800 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
-  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));  // let the page crossfade end
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));  // let the page crossfade end
   await page.screenshot({ path: ".local/rule-preview-phone.png", fullPage: true });
   await page.getByLabel("Also apply to existing transactions").check();
   await page.getByRole("button", { name: "Save rule" }).click();
@@ -98,7 +98,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByRole("link", { name: /new alert/ }).click();
   await expect(page.locator("main")).toContainText("Name contains “alert " + suffix + "” went over budget");
   await expect(page.locator("main")).toContainText("$1.00 over");
-  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));  // let the page crossfade end
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));  // let the page crossfade end
   await page.screenshot({ path: ".local/alerts-phone.png" });
   await page.reload();
   await expect(page.getByRole("link", { name: /new alert/ })).toHaveCount(0);
@@ -123,7 +123,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByLabel("Search transaction names").fill(`bagels${tag}`);
   await page.getByRole("button", { name: "Search" }).click();
   await expect(page.getByRole("status")).toContainText("2 transactions contain");
-  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);

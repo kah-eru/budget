@@ -151,15 +151,32 @@ class RuleForm(forms.ModelForm):
 
     class Meta:
         model = Rule
-        fields = ["kind", "pattern", "category", "priority", "enabled"]
-        labels = {"kind": "Match", "pattern": "Text", "priority": "Priority"}
+        fields = ["kind", "pattern", "category", "split_category", "split_percent", "priority", "enabled"]
+        labels = {"kind": "Match", "pattern": "Text", "priority": "Priority", "split_category": "Split with (optional)",
+                  "split_percent": "Share for the second category (%)"}
         help_texts = {"pattern": "Compared with the original bank or entry name, ignoring case and extra spaces.",
-                      "priority": "Lower numbers are checked first."}
+                      "priority": "Lower numbers are checked first.",
+                      "split_category": "For mixed purchases, like 70% Groceries and 30% Shopping. Amounts round so they add up exactly."}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = self.instance.workspace.categories.filter(
             Q(archived=False) | Q(pk=self.instance.category_id)).order_by("name")
+        self.fields["split_category"].queryset = self.instance.workspace.categories.filter(
+            Q(archived=False) | Q(pk=self.instance.split_category_id)).order_by("name")
+        self.fields["split_category"].empty_label = "No split"
+        self.fields["split_percent"].widget.attrs.update(min=1, max=99)
+
+    def clean(self):
+        data = super().clean()
+        split, percent = data.get("split_category"), data.get("split_percent")
+        if split and not percent or percent and not split:
+            raise forms.ValidationError("A split needs both a second category and its share.")
+        if split and split == data.get("category"):
+            self.add_error("split_category", "Choose a different category from the first one.")
+        if percent is not None and not 1 <= percent <= 99:
+            self.add_error("split_percent", "Enter a share from 1 to 99.")
+        return data
 
     def clean_pattern(self):
         if not normalize(self.cleaned_data["pattern"]):

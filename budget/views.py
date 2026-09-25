@@ -33,7 +33,7 @@ from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice,
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
-from .rules import categorize, categorize_everywhere, ensure_rule, matches, normalize
+from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
 
@@ -372,9 +372,11 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             form.save()
+            if "category" in form.changed_data:
+                drop_rule_splits(workspace, [row.pk])
             if form.cleaned_data["also_similar"]:
                 ensure_rule(workspace, form.cleaned_data["match_text"], form.cleaned_data["category"])
-                categorize(Transaction.objects.filter(account__in=visible_accounts(request.user, workspace)).only("pk", "description"), workspace)
+                categorize(Transaction.objects.filter(account__in=visible_accounts(request.user, workspace)).only("pk", "description", "amount_cents"), workspace)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
             evaluate(workspace)
         similar = form.cleaned_data["also_similar"]
@@ -430,6 +432,7 @@ def category_add(request, workspace_id, category_id):
                 annotation = existing.get(row.pk) or TransactionAnnotation(transaction=row, workspace=workspace)
                 annotation.category, annotation.category_source = category, "manual"
                 annotation.save()
+            drop_rule_splits(workspace, [r.pk for r in picked])
             if make_rule:
                 ensure_rule(workspace, keyword, category)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
@@ -454,6 +457,7 @@ def category_edit(request, workspace_id, category_id):
             form.save()
             if category.archived:
                 category.rules.update(enabled=False)
+                category.split_rules.update(enabled=False)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
         messages.success(request, "Category saved." + (" Its rules are now off." if category.archived else ""))
         return redirect(back)
@@ -523,7 +527,7 @@ def budget_delete(request, workspace_id, budget_id):
 def rule_list(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
     return render(request, "budget/rules.html", {**page_context(request.user, workspace),
-                  "rules": workspace.rules.select_related("category").order_by("priority", "pk")})
+                  "rules": workspace.rules.select_related("category", "split_category").order_by("priority", "pk")})
 
 
 PREVIEW_SIZE = 20
@@ -546,7 +550,7 @@ def rule_edit(request, workspace_id, rule_id=None):
             return render(request, "budget/rule_form.html", {**context, "preview": found[:PREVIEW_SIZE], "match_count": len(found)})
         with transaction.atomic():
             form.save()
-            changed = categorize(history.only("pk", "description"), workspace) if form.cleaned_data["apply_existing"] else 0
+            changed = categorize(history.only("pk", "description", "amount_cents"), workspace) if form.cleaned_data["apply_existing"] else 0
             evaluate(workspace)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
         messages.success(request, "Rule saved." + (f" {changed} existing transaction{'s' if changed != 1 else ''} updated." if form.cleaned_data["apply_existing"] else ""))

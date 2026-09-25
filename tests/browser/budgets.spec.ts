@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // Synthetic data on the disposable local database only.
 test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }) => {
+  test.setTimeout(90_000);  // budgets, plan, a split and a split rule in one journey
   await page.goto("/login/");
   await page.getByLabel("Username", { exact: true }).fill("browser-check");
   await page.getByLabel("Password", { exact: true }).fill("synthetic-browser-check-only");
@@ -26,7 +27,7 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   await expect(page.locator("main")).toContainText("Fixed bill, due on day 1");
   await expect(page.locator("main")).toContainText("set aside $100.00/month");
   await page.setViewportSize({ width: 360, height: 800 });
-  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
@@ -56,10 +57,32 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   await page.getByLabel("Line 2 amount (USD)").fill("19.99");
   await page.getByRole("button", { name: "Save split" }).click();
   await expect(page.getByRole("alert")).toContainText("$0.01 left to split");
-  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
   await page.screenshot({ path: ".local/split-phone.png", fullPage: true });
   await page.getByLabel("Line 2 amount (USD)").fill("20");
   await page.getByRole("button", { name: "Save split" }).click();
   await expect(page.locator("main")).toContainText("Split: Groceries $30.00, Shopping $20.00");
+
+  // A rule with a 70/30 split template, applied to history, rounds so the lines add up exactly.
+  const tag = suffix.replace(/\d/g, (d) => "abcdefghij"[Number(d)]);
+  await page.getByRole("link", { name: "Add transaction" }).click();
+  await page.getByLabel("Date").fill("2026-04-13");
+  await page.getByLabel("Amount (USD)").fill("10.01");
+  await page.getByLabel("Description").fill(`Warehouse${tag} #7`);
+  await page.getByRole("button", { name: "Save transaction" }).click();
+  await page.goto("/");
+  await page.getByRole("link", { name: "Manage categories" }).click();
+  await page.getByRole("link", { name: /^Rules/ }).click();
+  await page.getByRole("link", { name: "Add rule" }).click();
+  await page.getByLabel("Text").fill(`warehouse${tag}`);
+  await page.getByLabel("Category", { exact: true }).selectOption({ label: "Groceries" });
+  await page.getByLabel("Split with (optional)").selectOption({ label: "Shopping" });
+  await page.getByLabel("Share for the second category (%)").fill("30");
+  await page.getByLabel("Also apply to existing transactions").check();
+  await page.getByRole("button", { name: "Save rule" }).click();
+  await expect(page.getByRole("link", { name: new RegExp(`warehouse${tag}.*Groceries 70% / Shopping 30%`) })).toBeVisible();
+  await page.goto("/");
+  await page.getByRole("link", { name: accountName }).click();
+  await expect(page.locator("li", { hasText: `Warehouse${tag} #7` })).toContainText("Split: Groceries $7.01, Shopping $3.00");
 });
