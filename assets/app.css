@@ -94,6 +94,10 @@
   --font-sans: "Hanken Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Page-to-page crossfade (Chrome, Safari 18.2+) so tabs read as one app; the bottom nav holds still. base.html opts in
+   from script only, because Chrome left a no-JavaScript page stuck behind the transition overlay. Reduced motion: off. */
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
 @layer base {
   body { @apply bg-canvas font-sans text-ink; }
   /* Bklit chart tokens follow the same roles. */
@@ -145,7 +149,7 @@
     .primary:active, .secondary:active, .workspace-link:active, .workspace-summary:active, .nav-link:active { transform: none; }
   }
   /* Translucent nav so content reads as scrolling under it; solid when transparency is reduced. */
-  .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(16px) saturate(160%); }
+  .bottom-nav { view-transition-name: bottom-nav; padding-bottom: env(safe-area-inset-bottom, 0px); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(16px) saturate(160%); }
   @media (prefers-reduced-transparency: reduce) { .bottom-nav { background: var(--surface); backdrop-filter: none; } }
   /* Flat sections: spacing and hairlines separate content, not boxes. */
   .card { @apply mb-8; }
@@ -160,6 +164,12 @@
   .segment { @apply relative flex-1 cursor-pointer rounded-full px-3 py-2 text-center text-sm font-bold text-accent-text has-[:checked]:bg-accent has-[:checked]:text-on-accent has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)]; transition: background-color 100ms ease-out; }
   .stat-row { @apply flex min-h-12 items-center justify-between gap-3 border-b border-line py-3; }
   .chevron::after { content: "›"; @apply ml-2 text-lg text-muted; }
+  /* The chart's space is held before its code loads, so nothing below it moves. No JavaScript: no slot (the table has the numbers). */
+  .chart-slot { display: none; aspect-ratio: 2.4 / 1; }
+  :root.js .chart-slot { display: block; }
+  .chart-skeleton { width: 100%; height: 100%; color: var(--line-strong); animation: skeleton-pulse 1.2s ease-in-out infinite alternate; }
+  @keyframes skeleton-pulse { from { opacity: 0.25; } to { opacity: 0.6; } }
+  @media (prefers-reduced-motion: reduce) { .chart-skeleton { animation: none; opacity: 0.4; } }
   .skip-link { @apply sr-only; }
   .skip-link:focus { @apply not-sr-only fixed top-2 left-2 z-50 rounded bg-surface p-3; }
 }

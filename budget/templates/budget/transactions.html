@@ -9,7 +9,7 @@
 <section aria-labelledby="totals-title" class="card">
   <h2 id="totals-title" class="text-sm font-semibold text-accent-text">{% if filtered %}Matching spending{% else %}Spending{% endif %}</h2>
   <p class="hero-amount mt-2">{{ totals.posted_cents|dollars }}</p>
-  <div data-spending-chart hidden class="mt-4 overflow-hidden" role="img" aria-label="Running posted spending by day, {{ start|date:'M j' }} to {{ end|date:'M j' }}. The daily totals table has the same numbers."></div>
+  <div data-spending-chart class="chart-slot mt-4 overflow-hidden" role="img" aria-label="Running posted spending by day, {{ start|date:'M j' }} to {{ end|date:'M j' }}. The daily totals table has the same numbers.">{% include "budget/components/chart_skeleton.html" %}</div>
   {{ days|json_script:'daily-series' }}
   <dl class="mt-2">
     <div class="stat-row"><dt>Posted spending</dt><dd class="amount font-semibold">{{ totals.posted_cents|dollars }}</dd></div>

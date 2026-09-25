@@ -6,9 +6,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <title>{% block title %}Budget{% endblock %}</title>
-  <script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+  <script>document.documentElement.classList.add("js");var v=document.createElement("style");v.textContent="@view-transition{navigation:auto}";document.head.appendChild(v);try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
   <link rel="stylesheet" href="{% static 'budget/dist/app.css' %}">
   <script type="module" src="{% static 'budget/dist/app.js' %}"></script>
+  {# Installable: Add to Home Screen opens full screen. No service worker, so no financial page is ever cached offline. #}
+  <link rel="manifest" href="{% static 'budget/manifest.webmanifest' %}">
+  <link rel="icon" href="{% static 'budget/icons/icon.svg' %}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{% static 'budget/icons/icon-180.png' %}">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#22181c" media="(prefers-color-scheme: dark)">
+  {% if user.is_authenticated %}
+  {# Chrome/Android: prefetch the tab pages as soon as a page loads and anything else on hover or touch, so switching feels instant. #}
+  {# GET pages here have no side effects; logout (POST) and downloads are excluded. Other browsers ignore this. #}
+  {# ponytail: eager tab prefetch costs up to 3 extra page requests per view; drop "eager" if the load gate says so. #}
+  <script type="speculationrules">
+  {"prefetch": [
+    {"where": {"selector_matches": ".bottom-nav a"}, "eagerness": "eager"},
+    {"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/*export.csv*"}}, {"not": {"selector_matches": "[download]"}}]}, "eagerness": "moderate"}
+  ]}
+  </script>
+  {% endif %}
 </head>
 <body class="antialiased">
   <a class="skip-link" href="#main">Skip to content</a>

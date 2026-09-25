@@ -2,6 +2,17 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, speed pass): the user asked whether agency speed wins (WebP/AVIF, lazy loading, CDN, trimming scripts, Next.js + headless CMS, SSR) or features (custom categories, limits, notifications) come first, then asked for skeleton loaders and preloading for an app feel. The user chose "speed pass, then features". SSR and lazy loading were already true; images and CMS don't apply.
+- Found and fixed a production-only double load of `app.js` (the chart chunk imported the unhashed entry). Initial JS is now 1.17 kB gzip.
+- Added a chart skeleton: CLS went from 0.117 to 0.
+- Added speculation-rules prefetch (tab switches confirmed served from prefetch), script-gated cross-document view transitions (no-JS Chrome hang avoided), and an installable manifest with icons.
+- The font preload was A/B-tested and dropped.
+- 93 Django tests OK; 6/6 Chrome checks.
+- Committed locally; **not pushed**.
+- The biggest remaining delay is Render free-plan cold start (a paid plan or keep-warm ping; the user decides, no money spent).
+- Details: [development guide](docs/development.md#speed-and-app-feel-pass--september-25-night-latest).
+- Next: custom categories (milestone 4), then limits, then notifications.
+
 Latest request (2026-09-25, night, latest): "add some of the settings features, email/password/username change confirmations via email, settings page, export csv, change light/dark mode". User chose **notify after** for password/username (current password required, then a notice to the verified email); email change confirms by a link to the new address. Built Settings (replaces More), username/email changes, CSV export from the Timeline, System/Light/Dark theme. 93 Django tests OK, 6/6 Chrome checks. Pushed 2026-09-25 (feat `2caba84`, main `ec6e9a6`); Render auto-deploys after CI (live site not checked by the agent). Details: [development guide](docs/development.md#settings-login-changes-csv-export-theme--september-25-night-latest). Suggested next settings (not built): sign out other devices, delete account and data, default workspace, two-factor login.
 
 Latest request (2026-09-25, night, later): "make the ui something more like this" (Robinhood reference screenshots). Rebuilt to a flat layout: hero spending number + change vs previous period + bare chart + period chips on Overview and Timeline, stat rows, per-account pink value pills, icon bottom nav, filters in a disclosure; serif/mono fonts and the receipt style removed. 78 Django tests OK, 5/5 Chrome checks, light/dark screenshots reviewed. Pushed on "push" (`feat` cefc49b, `main` 3e16730); Render redeploys after CI (not checked by the agent). Details: [development guide](docs/development.md#robinhood-style-layout--september-25-night-later).
@@ -89,7 +100,7 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 ## Ordered next steps
 
 1. Done 2026-09-25: Render preview live, owner signed in. Optional: try a synthetic invite (link appears in Render Logs).
-2. Done 2026-09-25 (local commit): Bklit chart. CSV export done. Next: CSV import (imported amounts read-only per spec). Optional: trim the chart chunk (mostly React DOM + Motion).
+2. Done 2026-09-25 (local commit): Bklit chart. CSV export done; speed pass done. Next per user: custom categories, then limits (budgets), then notifications (in-app inbox first). CSV import still open (imported amounts read-only per spec). Optional: trim the chart chunk (mostly React DOM + Motion).
 3. Optional login follow-ups not built: web-based first-user setup (still `createsuperuser`). Apply apple-design springs once Motion drives real transitions.
 4. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
 

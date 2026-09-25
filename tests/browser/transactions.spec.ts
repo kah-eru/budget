@@ -29,7 +29,9 @@ test("search transactions, edit from a filtered list and return to it; year view
   await expect(page.locator("main")).toContainText("Coffee " + suffix);
   await expect(page.locator("main")).not.toContainText("Hardware " + suffix);
   const chart = page.getByRole("img", { name: /^Running posted spending/ });
-  await expect(chart.locator("svg").first()).toBeVisible();
+  // The skeleton holds the chart's space, so mounting must not change the page height below it.
+  await expect(chart.locator("svg:not(.chart-skeleton)").first()).toBeVisible();
+  await expect(chart.locator(".chart-skeleton")).toHaveCount(0);
   await page.getByRole("link", { name: new RegExp("^Edit Coffee " + suffix) }).click();
   await page.getByLabel("Display name").fill("Morning coffee " + suffix);
   await page.getByRole("button", { name: "Save changes" }).click();

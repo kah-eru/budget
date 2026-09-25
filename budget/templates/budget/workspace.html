@@ -10,7 +10,7 @@
   <p class="hero-amount mt-2">{{ month.posted_cents|dollars }}</p>
   <p id="hero-label" class="mt-2 text-sm font-semibold text-accent-text">{{ label }} spending ·
     {% if change_cents > 0 %}<span aria-hidden="true">↗</span> {{ change_cents|dollars }} more than {{ prev_label }}{% elif change_cents < 0 %}<span aria-hidden="true">↘</span> {{ change_cents|dollars|cut:'-' }} less than {{ prev_label }}{% else %}same as {{ prev_label }}{% endif %}</p>
-  <div data-spending-chart hidden class="mt-4 overflow-hidden" role="img" aria-label="Running posted spending, {{ label }}. The totals below and the timeline have the same numbers."></div>
+  <div data-spending-chart class="chart-slot mt-4 overflow-hidden" role="img" aria-label="Running posted spending, {{ label }}. The totals below and the timeline have the same numbers.">{% include "budget/components/chart_skeleton.html" %}</div>
   {{ series|json_script:'daily-series' }}
   <nav aria-label="Period" class="mt-3 flex flex-wrap items-center justify-between gap-1 border-b border-line pb-3">
     <a class="chip" href="?period={{ prev }}" aria-label="Previous {{ kind }}">←</a>

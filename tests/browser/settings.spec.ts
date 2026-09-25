@@ -27,6 +27,10 @@ test("theme choice applies, survives reload and returns to system; Timeline expo
   }
   await page.screenshot({ path: ".local/settings-light.png", fullPage: true });
 
+  // Installable: the manifest resolves and names the app.
+  const manifest = await page.locator('link[rel="manifest"]').getAttribute("href");
+  expect((await (await page.request.get(manifest!)).json()).name).toBe("Budget");
+
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: /^Export CSV/ }).click();
