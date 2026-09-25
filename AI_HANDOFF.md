@@ -2,6 +2,8 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest (2026-09-25): live preview URL https://budget-4aek.onrender.com (owner-created; duplicate service deleted). Owner declined rotating the chat-exposed `budget_site` password. First user still to be created by the owner; live endpoints not verified by the agent (owner declined the check).
+
 Latest question (2026-09-25): "where do i see the url" — answered (Render dashboard → budget service → URL under the name; live after status shows Live). No product changes.
 
 Latest request (2026-09-25, night): user supplied the Neon site role (file `env (2).txt` in the root checkout, now moved to ignored worktree `.local/neon-site.env`; the password was also pasted in chat, so the user was asked to reset it after setup) and asked whether the GitHub MCP could do the rest. Answer: GitHub is already done (pushed, CI green); Render needs the owner's own sign-in, and a PAT must not go into chat. Created database `budget_site` owned by role `budget_site` and applied migrations 0001-0005. **Still blocked on the owner:** Render Blueprint creation (PG values in the Render dashboard), first user via `createsuperuser` in their own terminal, Neon password reset. Docs-only local commit; not pushed.
