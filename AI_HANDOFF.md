@@ -6,7 +6,7 @@ Latest request (2026-09-25, categories): "now continue with the features". Built
 - `4a58af7` categories: per-workspace, ten seeded standard categories, archive not delete, Overview By category, Timeline filter, CSV column.
 - `6927da6` rules: contains/exact with normalized matching, priority then ID, manual choice always wins, preview and opt-in backfill, auto-apply on new/edited transactions.
 - Verification: 108 Django tests OK; 7/7 Chrome checks; light/dark 360 px screenshots reviewed.
-- Committed locally; **not pushed**.
+- Pushed 2026-09-25 on the user's "update all docs and then push and commit"; Render auto-deploys after CI (migrations 0006-0007 run on deploy; live site not checked by the agent).
 - Details: [development guide](docs/development.md#categories-and-rules--september-25-night-latest).
 - Next: budgets/limits (monthly/yearly per category or name match, overview progress), then in-app notifications. Splits and fixed/irregular/flexible budget kinds are queued after basic limits.
 
