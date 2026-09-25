@@ -28,15 +28,18 @@ export function useChartPhaseOrchestrator({
   revealSignature = "",
   skipEnterReveal = false,
 }: UseChartPhaseOrchestratorOptions) {
+  // Budget: start a ready chart already "revealing" so the first paint is the empty clip, not one
+  // fully drawn frame before the reveal effect runs (visible on slow phones as a flash, then redraw).
+  const enterOnMount = chartStatus === "ready" && !skipEnterReveal;
   const [chartPhase, setChartPhase] = useState<ChartPhase>(() =>
-    resolveRestingChartPhase(chartStatus)
+    enterOnMount ? "revealing" : resolveRestingChartPhase(chartStatus)
   );
   const [plotData, setPlotData] = useState<Record<string, unknown>[]>(() =>
     chartStatus === "loading" ? skeletonData : targetData
   );
   const [revealEpoch, setRevealEpoch] = useState(0);
   const [concealEpoch, setConcealEpoch] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(() => chartStatus === "ready");
+  const [isLoaded, setIsLoaded] = useState(() => chartStatus === "ready" && !enterOnMount);
   const prevStatusRef = useRef(chartStatus);
   const phaseRef = useRef(chartPhase);
   phaseRef.current = chartPhase;

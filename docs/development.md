@@ -192,6 +192,10 @@ Measured (lab only, not field data):
   - The chart slot has its own `view-transition-name`, with no old snapshot and no group or new animation, so the old line vanishes instantly and only the new line draws in.
   - The placeholder line now appears only if the chart takes more than 0.4 s, which prefetched pages essentially never do.
   - Re-captured frames confirm no line before the draw-in. 6/6 Chrome checks.
+- **Second chart flash fix (after categories, user report: "rendering a straight line for like 100ms and then reanimating it on a tab change").** Per-frame probing of the chart path and reveal clip under 6x CPU throttling (phone-like) found two causes:
+  - The chart mounted in its "ready" phase, so one fully drawn frame painted before the reveal effect reset the clip to 0 and drew it again. `use-chart-phase-orchestrator.ts` now starts a ready chart already in "revealing", so the first painted frame is the empty clip.
+  - The placeholder line appeared after 0.4 s, and loading the chart code on a throttled CPU took about 0.6–0.9 s. The delay is now 1.5 s, so the placeholder shows only on genuinely slow loads.
+  - After the fix, probes show the first chart frame at clip width 0 and the placeholder never visible. 7/7 Chrome checks. The temporary probe spec was deleted.
 - **Biggest remaining delay (not code):** Render's free plan sleeps after about 15 idle minutes, so the first visit waits roughly 30–60 s, and Neon's free compute also suspends. The fix is a paid instance (about $7/month) or an external keep-warm ping. That is the user's decision and has not been done.
 - Verification: 93 Django tests OK (4 PG-only skipped); 6/6 Chrome checks (the chart check now requires the real chart and no skeleton, and Settings checks the manifest), including the no-JavaScript journeys.
 
