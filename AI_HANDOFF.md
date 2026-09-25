@@ -2,7 +2,7 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
-Latest request (2026-09-25, later): "do it, also if not there already, add the ability to create logins and stuff." Asked about sign-up; the user chose **invite-only + standalone invites** (no public sign-up). Built in the worktree: timeline (daily/cumulative, two-year cap, revision-checked cursor), bottom nav Overview | Timeline | More, collapsible workspace switcher, standalone invites (personal-workspace invitation grants no access), More page with password change. Committed locally; **not pushed** (push only on request). Details: [development guide](docs/development.md#timeline-more-page-and-standalone-invites--september-25-later).
+Latest request (2026-09-25, later): "do it, also if not there already, add the ability to create logins and stuff." Asked about sign-up; the user chose **invite-only + standalone invites** (no public sign-up). Built in the worktree: timeline (daily/cumulative, two-year cap, revision-checked cursor), bottom nav Overview | Timeline | More, collapsible workspace switcher, standalone invites (personal-workspace invitation grants no access), More page with password change. Committed (`43ddb13`) and pushed with the docs sync on `main` when the user asked ("update docs ... then commit and push"); outgoing diffs scanned for credentials, none found. Details: [development guide](docs/development.md#timeline-more-page-and-standalone-invites--september-25-later).
 
 Earlier on 2026-09-25: transaction list/filters/cursor and month/year views (`1be829e`), pushed with docs on the user's "do it".
 
@@ -74,6 +74,6 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 
 ## Git and documentation state
 
-`origin` (GitHub `kah-eru/budget`) has `feat/project-foundation` at `d0f656b` and `main` at `b34d86a`. The later 2026-09-25 timeline/invites commit (worktree) and its docs sync (root `main`) are local only. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
+Both branches are pushed to `origin` (GitHub `kah-eru/budget`), including the timeline/invites slice (`43ddb13`), its docs sync on `main` (`b3dea00`) and this handoff update. No PR, merge or deployment. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.
