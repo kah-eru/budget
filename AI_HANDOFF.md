@@ -2,7 +2,7 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
-Latest request (2026-09-25): "update the docs if you haven't already." Docs were already updated on 2026-09-24; this turn refreshed this handoff header and the SDD ledger only. No product changes.
+Latest request (2026-09-25): "now commit and push." Pushed to GitHub (`kah-eru/budget`): `feat/project-foundation` (26d5722..f786cb2, 17 commits) and `main` (fb3f2e8, synced docs). Commits scanned for credentials first; none found. No PR, merge or deployment.
 
 ## Recent history (2026-09-24)
 
@@ -54,6 +54,6 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 
 ## Git and documentation state
 
-Worktree branch `feat/project-foundation` is ahead of local `origin/feat/project-foundation` (`26d5722`) by the September 24 commits (`git log origin/feat/project-foundation..HEAD`); remote not contacted, nothing pushed. Worktree clean. Root `main` retains its prior uncommitted doc edits plus synchronized copies of these canonical docs. See [development guide](docs/development.md).
+Both branches are pushed to `origin` (GitHub `kah-eru/budget`) as of 2026-09-25; this handoff update is committed and pushed after that. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.
