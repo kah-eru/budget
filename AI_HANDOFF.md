@@ -2,6 +2,11 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, chart flash): "the line flashes before animating itself from left to right, prolly cuz of the preload... remove the preload for only the graph line".
+- Frames showed the cause was not the preload: the page crossfade showed the previous page's finished line fading out, plus a brief placeholder line.
+- The chart is now excluded from the crossfade, and the placeholder shows only after 0.4 s. Preloading is kept.
+- 6/6 Chrome checks. Committed locally; **not pushed**.
+
 Latest request (2026-09-25, speed pass): the user asked whether agency speed wins (WebP/AVIF, lazy loading, CDN, trimming scripts, Next.js + headless CMS, SSR) or features (custom categories, limits, notifications) come first, then asked for skeleton loaders and preloading for an app feel. The user chose "speed pass, then features". SSR and lazy loading were already true; images and CMS don't apply.
 - Found and fixed a production-only double load of `app.js` (the chart chunk imported the unhashed entry). Initial JS is now 1.17 kB gzip.
 - Added a chart skeleton: CLS went from 0.117 to 0.
