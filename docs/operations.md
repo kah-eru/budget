@@ -26,7 +26,7 @@ Progress 2026-09-25: role `budget_site` created by the owner in Neon; database `
    .venv/Scripts/python.exe manage.py createsuperuser
    ```
 
-   It prompts for username, email and password. Then sign in on the site and invite others from More → Invite someone to Budget; copy the link from Render → Logs and send it yourself.
+   It prompts for username, email and password. Then sign in on the site and invite others from Settings → Invite someone to Budget; copy the link from Render → Logs and send it yourself.
 
 ## Updating
 

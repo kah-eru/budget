@@ -32,8 +32,27 @@
   --danger-soft: #fde3e6;
   --focus: var(--black-cherry);
 }
+/* Dark: the saved choice on this device (data-theme, set before paint in base.html), else the OS setting. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: var(--coffee-bean);
+  --surface: var(--coffee-bean);
+  --sunken: #33161b;
+  --ink: var(--lavender-blush);
+  --muted: #c4a9af;
+  --line: #3e1c22;
+  --line-strong: #8a2530;
+  --accent: var(--bubblegum-pink);
+  --on-accent: var(--coffee-bean);
+  --accent-text: var(--bubblegum-pink);
+  --accent-soft: #4a1017;
+  --pressed: var(--black-cherry);
+  --danger: #ff9aa3;
+  --danger-soft: #4a1017;
+  --focus: var(--bubblegum-pink);
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --canvas: var(--coffee-bean);
     --surface: var(--coffee-bean);
@@ -97,7 +116,7 @@
   a, button { overflow-wrap: anywhere; }
   main a:not([class]) { color: var(--accent-text); }
   /* :is() lifts select/textarea to the input's specificity so Flowbite's white form defaults lose in dark mode. */
-  :is(input:not([type="hidden"]):not([type="checkbox"]), select, textarea) {
+  :is(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea) {
     @apply block min-h-11 w-full rounded-lg border border-transparent bg-sunken p-3 text-base text-ink;
   }
   input[type="checkbox"] { @apply mt-1 size-5 shrink-0 rounded; accent-color: var(--accent); }
@@ -137,6 +156,8 @@
   /* Period chips under the chart. */
   .chip { @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-3 text-sm font-bold text-accent-text; }
   .chip[aria-current="page"] { @apply bg-accent text-on-accent; }
+  /* Segmented System / Light / Dark control; the radio stays focusable, the label shows focus. */
+  .segment { @apply relative flex-1 cursor-pointer rounded-full px-3 py-2 text-center text-sm font-bold text-accent-text has-[:checked]:bg-accent has-[:checked]:text-on-accent has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)]; transition: background-color 100ms ease-out; }
   .stat-row { @apply flex min-h-12 items-center justify-between gap-3 border-b border-line py-3; }
   .chevron::after { content: "›"; @apply ml-2 text-lg text-muted; }
   .skip-link { @apply sr-only; }

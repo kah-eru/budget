@@ -8,7 +8,7 @@ test("search transactions, edit from a filtered list and return to it; year view
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   const suffix = Date.now().toString();
   const accountName = "Synthetic card " + suffix;
-  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("link", { name: /^Add account/ }).click();
   await page.getByLabel("Name", { exact: true }).fill(accountName);
   await page.getByRole("button", { name: "Create private account" }).click();

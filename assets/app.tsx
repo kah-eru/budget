@@ -20,3 +20,23 @@ if (chart && series) {
     chart.hidden = false;
   }).catch(() => {});
 }
+
+// Theme choice for this device. base.html applies the saved value before paint; without JS the picker stays hidden.
+const picker = document.querySelector<HTMLFieldSetElement>("[data-theme-picker]");
+if (picker) {
+  const root = document.documentElement;
+  const current = picker.querySelector<HTMLInputElement>(`input[value="${root.dataset.theme || "system"}"]`);
+  if (current) current.checked = true;
+  picker.hidden = false;
+  picker.addEventListener("change", (event) => {
+    const value = (event.target as HTMLInputElement).value;
+    if (value === "system") delete root.dataset.theme;
+    else root.dataset.theme = value;
+    try {
+      if (value === "system") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", value);
+    } catch {
+      // Storage blocked: the choice still applies until the page changes.
+    }
+  });
+}

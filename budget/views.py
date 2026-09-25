@@ -1,22 +1,33 @@
+import csv
 from datetime import date, timedelta
+from smtplib import SMTPException
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.decorators import login_required
+from django.core import signing
 from django.core.exceptions import ValidationError
-from django.db import DatabaseError, connection, transaction
+from django.core.mail import send_mail
+from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.db.models import F, Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.crypto import constant_time_compare, salted_hmac
 from django.utils.formats import date_format
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 
-from .forms import AccountForm, AnnotationForm, GroupForm, SharingForm, TransactionFilterForm, TransactionForm
-from .models import Membership, MembershipNotice, Transaction, TransactionAnnotation, Workspace
+from .account_mail import notify
+from .forms import (
+    AccountForm, AnnotationForm, EmailChangeForm, GroupForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+)
+from .invitations import claim_email_send
+from .models import Membership, MembershipNotice, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, daily, monthly, spending, visible_transactions
 from .templatetags.money import dollars
@@ -45,21 +56,114 @@ def page_context(user, workspace=None):
     return {"workspace": workspace, "workspaces": workspaces, "personal": workspaces[0] if workspaces else None}
 
 
+def email_verified(user):
+    return bool(user.email and user.verified_email == user.email.lower())
+
+
 @login_required
-def more(request):
-    user = request.user
-    return render(request, "budget/more.html", {**page_context(user), "verified": bool(user.email and user.verified_email == user.email.lower())})
+def settings_page(request):
+    return render(request, "budget/settings.html", {**page_context(request.user), "verified": email_verified(request.user)})
+
+
+def settings_form(request, form, status=200, **context):
+    return render(request, "budget/form.html", {**page_context(request.user), "form": form, "cancel_url": reverse("settings"), **context}, status=status)
 
 
 class PasswordChange(SuccessMessageMixin, auth_views.PasswordChangeView):
     template_name = "budget/form.html"
-    success_url = reverse_lazy("more")
+    success_url = reverse_lazy("settings")
     success_message = "Password changed."
-    extra_context = {"title": "Change password", "action": "Change password", "cancel_url": reverse_lazy("more"),
+    extra_context = {"title": "Change password", "action": "Change password", "cancel_url": reverse_lazy("settings"),
                      "help": "Enter your current password, then a new one. You stay signed in on this device."}
 
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), **page_context(self.request.user)}
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        notify(self.request, self.request.user, "Your Budget password was changed", "The password for your Budget login was just changed.")
+        return response
+
+
+@sensitive_post_parameters("current_password")
+@login_required
+@require_http_methods(["GET", "POST"])
+def username_change(request):
+    user = User.objects.get(pk=request.user.pk)  # a failed form must not rename request.user in the page header
+    form = UsernameChangeForm(request.POST if request.method == "POST" else None, instance=user)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        notify(request, user, "Your Budget username was changed", f"Your Budget username is now {user.username}. Use it to sign in.")
+        messages.success(request, "Username changed.")
+        return redirect("settings")
+    return settings_form(request, form, 400 if request.method == "POST" else 200, title="Change username", action="Change username",
+                         help=f"You sign in as {request.user.username}. Enter the new username and your current password.")
+
+
+EMAIL_CHANGE_SALT = "budget.email_change"
+EMAIL_CHANGE_MAX_AGE = 3600
+
+
+def password_stamp(user):
+    # Any password change (including a reset) invalidates outstanding email-change links.
+    return salted_hmac(EMAIL_CHANGE_SALT, user.password).hexdigest()[:16]
+
+
+@sensitive_post_parameters("current_password")
+@login_required
+@require_http_methods(["GET", "POST"])
+def email_change(request):
+    user = request.user
+    form = EmailChangeForm(request.POST if request.method == "POST" else None, user=user)
+    if request.method == "POST" and form.is_valid():
+        new = form.cleaned_data["email"]
+        if not claim_email_send(user):
+            form.add_error(None, "Please wait one minute before requesting another email.")
+        else:
+            token = signing.dumps({"u": user.pk, "e": new, "p": password_stamp(user)}, salt=EMAIL_CHANGE_SALT)
+            link = request.build_absolute_uri(reverse("email_change_confirm", args=[token]))
+            try:
+                send_mail("Confirm your new Budget email", f"While signed in to Budget as {user.username}, open this link and confirm {new} as your email. It expires in one hour.\n\n{link}\n", None, [new])
+            except (OSError, SMTPException):
+                form.add_error(None, "The confirmation email could not be sent. Please try again in a minute.")
+            else:
+                notify(request, user, "A Budget email change was requested", f"Someone signed in as {user.username} asked to change the login email to {new}. Nothing changes unless that address confirms.")
+                messages.success(request, f"Confirmation sent to {new}. Open its link while signed in. Your email stays the same until then.")
+                return redirect("settings")
+    return settings_form(request, form, 400 if request.method == "POST" else 200, title="Change email", action="Send confirmation",
+                         help=f"Current email: {user.email or 'none'}. We send a link to the new address; the change happens when you open it.")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def email_change_confirm(request, token):
+    form = forms.Form(request.POST if request.method == "POST" else None)
+    try:
+        data = signing.loads(token, salt=EMAIL_CHANGE_SALT, max_age=EMAIL_CHANGE_MAX_AGE)
+    except signing.BadSignature:
+        data = None
+    if data and data.get("u") != request.user.pk:
+        raise Http404
+    if request.method == "POST":
+        user = request.user
+        try:
+            if not data or not constant_time_compare(data.get("p", ""), password_stamp(user)):
+                raise ValidationError("This link is invalid or expired. Request a new one from Settings.")
+            user.email = user.verified_email = data["e"]
+            try:
+                with transaction.atomic():
+                    user.save(update_fields=["email", "verified_email"])
+            except IntegrityError:
+                raise ValidationError("Another login started using this email. Choose a different one.")
+        except ValidationError as error:
+            user.refresh_from_db()
+            form.add_error(None, error)
+        else:
+            notify(request, user, "Your Budget email was changed", f"This is now the email for the Budget login {user.username}.")
+            messages.success(request, "Email changed and verified.")
+            return redirect("settings")
+    return settings_form(request, form, 400 if request.method == "POST" else 200, title="Confirm new email", action="Confirm email",
+                         help=f"Make {data['e'] if data else 'this address'} the email for {request.user.username}.")
 
 
 @login_required
@@ -168,6 +272,33 @@ def transaction_list(request, workspace_id):
                    totals={k: sum(d[k] for d in days) for k in ("posted_cents", "pending_cents", "income_cents")},
                    filtered=any(request.GET.get(name) for name in form.fields))
     return render(request, "budget/transactions.html", context)
+
+
+def csv_cell(value):
+    # Spreadsheets run cells that start like a formula; a leading quote keeps them text.
+    value = str(value)
+    return "'" + value if value[:1] in ("=", "+", "-", "@", "\t", "\r") else value
+
+
+@login_required
+def transaction_export(request, workspace_id):
+    """The Timeline's rows as CSV: same filters and range cap, no paging."""
+    workspace = get_workspace(request.user, workspace_id)
+    form = TransactionFilterForm(request.GET, accounts=visible_accounts(request.user, workspace))
+    if not form.is_valid():
+        return HttpResponse(" ".join(e for errors in form.errors.values() for e in errors), status=400, content_type="text/plain")
+    start, end = form.cleaned_data["start"], form.cleaned_data["end"]
+    rows = labelled(list(form.apply(visible_transactions(request.user, workspace)).filter(posted_on__range=(start, end))
+                         .select_related("account__owner").order_by("-posted_on", "-pk")))
+    response = HttpResponse(content_type="text/csv; charset=utf-8", headers={
+        "Content-Disposition": f'attachment; filename="budget-{start:%Y-%m-%d}-{end:%Y-%m-%d}.csv"', "Cache-Control": "no-store"})
+    writer = csv.writer(response)
+    writer.writerow(["Date", "Account", "Owner", "Name", "Original description", "Classification", "Status", "Amount (USD)", "Note"])
+    for row in rows:
+        names = [row.account.name, row.account.owner.username, row.ann_name or row.description, row.description, row.effective_label]
+        writer.writerow([f"{row.posted_on:%Y-%m-%d}", *map(csv_cell, names), "Pending" if row.pending else "Posted",
+                         f"{row.amount_cents // 100}.{row.amount_cents % 100:02d}", csv_cell(row.ann_note or "")])
+    return response
 
 
 @login_required

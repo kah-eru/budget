@@ -2,6 +2,8 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, night, latest): "add some of the settings features, email/password/username change confirmations via email, settings page, export csv, change light/dark mode". User chose **notify after** for password/username (current password required, then a notice to the verified email); email change confirms by a link to the new address. Built Settings (replaces More), username/email changes, CSV export from the Timeline, System/Light/Dark theme. 93 Django tests OK, 6/6 Chrome checks. Committed locally; **not pushed**. Details: [development guide](docs/development.md#settings-login-changes-csv-export-theme--september-25-night-latest). Suggested next settings (not built): sign out other devices, delete account and data, default workspace, two-factor login.
+
 Latest request (2026-09-25, night, later): "make the ui something more like this" (Robinhood reference screenshots). Rebuilt to a flat layout: hero spending number + change vs previous period + bare chart + period chips on Overview and Timeline, stat rows, per-account pink value pills, icon bottom nav, filters in a disclosure; serif/mono fonts and the receipt style removed. 78 Django tests OK, 5/5 Chrome checks, light/dark screenshots reviewed. Pushed on "push" (`feat` cefc49b, `main` 3e16730); Render redeploys after CI (not checked by the agent). Details: [development guide](docs/development.md#robinhood-style-layout--september-25-night-later).
 
 Latest request (2026-09-25, night): "Do the frontend first with these colors" (white + pink light; coffee bean + black cherry dark; more colours coming). Used `frontend-design` + `apple-design`. Built a token theme in `assets/app.css` (palette block -> roles -> Tailwind utilities), self-hosted Young Serif / Hanken Grotesk / Martian Mono, receipt-style spending summaries, OS-driven dark mode; templates moved off gray utilities. 78 Django tests OK, 5/5 Chrome checks, light/dark phone screenshots reviewed. Committed locally; **not pushed**. Details: [development guide](docs/development.md#visual-theme--september-25-night). Next: CSV import/export, then Plaid sandbox (milestone 3).
@@ -87,8 +89,8 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 ## Ordered next steps
 
 1. Done 2026-09-25: Render preview live, owner signed in. Optional: try a synthetic invite (link appears in Render Logs).
-2. Done 2026-09-25 (local commit): Bklit chart. Next: CSV import/export (imported amounts read-only per spec). Optional: trim the chart chunk (mostly React DOM + Motion).
-3. Optional login follow-ups not built: email change while signed in, web-based first-user setup (still `createsuperuser`). Apply apple-design springs once Motion drives real transitions.
+2. Done 2026-09-25 (local commit): Bklit chart. CSV export done. Next: CSV import (imported amounts read-only per spec). Optional: trim the chart chunk (mostly React DOM + Motion).
+3. Optional login follow-ups not built: web-based first-user setup (still `createsuperuser`). Apply apple-design springs once Motion drives real transitions.
 4. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
 
 ## Git and documentation state

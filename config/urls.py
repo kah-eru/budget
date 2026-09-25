@@ -1,5 +1,6 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
+from django.views.generic import RedirectView
 
 from budget import views
 from budget import invitation_views
@@ -13,7 +14,11 @@ urlpatterns = [
     path("password-reset/sent/", auth_views.PasswordResetDoneView.as_view(), name="password_reset_done"),
     path("password-reset/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(), name="password_reset_confirm"),
     path("password-reset/complete/", auth_views.PasswordResetCompleteView.as_view(), name="password_reset_complete"),
-    path("more/", views.more, name="more"),
+    path("more/", RedirectView.as_view(pattern_name="settings")),
+    path("settings/", views.settings_page, name="settings"),
+    path("settings/username/", views.username_change, name="username_change"),
+    path("settings/email/", views.email_change, name="email_change"),
+    path("settings/email/<str:token>/", views.email_change_confirm, name="email_change_confirm"),
     path("settings/password/", views.PasswordChange.as_view(), name="password_change"),
     path("email/verify/", invitation_views.email_verify, name="email_verify"),
     path("email/verify/<str:token>/", invitation_views.email_verify, name="email_verify_confirm"),
@@ -29,6 +34,7 @@ urlpatterns = [
     path("groups/new/", views.group_create, name="group_create"),
     path("workspaces/<int:workspace_id>/", views.workspace_detail, name="workspace"),
     path("workspaces/<int:workspace_id>/transactions/", views.transaction_list, name="transactions"),
+    path("workspaces/<int:workspace_id>/transactions/export.csv", views.transaction_export, name="transaction_export"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/", views.account_detail, name="account_detail"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/new/", views.transaction_edit, name="transaction_create"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/<int:transaction_id>/", views.transaction_edit, name="transaction_edit"),

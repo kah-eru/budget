@@ -1,0 +1,34 @@
+{% extends 'budget/base.html' %}
+{% block content %}
+<h1 class="mb-6 text-3xl">Settings</h1>
+<section aria-labelledby="login-title" class="card">
+  <h2 id="login-title" class="text-sm font-semibold text-accent-text">Your login</h2>
+  <a class="stat-row chevron" href="{% url 'username_change' %}"><span class="min-w-0 flex-1"><span class="block font-medium">Change username</span><span class="block break-all text-sm text-muted">{{ user.username }}</span></span></a>
+  <a class="stat-row chevron" href="{% url 'email_change' %}"><span class="min-w-0 flex-1"><span class="block font-medium">Change email</span><span class="block break-all text-sm text-muted">{{ user.email|default:"No email set" }}{% if user.email %} · {% if verified %}Verified{% else %}Not verified{% endif %}{% endif %}</span></span></a>
+  {% if user.email and not verified %}<a class="stat-row chevron" href="{% url 'email_verify' %}"><span class="flex-1 font-medium">Verify email</span></a>{% endif %}
+  <a class="stat-row chevron" href="{% url 'password_change' %}"><span class="min-w-0 flex-1"><span class="block font-medium">Change password</span><span class="block text-sm text-muted">{% if verified %}We email you after every change.{% else %}Verify your email to get change notices and password recovery.{% endif %}</span></span></a>
+</section>
+<section aria-labelledby="look-title" class="card">
+  <h2 id="look-title" class="mb-3 text-sm font-semibold text-accent-text">Appearance</h2>
+  <fieldset data-theme-picker hidden>
+    <legend class="sr-only">Colour theme on this device</legend>
+    <div class="flex gap-1 rounded-full bg-sunken p-1">
+      <label class="segment"><input class="sr-only" type="radio" name="theme" value="system">System</label>
+      <label class="segment"><input class="sr-only" type="radio" name="theme" value="light">Light</label>
+      <label class="segment"><input class="sr-only" type="radio" name="theme" value="dark">Dark</label>
+    </div>
+  </fieldset>
+  <p class="mt-2 text-sm text-muted">System follows your phone or computer. The choice is saved on this device only.</p>
+</section>
+<section aria-labelledby="data-title" class="card">
+  <h2 id="data-title" class="text-sm font-semibold text-accent-text">Your data</h2>
+  {% if personal %}<a class="stat-row chevron" href="{% url 'transaction_export' personal.pk %}" download><span class="min-w-0 flex-1"><span class="block font-medium">Export transactions (CSV)</span><span class="block text-sm text-muted">This month, all your accounts. For another range or a group, use Export on its Timeline.</span></span></a>{% endif %}
+</section>
+<section aria-labelledby="create-title" class="card">
+  <h2 id="create-title" class="text-sm font-semibold text-accent-text">Add</h2>
+  <a class="stat-row chevron" href="{% url 'account_create' %}"><span class="min-w-0 flex-1"><span class="block font-medium">Add account</span><span class="block text-sm text-muted">A manual account. It starts private.</span></span></a>
+  <a class="stat-row chevron" href="{% url 'group_create' %}"><span class="min-w-0 flex-1"><span class="block font-medium">New group</span><span class="block text-sm text-muted">Share chosen accounts with a partner or friends.</span></span></a>
+  {% if personal %}<a class="stat-row chevron" href="{% url 'invitation_create' personal.pk %}"><span class="min-w-0 flex-1"><span class="block font-medium">Invite someone to Budget</span><span class="block text-sm text-muted">They get their own private login. Nothing is shared.</span></span></a>{% endif %}
+</section>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="secondary w-full" type="submit">Sign out</button></form>
+{% endblock %}

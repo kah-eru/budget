@@ -33,7 +33,7 @@
 
 - [x] 2026-09-25: timeline on the filtered list: one-month default range, two-year cap, `reporting.daily()` zero-filled daily + cumulative (plan fixture `[10000, 0, -1500]` / `[10000, 10000, 8500]`, equal to `spending()`), accessible daily table, day headers, cursor restart on data/permission revision change. Bottom nav Overview/Timeline/More; collapsible workspace switcher. Standalone invites (personal-workspace invitation, no access granted) and password change on More.
 
-This is not milestone 1 completion. Milestone 2 remaining: CSV import/export (the Bklit running-total chart landed 2026-09-25).
+This is not milestone 1 completion. Milestone 2 remaining: CSV import (the Bklit running-total chart and Timeline CSV export landed 2026-09-25).
 
 ## Global constraints
 

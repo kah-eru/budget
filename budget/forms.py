@@ -140,3 +140,46 @@ class VerifiedPasswordResetForm(PasswordResetForm):
         for user in super().get_users(email):
             if user.verified_email == user.email.lower() and claim_email_send(user):
                 yield user
+
+
+class CurrentPasswordMixin:
+    """A change to login details needs the current password, like Django's own password change."""
+
+    def check_password(self, user):
+        if not user.check_password(self.cleaned_data.get("current_password") or ""):
+            self.add_error("current_password", "Your current password was entered incorrectly.")
+
+
+class UsernameChangeForm(CurrentPasswordMixin, forms.ModelForm):
+    current_password = forms.CharField(widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}))
+
+    class Meta:
+        model = User
+        fields = ["username"]
+
+    def clean(self):
+        data = super().clean()
+        self.check_password(self.instance)
+        return data
+
+
+class EmailChangeForm(CurrentPasswordMixin, forms.Form):
+    email = forms.EmailField(label="New email address", max_length=254)
+    current_password = forms.CharField(widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}))
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip().lower()
+        if email == self.user.email.lower():
+            raise forms.ValidationError("That is already your email address.")
+        if User.objects.filter(email__iexact=email).exclude(pk=self.user.pk).exists():
+            raise forms.ValidationError("Another login already uses this email.")
+        return email
+
+    def clean(self):
+        data = super().clean()
+        self.check_password(self.user)
+        return data

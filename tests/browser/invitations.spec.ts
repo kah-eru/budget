@@ -19,7 +19,7 @@ test("invited registration, email confirmation and sharing access work without J
   await page.getByLabel("Username", { exact: true }).fill("browser-check");
   await page.getByLabel("Password", { exact: true }).fill("synthetic-browser-check-only");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("link", { name: /^New group/ }).click();
   await page.getByLabel("Name", { exact: true }).fill("Invitation check " + suffix);
   await page.getByRole("button", { name: "Create group", exact: true }).click();
@@ -36,7 +36,7 @@ test("invited registration, email confirmation and sharing access work without J
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: ".local/invitations-phone.png", fullPage: true });
   const invitation = await latestMailLink("invitations");
-  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await page.goto(invitation);
   await page.getByRole("link", { name: "Create invited account" }).click();
@@ -68,19 +68,19 @@ test("standalone invitation creates a private login with no group access", async
   await page.getByLabel("Username", { exact: true }).fill("browser-check");
   await page.getByLabel("Password", { exact: true }).fill("synthetic-browser-check-only");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   for (const width of [320, 360]) {
     await page.setViewportSize({ width, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
-  await page.screenshot({ path: ".local/more-phone.png", fullPage: true });
+  await page.screenshot({ path: ".local/settings-phone.png", fullPage: true });
   await page.getByRole("link", { name: /^Invite someone to Budget/ }).click();
   await page.getByLabel("Their email address").fill(`solo-${suffix}@example.com`);
   await page.getByLabel("I understand they get their own private login").check();
   await page.getByRole("button", { name: "Send invitation", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Invitation sent");
   const invitation = await latestMailLink("invitations");
-  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await page.goto(invitation);
   await expect(page.getByRole("heading", { name: "Create your Budget login" })).toBeVisible();

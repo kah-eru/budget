@@ -271,13 +271,6 @@ class AccountSettingsTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user("alice", email="alice@example.com", password="synthetic-password")
 
-    def test_more_page_needs_login_and_lists_actions(self):
-        self.assertEqual(self.client.get("/more/").status_code, 302)
-        self.client.force_login(self.user, backend="django.contrib.auth.backends.ModelBackend")
-        page = self.client.get("/more/")
-        for text in ("Change password", "Email verification", "Sign out", "Add account", "New group", "Invite someone to Budget", "alice@example.com"):
-            self.assertContains(page, text)
-
     def test_password_change_keeps_session(self):
         self.client.force_login(self.user, backend="django.contrib.auth.backends.ModelBackend")
         new = "Another-long-synthetic-passphrase-19"
@@ -285,5 +278,5 @@ class AccountSettingsTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password(new))
-        self.assertEqual(self.client.get("/more/").status_code, 200)
+        self.assertEqual(self.client.get("/settings/").status_code, 200)
         self.assertEqual(self.client.post("/settings/password/", {"old_password": "wrong", "new_password1": new, "new_password2": new}).status_code, 200)

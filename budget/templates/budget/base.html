@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <title>{% block title %}Budget{% endblock %}</title>
+  <script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
   <link rel="stylesheet" href="{% static 'budget/dist/app.css' %}">
   <script type="module" src="{% static 'budget/dist/app.js' %}"></script>
 </head>
@@ -40,7 +41,7 @@
       {% with here=request.resolver_match.url_name %}
       <a href="{% if workspace %}{% url 'workspace' workspace.pk %}{% else %}{% url 'home' %}{% endif %}" class="nav-link" {% if here == 'workspace' or here == 'account_detail' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 4 8-9"/><path d="M3 21h18"/></svg>Overview</a>
       <a href="{% if workspace %}{% url 'transactions' workspace.pk %}{% elif personal %}{% url 'transactions' personal.pk %}{% else %}{% url 'home' %}{% endif %}" class="nav-link" {% if here == 'transactions' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>Timeline</a>
-      <a href="{% url 'more' %}" class="nav-link" {% if here == 'more' or here == 'account_create' or here == 'group_create' or here == 'password_change' or here == 'email_verify' or here == 'invitation_create' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>More</a>
+      <a href="{% url 'settings' %}" class="nav-link" {% if here in 'settings username_change email_change email_change_confirm password_change email_verify account_create group_create invitation_create' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Settings</a>
       {% endwith %}
     </div>
   </nav>
