@@ -24,12 +24,13 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .account_mail import notify
 from .forms import (
-    AccountForm, AnnotationForm, CategoryForm, EmailChangeForm, GroupForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+    AccountForm, AnnotationForm, CategoryForm, EmailChangeForm, GroupForm, RuleForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Category, Membership, MembershipNotice, Transaction, TransactionAnnotation, User, Workspace
+from .models import Category, Membership, MembershipNotice, Rule, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, by_category, daily, monthly, spending, visible_transactions
+from .rules import categorize, categorize_everywhere, matches
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
 
@@ -316,6 +317,7 @@ def transaction_edit(request, workspace_id, account_id, transaction_id=None):
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             form.save()
+            categorize_everywhere(form.instance)
             bump_account_data(account)
         messages.success(request, "Transaction saved.")
         return redirect(back)
@@ -371,11 +373,47 @@ def category_edit(request, workspace_id, category_id):
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             form.save()
+            if category.archived:
+                category.rules.update(enabled=False)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
-        messages.success(request, "Category saved.")
+        messages.success(request, "Category saved." + (" Its rules are now off." if category.archived else ""))
         return redirect(back)
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": f"Edit {category.name}", "action": "Save category",
                   "cancel_url": back, "help": f"Renaming changes the label on every {workspace.name} transaction in this category."}, status=400 if request.method == "POST" else 200)
+
+
+@login_required
+def rule_list(request, workspace_id):
+    workspace = get_workspace(request.user, workspace_id)
+    return render(request, "budget/rules.html", {**page_context(request.user, workspace),
+                  "rules": workspace.rules.select_related("category").order_by("priority", "pk")})
+
+
+PREVIEW_SIZE = 20
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def rule_edit(request, workspace_id, rule_id=None):
+    """Any member may manage rules: they only change this workspace's overlay, never the original entries."""
+    workspace = get_workspace(request.user, workspace_id)
+    rule = get_object_or_404(workspace.rules, pk=rule_id) if rule_id else Rule(workspace=workspace)
+    form = RuleForm(request.POST if request.method == "POST" else None, instance=rule)
+    back = reverse("rules", args=[workspace.pk])
+    context = {**page_context(request.user, workspace), "form": form, "cancel_url": back, "rule": rule}
+    if request.method == "POST" and form.is_valid():
+        # ponytail: matches in Python over every visible row (casefold has no SQL equivalent); batch it if history grows large.
+        history = Transaction.objects.filter(account__in=visible_accounts(request.user, workspace)).order_by("-posted_on", "-pk")
+        if "preview" in request.POST:
+            found = [row for row in history.only("pk", "posted_on", "description", "amount_cents") if matches(form.instance, row.description)]
+            return render(request, "budget/rule_form.html", {**context, "preview": found[:PREVIEW_SIZE], "match_count": len(found)})
+        with transaction.atomic():
+            form.save()
+            changed = categorize(history.only("pk", "description"), workspace) if form.cleaned_data["apply_existing"] else 0
+            Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
+        messages.success(request, "Rule saved." + (f" {changed} existing transaction{'s' if changed != 1 else ''} updated." if form.cleaned_data["apply_existing"] else ""))
+        return redirect(back)
+    return render(request, "budget/rule_form.html", context, status=400 if request.method == "POST" else 200)
 
 
 @login_required

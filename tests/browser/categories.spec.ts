@@ -42,4 +42,20 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByLabel("Name", { exact: true }).fill("Pets " + suffix);
   await page.getByRole("button", { name: "Add category" }).click();
   await expect(page.getByRole("link", { name: "Pets " + suffix })).toBeVisible();
+
+  // A rule previews its matches; applying it to history keeps the hand-picked Groceries.
+  await page.getByRole("link", { name: /^Rules/ }).click();
+  await page.getByRole("link", { name: "Add rule" }).click();
+  await page.getByLabel("Text").fill("market " + suffix);
+  await page.getByLabel("Category").selectOption({ label: "Pets " + suffix });
+  await page.getByRole("button", { name: "Preview matches" }).click();
+  await expect(page.getByRole("status")).toContainText("1 transaction matches");
+  await expect(page.getByRole("status")).toContainText("Market " + suffix);
+  await page.setViewportSize({ width: 360, height: 800 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+  await page.screenshot({ path: ".local/rule-preview-phone.png", fullPage: true });
+  await page.getByLabel("Also apply to existing transactions").check();
+  await page.getByRole("button", { name: "Save rule" }).click();
+  await expect(page.locator("body")).toContainText("0 existing transactions updated");
+  await expect(page.getByRole("link", { name: new RegExp("Name contains “market " + suffix) })).toBeVisible();
 });

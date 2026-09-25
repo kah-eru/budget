@@ -111,6 +111,19 @@ class TransactionAnnotation(models.Model):
     classification = models.CharField(max_length=10, choices=Transaction.CLASSIFICATIONS, null=True, blank=True)
     note = models.CharField(max_length=500, blank=True)
     category = models.ForeignKey(Category, on_delete=models.RESTRICT, null=True, blank=True)
+    # "manual" choices (including a manual Uncategorized) are never changed by rules.
+    category_source = models.CharField(max_length=6, choices=[("manual", "Manual"), ("rule", "Rule")], blank=True)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["transaction", "workspace"], name="annotation_one_per_workspace")]
+
+
+class Rule(models.Model):
+    # Matches the original description, never the edited display name. Lower priority runs first; ties by id.
+    KINDS = [("contains", "Name contains"), ("exact", "Name is exactly")]
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="rules")
+    kind = models.CharField(max_length=8, choices=KINDS, default="contains")
+    pattern = models.CharField(max_length=100)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="rules")
+    priority = models.PositiveIntegerField(default=100)
+    enabled = models.BooleanField(default=True)

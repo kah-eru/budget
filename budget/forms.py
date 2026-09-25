@@ -7,7 +7,8 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .invitations import claim_email_send
-from .models import Account, Category, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, Category, Rule, Transaction, TransactionAnnotation, User, Workspace
+from .rules import normalize
 
 
 class AccountForm(forms.ModelForm):
@@ -51,6 +52,11 @@ class AnnotationForm(forms.ModelForm):
         self.fields["display_name"].help_text = f"Leave blank to show the original: {source.description or '(no description)'}"
         self.fields["classification"].choices = [("", f"Original ({source.get_classification_display()})"), *Transaction.CLASSIFICATIONS]
         self.fields["note"].label = "Personal note (only you)" if personal else "Group note (everyone in this group)"
+
+    def save(self, commit=True):
+        if "category" in self.changed_data:
+            self.instance.category_source = "manual"
+        return super().save(commit)
 
 
 class TransactionFilterForm(forms.Form):
@@ -113,6 +119,28 @@ class CategoryForm(forms.ModelForm):
         if taken.exists():
             raise forms.ValidationError("This workspace already has a category with that name.")
         return name
+
+
+class RuleForm(forms.ModelForm):
+    apply_existing = forms.BooleanField(label="Also apply to existing transactions", required=False,
+                                        help_text="Categories you picked by hand are kept.")
+
+    class Meta:
+        model = Rule
+        fields = ["kind", "pattern", "category", "priority", "enabled"]
+        labels = {"kind": "Match", "pattern": "Text", "priority": "Priority"}
+        help_texts = {"pattern": "Compared with the original bank or entry name, ignoring case and extra spaces.",
+                      "priority": "Lower numbers are checked first."}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = self.instance.workspace.categories.filter(
+            Q(archived=False) | Q(pk=self.instance.category_id)).order_by("name")
+
+    def clean_pattern(self):
+        if not normalize(self.cleaned_data["pattern"]):
+            raise forms.ValidationError("Enter the text to match.")
+        return " ".join(self.cleaned_data["pattern"].split())
 
 
 class GroupForm(forms.ModelForm):

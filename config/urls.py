@@ -41,6 +41,9 @@ urlpatterns = [
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/<int:transaction_id>/annotate/", views.annotation_edit, name="annotation_edit"),
     path("workspaces/<int:workspace_id>/categories/", views.category_list, name="categories"),
     path("workspaces/<int:workspace_id>/categories/<int:category_id>/", views.category_edit, name="category_edit"),
+    path("workspaces/<int:workspace_id>/rules/", views.rule_list, name="rules"),
+    path("workspaces/<int:workspace_id>/rules/new/", views.rule_edit, name="rule_create"),
+    path("workspaces/<int:workspace_id>/rules/<int:rule_id>/", views.rule_edit, name="rule_edit"),
     path("workspaces/<int:workspace_id>/sharing/", views.sharing, name="sharing"),
     path("workspaces/<int:workspace_id>/members/<int:member_id>/remove/", views.member_remove, name="member_remove"),
 ]

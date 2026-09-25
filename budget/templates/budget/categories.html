@@ -10,5 +10,9 @@
     {% endfor %}
   </ul>
 </section>
+<section aria-labelledby="rules-link-title" class="card">
+  <h2 id="rules-link-title" class="text-sm font-semibold text-accent-text">Automatic</h2>
+  <a class="stat-row chevron" href="{% url 'rules' workspace.pk %}"><span class="min-w-0 flex-1"><span class="block font-medium">Rules</span><span class="block text-sm text-muted">Set categories from names, like “STARBUCKS” → Dining.</span></span></a>
+</section>
 <a class="secondary" href="{% url 'workspace' workspace.pk %}">Back to overview</a>
 {% endblock %}
