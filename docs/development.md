@@ -119,7 +119,7 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 - **More page** (`more/`): username, email + verified status, Change password (Django `PasswordChangeView` at `settings/password/`, session kept), Email verification, Sign out; Add account, New group, Invite someone to Budget. The header now shows only the username.
 - **Navigation**: bottom nav is Overview | Timeline | More. The workspace switcher is a native `<details>` ("Workspace: <name>"), one line when closed, which fixes the long list on phones.
 - Build CSS 11.82 kB gzip, JS 4.96 kB. 5/5 Chrome checks (new standalone-invite journey with JavaScript disabled). 360px screenshots of Timeline, More and the switcher reviewed; no overflow at 320/360 (plus the existing width matrices).
-- Not done: email change while signed in (operator), a page-size parameter (fixed 50), web-based first-user setup (still `createsuperuser`), Bklit chart.
+- Not done: email change while signed in (operator), a page-size parameter (fixed 50), web-based first-user setup (still `createsuperuser`).
 
 ## Online preview configuration — September 25
 
@@ -129,4 +129,13 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 
 ## Next
 
-Continue milestone 2: Bklit chart over the daily series, then CSV import/export. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Timeline chart — September 25 (night)
+
+- First mounted React component: a Bklit `AreaChart` of the running posted total (`assets/spending-chart.tsx`) on the Timeline. Data comes from the page's `reporting.daily()` series via `json_script` (`daily-series`); the tooltip shows the running total and that day's net. The daily totals table stays as the accessible equivalent; the chart container is `role="img"` with a summary label and stays `hidden` if the script fails or JavaScript is off.
+- Bklit source (MIT, copyright uixmat) copied from the registry into `assets/components/charts/`, `assets/components/shimmering-text.tsx` and `assets/lib/utils.ts` (only the area-chart item and its registry dependencies). One import path was fixed to `@/components/shimmering-text`. Added pinned deps: `@number-flow/react` 0.6.2, `@visx/{curve,event,grid,responsive,scale,shape}` 4.0.1-alpha.0 (the registry's pinned version), `clsx`, `d3-array`, `d3-shape`, `tailwind-merge` (MIT/ISC). Chart theme tokens (`--chart-*`) are defined in `assets/app.css` on the gray palette.
+- `vite.config.ts` now does a normal app build (was library mode, which skipped minification and left development React): `base: "./"` so the lazily imported chunk resolves beside `app.js`. Measured: initial `app.js` 4.63 kB gzip, CSS 12.51 kB gzip; deferred `spending-chart-*.js` 162.56 kB gzip, loaded only when a page has `[data-spending-chart]`. Mostly React DOM and Motion's React build. Initial budget (150 KiB) holds; the deferred cost is recorded, not yet optimised.
+- Reduced motion: `MotionConfig reducedMotion="user"` and a zero reveal duration. After a resize the chart re-measures after a short debounce, so the browser width checks poll.
+- Verified: 78 Django tests OK (4 PG-only skipped), `check` clean, build OK, production-mode `collectstatic` OK, 5/5 Chrome checks (Timeline spec asserts the chart SVG renders); 360px screenshot reviewed (`.local/transactions-phone.png`, `.local/chart-dbg.png`).
+- Not done: keyboard access to chart points (the table covers it), a y-axis, category charts (milestone 4).
+
+Continue milestone 2: CSV import/export. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

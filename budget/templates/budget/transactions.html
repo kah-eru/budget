@@ -23,6 +23,8 @@
     <div><dt class="text-sm text-gray-600">Pending (estimate)</dt><dd class="text-2xl font-semibold tabular-nums">{{ totals.pending_cents|dollars }}</dd></div>
     <div><dt class="text-sm text-gray-600">Income</dt><dd class="text-2xl font-semibold tabular-nums">{{ totals.income_cents|dollars }}</dd></div>
   </dl>
+  <div data-spending-chart hidden class="mt-4" role="img" aria-label="Running posted spending by day, {{ start|date:'M j' }} to {{ end|date:'M j' }}. The daily totals table has the same numbers."></div>
+  {{ days|json_script:'daily-series' }}
   <details class="mt-4">
     <summary class="workspace-summary">Daily totals table<span aria-hidden="true">▾</span></summary>
     <div class="mt-3 max-h-96 overflow-auto" role="region" aria-label="Daily spending" tabindex="0">

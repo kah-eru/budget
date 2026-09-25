@@ -6,6 +6,17 @@
 
 @layer base {
   body { font-family: ui-sans-serif, system-ui, sans-serif; }
+  /* Bklit chart tokens mapped onto the app's gray palette. */
+  :root {
+    --foreground: var(--color-gray-900); --muted-foreground: var(--color-gray-600);
+    --chart-1: var(--color-blue-700); --chart-2: var(--color-gray-500); --chart-3: var(--color-gray-400); --chart-4: var(--color-gray-300); --chart-5: var(--color-gray-200);
+    --chart-background: #fff; --chart-foreground: var(--color-gray-900); --chart-foreground-muted: var(--color-gray-600); --chart-label: var(--color-gray-600);
+    --chart-line-primary: var(--color-blue-700); --chart-line-secondary: var(--color-gray-500); --chart-crosshair: var(--color-gray-400); --chart-grid: var(--color-gray-200);
+    --chart-indicator-color: var(--color-gray-400); --chart-indicator-secondary-color: var(--color-gray-300); --chart-tooltip-background: rgb(255 255 255 / 0.95);
+    --chart-marker-background: #fff; --chart-marker-border: var(--color-gray-300); --chart-marker-foreground: var(--color-gray-900);
+    --chart-marker-badge-background: var(--color-gray-900); --chart-marker-badge-foreground: #fff;
+    --chart-segment-background: var(--color-gray-100); --chart-segment-line: var(--color-gray-400); --chart-brush-border: var(--color-gray-300); --shimmering-color: var(--color-gray-400);
+  }
   /* Scrolled-to and focused controls stop above the fixed bottom nav. */
   html { scroll-padding-bottom: 6rem; }
   a, button, input, select { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }

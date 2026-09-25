@@ -8,3 +8,13 @@ if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     animate(element, { backgroundColor: ["#e5e7eb", "#ffffff"] }, { duration: 0.2 });
   });
 }
+
+// Chart code loads only on pages that have a chart; a load failure leaves the table in place.
+const chart = document.querySelector<HTMLElement>("[data-spending-chart]");
+const series = document.getElementById("daily-series");
+if (chart && series) {
+  import("./spending-chart").then(({ mount }) => {
+    mount(chart, JSON.parse(series.textContent || "[]"));
+    chart.hidden = false;
+  }).catch(() => {});
+}

@@ -28,16 +28,20 @@ test("search transactions, edit from a filtered list and return to it; year view
   const filtered = page.url();
   await expect(page.locator("main")).toContainText("Coffee " + suffix);
   await expect(page.locator("main")).not.toContainText("Hardware " + suffix);
+  const chart = page.getByRole("img", { name: /^Running posted spending/ });
+  await expect(chart.locator("svg").first()).toBeVisible();
   await page.getByRole("link", { name: new RegExp("^Edit Coffee " + suffix) }).click();
   await page.getByLabel("Display name").fill("Morning coffee " + suffix);
   await page.getByRole("button", { name: "Save changes" }).click();
   expect(page.url()).toBe(filtered);
   await expect(page.locator("main")).toContainText("Morning coffee " + suffix);
+  // The chart re-measures shortly after a resize, so poll instead of reading once.
   for (const width of [320, 360, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
   await page.setViewportSize({ width: 360, height: 800 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
   await page.screenshot({ path: ".local/transactions-phone.png", fullPage: true });
   await page.getByRole("link", { name: /^Back to / }).click();
   await page.getByRole("link", { name: "Year", exact: true }).click();
