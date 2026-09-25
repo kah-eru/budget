@@ -203,8 +203,8 @@ Create files only when their milestone needs them. Framework-required package fi
 
 - [ ] Enforce one alert per recipient/budget/period in the database. Test duplicate evaluation, concurrent workers, refund/recrossing, month rollover, and device retry without duplicate inbox rows.
 - [x] (2026-09-25) Add unread/read inbox state and budget links. Recompute financial details from currently authorized records rather than storing stale amounts in notification text.
-- [ ] Add device-specific push subscription/unsubscription and endpoint validation against SSRF. Request browser permission only on an explicit action.
-- [ ] Use a maintained Web Push library and server-held VAPID keys. Persist per-device attempts, retry temporary failure, expire invalid subscriptions, and use a stable browser notification tag.
+- [x] (2026-09-25) Add device-specific push subscription/unsubscription and endpoint validation against SSRF. Request browser permission only on an explicit action.
+- [x] (2026-09-25; no retry queue yet, failures are logged and gone devices removed) Use a maintained Web Push library and server-held VAPID keys. Persist per-device attempts, retry temporary failure, expire invalid subscriptions, and use a stable browser notification tag.
 - [ ] Test member removal/share revocation after enqueue but before dispatch: no financial detail or unauthorized push can be sent. Test following an old notification URL after revocation.
 - [ ] Cache public assets only. Test that logout/another user's login cannot recover financial pages from a service-worker cache.
 - [ ] Run `python manage.py test budget.tests.test_notifications`; then verify actual push on both users' phones, installation guidance where required, denied permission, logout, and tapping an alert after session expiry.

@@ -289,4 +289,40 @@ Verification:
 - 8/8 Chrome checks. The new `budgets.spec.ts` covers income, a fixed bill, a yearly cost, the plan card, and a split with the "left to split" error.
 - Light and dark screenshots reviewed.
 
-Continue: rule split templates, phone push, email alerts (provider needed), CSV import, then milestone 9 (reports, goals, recurring, net worth) (requested 2026-09-25), then phone push. Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Rule split templates and phone push — September 25 (night, latest)
+
+Why: the user said "ok continue on the list". The next items were rule split templates, then phone push.
+
+Rule split templates (`Rule.split_category`, `Rule.split_percent`, `SplitLine.from_rule`, migration 0012; `rules.largest_remainder`):
+- A rule can split what it matches: the first category gets (100 − p)% and **Split with** gets p% (1–99, a different category). For example, "COSTCO → Groceries 70% / Shopping 30%".
+- Amounts use largest-remainder rounding, so the lines always add up exactly: $10.01 at 70/30 gives $7.01 + $3.00. This is checked for every total from 1¢ to $3.99.
+- `categorize` rewrites only rule-made lines. A hand-made split, or a category picked by hand, counts as a manual choice and is never touched; picking a category by hand also drops a rule split. Changing the rule to no split removes its lines on the next application.
+- Archiving either category turns the rule off.
+- Two-way splits only, marked `ponytail:` in the model (a lines table would be the upgrade).
+
+Phone push (`PushSubscription`, migration 0013; `budget/push.py`; `assets/push.ts`; `/sw.js`; `manage.py vapid_keys`; new dependency `pywebpush` 2.5.0 with pinned transitive packages):
+- **Settings → Notifications → Turn on for this device** asks for browser permission only on that tap. It then registers `/sw.js` and saves the subscription.
+  - **Turn off** removes it from the server and the browser.
+  - On iPhone it works once Budget is added to the Home Screen; the page says so.
+  - The section stays hidden without JavaScript, push support, or server keys.
+- Security:
+  - Subscription endpoints must be HTTPS on a known push service (FCM, Mozilla, Apple, Windows). This SSRF guard rejects metadata IPs and look-alike URLs.
+  - Unsubscribing only removes the signed-in user's own device.
+  - The service worker has **no fetch handler**, so no page or financial data is ever cached.
+- Delivery:
+  - Only a *new, non-silent* budget crossing pushes: after commit, once per subscribed device of each new recipient.
+  - The text is generic ("A budget went over its limit. Open Budget to see which one.") and opens Alerts. Lock screens never show names or amounts.
+  - Every push uses the tag `budget-alert`, so a rare concurrent double send shows as one notification.
+  - Devices reported gone (404/410) are deleted; other failures are logged.
+  - Sending is inline with a 5 s timeout per device, marked `ponytail:` (move to a worker queue later).
+- **Push is off until the owner sets both keys in Render** (see the operations guide). The browser test server generates throwaway keys per run.
+- Not verified end to end: Chrome under Playwright refuses push subscriptions ("Registration failed - permission denied" even with the push permission granted through DevTools). The first real delivery check is on the owner's phone after the keys are set. The server side is covered by mocked tests, and the key format was verified to sign VAPID headers.
+
+Verification:
+- 144 Django tests OK on SQLite (4 PG-only skipped), including new `test_rule_splits.py` (5) and `test_push.py` (5).
+- Push, alerts and splits 20/20 on Neon PostgreSQL.
+- Migration drift clean.
+- 8/8 Chrome checks. Budgets covers a 70/30 split rule; Settings covers the Notifications section and a push-only `/sw.js`.
+- Initial JS 1.22 kB gzip; the push chunk is 0.87 kB and loads only on Settings.
+
+Continue: email alerts (provider needed), CSV import, then milestone 9 (reports, goals, recurring, net worth) (requested 2026-09-25), then phone push. Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
