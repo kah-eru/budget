@@ -5,6 +5,7 @@ from django.http import Http404
 from django.utils import timezone
 
 from .models import Account, AccountShare, Membership, Workspace
+from .notifications import evaluate
 from .permissions import get_workspace
 
 
@@ -34,6 +35,7 @@ def replace_shares(user, workspace_id, account_ids):
     for account_id in owned_ids:
         AccountShare.objects.get_or_create(workspace=workspace, account_id=account_id)
     bump_permissions(workspace)
+    evaluate(workspace)
 
 
 @transaction.atomic

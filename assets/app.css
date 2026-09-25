@@ -166,6 +166,10 @@
   .category-bar { @apply mt-2 block h-1.5 overflow-hidden rounded-full bg-sunken; }
   .category-bar > span { @apply block h-full rounded-full bg-accent; }
   .category-bar.is-over > span { @apply bg-danger; }
+  .alerts-link { @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-semibold text-muted; }
+  .alerts-link svg { @apply size-5; }
+  .alerts-link.has-unread { @apply bg-accent px-3 text-on-accent; }
+  .unread-dot { @apply mr-2 inline-block size-2 rounded-full bg-accent align-middle; }
   .chevron::after { content: "›"; @apply ml-2 text-lg text-muted; }
   /* The chart's space is held before its code loads, so nothing below it moves. No JavaScript: no slot (the table has the numbers). */
   .chart-slot { display: none; aspect-ratio: 2.4 / 1; }

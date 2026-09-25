@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 
 from .models import Invitation, Membership, MembershipNotice, User, Workspace
+from .notifications import baseline_member
 from .permissions import get_workspace
 from .sharing import bump_permissions
 
@@ -126,6 +127,7 @@ def accept_invitation(user, token):
                 for recipient in recipients - {user.pk}
             ])
             bump_permissions(workspace)
+            baseline_member(workspace, user)
     invitation.accepted_at = timezone.now()
     invitation.save(update_fields=["accepted_at"])
     return workspace

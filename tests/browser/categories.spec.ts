@@ -53,6 +53,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await expect(page.getByRole("status")).toContainText("Market " + suffix);
   await page.setViewportSize({ width: 360, height: 800 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));  // let the page crossfade end
   await page.screenshot({ path: ".local/rule-preview-phone.png", fullPage: true });
   await page.getByLabel("Also apply to existing transactions").check();
   await page.getByRole("button", { name: "Save rule" }).click();
@@ -76,4 +77,28 @@ test("categorize a transaction, see it by category on Overview, filter the timel
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
     await budgets.getByRole("link", { name: new RegExp("market " + suffix) }).screenshot({ path: `.local/budget-${scheme}.png` });
   }
+
+  // A $5 budget this month, then a $6 purchase today: one alert in the header and the inbox.
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.getByRole("link", { name: "Manage budgets" }).click();
+  await page.getByRole("link", { name: "Add budget" }).click();
+  await page.getByLabel("Or a name containing").fill("alert " + suffix);
+  await page.getByLabel("Limit (USD)").fill("5");
+  await page.getByRole("button", { name: "Save budget" }).click();
+  await page.goto("/");
+  await page.getByRole("link", { name: accountName }).click();
+  await page.getByRole("link", { name: "Add transaction" }).click();
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  await page.getByLabel("Date").fill(today);
+  await page.getByLabel("Amount (USD)").fill("6.00");
+  await page.getByLabel("Description").fill("Alert " + suffix);
+  await page.getByRole("button", { name: "Save transaction" }).click();
+  await page.getByRole("link", { name: /new alert/ }).click();
+  await expect(page.locator("main")).toContainText("Name contains “alert " + suffix + "” went over budget");
+  await expect(page.locator("main")).toContainText("$1.00 over");
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));  // let the page crossfade end
+  await page.screenshot({ path: ".local/alerts-phone.png" });
+  await page.reload();
+  await expect(page.getByRole("link", { name: /new alert/ })).toHaveCount(0);
 });

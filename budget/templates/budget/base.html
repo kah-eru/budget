@@ -33,7 +33,10 @@
     <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
       <a href="{% url 'home' %}" class="text-xl font-bold tracking-tight">Budget<span class="text-accent" aria-hidden="true">.</span></a>
       {% if user.is_authenticated %}
-      <span class="break-all rounded-full bg-surface px-3 py-1 text-sm text-muted">{{ user.username }}</span>
+      <span class="flex items-center gap-2">
+        <a href="{% url 'alerts' %}" class="alerts-link{% if unread_alerts %} has-unread{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>{% if unread_alerts %}{{ unread_alerts }} new alert{{ unread_alerts|pluralize }}{% else %}<span class="sr-only">Alerts</span>{% endif %}</a>
+        <span class="break-all rounded-full bg-surface px-3 py-1 text-sm text-muted">{{ user.username }}</span>
+      </span>
       {% endif %}
     </header>
     {% if workspaces %}

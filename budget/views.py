@@ -27,9 +27,10 @@ from .forms import (
     AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, RuleForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Budget, Category, Membership, MembershipNotice, Rule, Transaction, TransactionAnnotation, User, Workspace
+from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice, Rule, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, daily, monthly, spending, visible_transactions
+from .notifications import evaluate, evaluate_account
 from .rules import categorize, categorize_everywhere, matches
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
@@ -54,7 +55,24 @@ def robots(request):
 
 def page_context(user, workspace=None):
     workspaces = list(visible_workspaces(user).order_by("-is_personal", "name", "pk"))
-    return {"workspace": workspace, "workspaces": workspaces, "personal": workspaces[0] if workspaces else None}
+    return {"workspace": workspace, "workspaces": workspaces, "personal": workspaces[0] if workspaces else None,
+            "unread_alerts": visible_alerts(user, workspaces).filter(read_at=None).count()}
+
+
+def visible_alerts(user, workspaces):
+    # An alert disappears with access: leaving a group hides its budgets' alerts.
+    return BudgetAlert.objects.filter(recipient=user, silent=False, budget__workspace__in=[w.pk for w in workspaces])
+
+
+@login_required
+def alerts(request):
+    context = page_context(request.user)
+    rows = list(visible_alerts(request.user, context["workspaces"]).select_related("budget__category", "budget__workspace").order_by("-created_at", "-pk")[:50])
+    for alert in rows:
+        # Amounts are recomputed from what this user can see now, never stored in the alert.
+        alert.progress = budget_progress(request.user, alert.budget.workspace, [alert.budget], alert.period_start)[0]
+    BudgetAlert.objects.filter(pk__in=[a.pk for a in rows if a.read_at is None]).update(read_at=timezone.now())
+    return render(request, "budget/alerts.html", {**context, "alerts": rows, "unread_alerts": 0})
 
 
 def email_verified(user):
@@ -322,6 +340,7 @@ def transaction_edit(request, workspace_id, account_id, transaction_id=None):
             form.save()
             categorize_everywhere(form.instance)
             bump_account_data(account)
+            evaluate_account(account)
         messages.success(request, "Transaction saved.")
         return redirect(back)
     title = "Edit transaction" if transaction_id else f"Add a transaction to {account.name}"
@@ -343,6 +362,7 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
         with transaction.atomic():
             form.save()
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
+            evaluate(workspace)
         messages.success(request, "Changes saved for this workspace only.")
         return redirect(back)
     where = "your personal view" if workspace.is_personal else workspace.name
@@ -402,7 +422,10 @@ def budget_edit(request, workspace_id, budget_id=None):
     form = BudgetForm(request.POST if request.method == "POST" else None, instance=budget)
     back = reverse("budgets", args=[workspace.pk])
     if request.method == "POST" and form.is_valid():
-        form.save()
+        with transaction.atomic():
+            form.save()
+            # Already over when set or edited: a silent baseline, so the first alert is a real crossing.
+            evaluate(workspace, silent=True, budgets=[form.instance])
         messages.success(request, "Budget saved.")
         return redirect(back)
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "cancel_url": back,
@@ -449,6 +472,7 @@ def rule_edit(request, workspace_id, rule_id=None):
         with transaction.atomic():
             form.save()
             changed = categorize(history.only("pk", "description"), workspace) if form.cleaned_data["apply_existing"] else 0
+            evaluate(workspace)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
         messages.success(request, "Rule saved." + (f" {changed} existing transaction{'s' if changed != 1 else ''} updated." if form.cleaned_data["apply_existing"] else ""))
         return redirect(back)

@@ -16,6 +16,7 @@ urlpatterns = [
     path("password-reset/complete/", auth_views.PasswordResetCompleteView.as_view(), name="password_reset_complete"),
     path("more/", RedirectView.as_view(pattern_name="settings")),
     path("settings/", views.settings_page, name="settings"),
+    path("alerts/", views.alerts, name="alerts"),
     path("settings/username/", views.username_change, name="username_change"),
     path("settings/email/", views.email_change, name="email_change"),
     path("settings/email/<str:token>/", views.email_change_confirm, name="email_change_confirm"),

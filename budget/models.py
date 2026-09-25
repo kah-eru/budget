@@ -146,3 +146,18 @@ class Budget(models.Model):
 
     def __str__(self):
         return self.category.name if self.category_id else f"Name contains “{self.name_match}”"
+
+
+class BudgetAlert(models.Model):
+    # One row per budget, recipient and period, ever: the database makes a second crossing a no-op.
+    # silent rows are baselines (already over when the budget was set or the member joined) and never show.
+    # No amounts are stored; the inbox recomputes them from what the recipient can see now.
+    budget = models.ForeignKey(Budget, on_delete=models.CASCADE, related_name="alerts")
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="budget_alerts")
+    period_start = models.DateField()
+    silent = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["budget", "recipient", "period_start"], name="budget_alert_once_per_period")]
