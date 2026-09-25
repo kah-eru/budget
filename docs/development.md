@@ -258,4 +258,35 @@ Implemented (no new model or migration; built on rules, budgets and alerts):
 - **Budget effect:** after either flow, the budgets are evaluated, so a category budget counts these rows and future matches immediately. A crossing alerts as usual.
 - Verification: 124 Django tests OK (4 PG-only skipped), including new `test_categorize_by_example.py` (6); migration drift clean; 7/7 Chrome checks. The categories journey now also covers search → tick → keyword rule, and "also similar" on a transaction; its timeout was raised to 90 s. Light and dark 360 px screenshots reviewed.
 
-Continue: budget kinds (fixed/irregular/flexible) and splits (requested 2026-09-25), then phone push. Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Budget types, disposable income and splits — September 25 (night, latest)
+
+Why: the user said "push and go". After pushing, work continued with the next requested features: the budgeting framework and split transactions (spec "Requested additions — 2026-09-25").
+
+Budget types (`Budget.kind`, `Budget.due_day`, `Workspace.expected_income_cents`, migration 0010):
+- **Fixed bill**: monthly, with the expected amount as the limit and an optional due day (1–31). It shows "Paid" once posted spending reaches the amount.
+- **Yearly or irregular cost**: a yearly total, shown as a monthly set-aside of ÷12 plus the amount set aside by now (total × month ÷ 12, so December equals the total).
+- **Flexible spending**: the earlier behavior, monthly or yearly.
+- The type fixes the period in the form (fixed = monthly, yearly = yearly). Only fixed bills keep a due day. A blank type means flexible, so older budgets and forms keep working.
+- **Monthly plan (estimate)** on Budgets (`reporting.disposable`):
+  - income − fixed bills − yearly set-asides = **disposable income**
+  - then flexible budgets (yearly ones as a twelfth) are subtracted, giving "not planned yet", or a red warning when they exceed it
+  - Income is the amount entered under Budgets → Income. Blank means the average posted income of the three complete months before this one, with pending excluded.
+
+Splits (`SplitLine`, migration 0011; `SplitForm`; `views.transaction_split`; `reporting.category_totals`):
+- The transaction Edit page has **Split across categories**: up to four lines of category and amount. There must be at least two lines, each category used once, all from this workspace's categories, adding up to the exact cent. An error says how much is left or over.
+- A split applies to this workspace only, and the original entry is unchanged. Remove split restores the single category. Only the account owner can split, the same as other transaction edits.
+- Each line takes the parent's classification and status: a refund split reduces each category, and a pending split is an estimate.
+- `category_totals` is one grouped query for unsplit rows plus one for split lines. The Overview By category list and category budgets both use it, so they agree.
+- The Timeline category filter lists a split row under each of its lines' categories, not under its old single category. Uncategorized excludes split rows.
+- Rows show "Split: Groceries $30.00, Shopping $20.00", and the CSV Category column reads "Split: Groceries 30.00; Shopping 20.00".
+- Name-match budgets still count whole transactions.
+- Not yet: rule split templates such as 70/30 with largest-remainder rounding (spec default).
+
+Verification:
+- 134 Django tests OK on SQLite (4 PG-only skipped), including new `test_budget_kinds.py` (5) and `test_splits.py` (5).
+- The new feature modules plus the concurrency tests pass on Neon PostgreSQL: 45/45 in 79 s.
+- `check` and migration drift clean.
+- 8/8 Chrome checks. The new `budgets.spec.ts` covers income, a fixed bill, a yearly cost, the plan card, and a split with the "left to split" error.
+- Light and dark screenshots reviewed.
+
+Continue: rule split templates, phone push, email alerts (provider needed), CSV import, then milestone 9 (reports, goals, recurring, net worth) (requested 2026-09-25), then phone push. Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

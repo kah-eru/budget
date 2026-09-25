@@ -192,8 +192,8 @@ Create files only when their milestone needs them. Framework-required package fi
 - [x] (2026-09-25; atomicity via the database unique constraint, PG concurrent test still to add) Test baseline establishment after create/edit/join, recalculation after share changes, and no retroactive alerts for closed periods. Keep the baseline update and any event creation atomic under concurrent evaluations.
 - [ ] Run `python manage.py test budget.tests.test_rules budget.tests.test_budgets`. Verify a Starbucks rule backfills only authorized history and leaves manual categories unchanged.
 - [x] (Requested and done 2026-09-25) Categorize by example: search by keyword, tick, keyword becomes a rule; "also similar" on one transaction.
-- [ ] (Requested 2026-09-25; seeding done) Seed standard categories per workspace. Add split transactions: lines sum exactly to the amount in integer cents, split templates on rules, largest-remainder rounding. Test that splits count per category in budgets and reports and never leak into other workspaces.
-- [ ] (Requested 2026-09-25) Budget kinds: fixed (expected amount, due day), irregular (yearly amount → monthly set-aside) and flexible (period limit). Add a disposable-income summary labeled as an estimate. Test the set-aside arithmetic and the income-average fallback.
+- [x] (2026-09-25; rule split templates and largest-remainder rounding still open) Seed standard categories per workspace. Add split transactions: lines sum exactly to the amount in integer cents, split templates on rules, largest-remainder rounding. Test that splits count per category in budgets and reports and never leak into other workspaces.
+- [x] (2026-09-25) Budget kinds: fixed (expected amount, due day), irregular (yearly amount → monthly set-aside) and flexible (period limit). Add a disposable-income summary labeled as an estimate. Test the set-aside arithmetic and the income-average fallback.
 
 ## Milestone 5: notification inbox and phone push
 
