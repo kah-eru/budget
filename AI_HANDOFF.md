@@ -2,6 +2,8 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest (2026-09-25, night): "continue with the checklist". Built the **Bklit running-total chart** on the Timeline (first mounted React component, lazy chunk 162.56 kB gzip, initial JS 4.63 kB gzip); switched Vite from library mode to a minified app build. 78 Django tests OK, 5/5 Chrome checks, production collectstatic OK. Committed locally in the worktree; **not pushed** (a push to `feat/project-foundation` auto-deploys to Render after CI). Details: [development guide](docs/development.md#timeline-chart--september-25-night).
+
 Latest (2026-09-25): **preview is live and the owner is signed in** at https://budget-4aek.onrender.com. First deploy failed on a mistyped Render `PGPASSWORD`; fixed by the owner. The owner's site login password appeared in chat; they were told they can change it under More -> Change password. Next: Bklit chart, then CSV import/export (see Ordered next steps; step 1 is done).
 
 Latest (2026-09-25): live preview URL https://budget-4aek.onrender.com (owner-created; duplicate service deleted). Owner declined rotating the chat-exposed `budget_site` password. First user still to be created by the owner; live endpoints not verified by the agent (owner declined the check).
@@ -67,7 +69,7 @@ Milestone 1 is functionally complete except full responsive navigation and mount
 
 ## Decisions and remaining limits
 
-Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut interactions; Manus for public SEO only; phone UX, selective sharing, integer cents, load gates. React installed but not mounted.
+Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut interactions; Manus for public SEO only; phone UX, selective sharing, integer cents, load gates. React mounted only for the Timeline chart.
 
 - Annotations are per workspace: personal overrides/notes never reach group totals or pages (tested). Only the account owner annotates. No category yet (milestone 4 adds Category; annotation gains a category FK then).
 - Account page still shows newest 100 only; the workspace transaction list has cursor paging. List cursor is not yet invalidated on data-revision change, and there are no filtered totals or category filter yet.
@@ -79,7 +81,7 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 ## Ordered next steps
 
 1. Done 2026-09-25: Render preview live, owner signed in. Optional: try a synthetic invite (link appears in Render Logs).
-2. Bklit daily/cumulative chart over `reporting.daily()` (first mounted React component; keep the daily table as the accessible fallback), then CSV import/export.
+2. Done 2026-09-25 (local commit): Bklit chart. Next: CSV import/export (imported amounts read-only per spec). Optional: trim the chart chunk (mostly React DOM + Motion).
 3. Optional login follow-ups not built: email change while signed in, web-based first-user setup (still `createsuperuser`). Apply apple-design springs once Motion drives real transitions.
 4. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
 
