@@ -40,6 +40,18 @@ Confirmed features:
 - Use Flowbite/Tailwind standard controls alongside Motion (motion.dev), Bklit UI, and Kokonut UI. Start design with low-fidelity wireframes focused on UX and user flow.
 - Keep Django as the backend; use Manus.im for SEO tracking only, as explicitly clarified on 2026-09-23.
 
+Added by the user on 2026-09-25 (requested; not implemented). Section 3, "Requested additions — 2026-09-25", has the first design defaults:
+
+- Bank sync that includes loan accounts, with manual entry kept as a backup.
+- Automatic sorting into standard groups (groceries, utilities, ...), and splitting one transaction across several categories, including by rule.
+- A budgeting framework that separates fixed bills, irregular/annual costs and flexible daily spending, and shows true disposable income.
+- Visual reports: color-coded category charts, pie/donut breakdowns and trend graphs.
+- Goal tracking: emergency fund, debt payoff, vacation, large purchase.
+- Customizable alerts by push or email: approaching a limit, upcoming bill due dates, unusual account activity.
+- Recurring transaction projection (rent, mortgage, subscriptions) and a cash-flow forecast.
+- Net worth and investment monitoring: assets, liabilities and portfolios in one dashboard.
+- Multi-device access (web plus iOS/Android) and collaborative sharing for couples and families. The existing design already covers both.
+
 The user wants spending visibility and notifications, not the ability to decline card purchases.
 
 Known institutions: Wells Fargo, Marcus savings, Chase checking and credit, and Chime. The girlfriend's institutions and both users' phone platforms have not been supplied; neither blocks this design.
@@ -61,7 +73,7 @@ These fill gaps in the conversation and can be changed during review.
 | Budget thresholds | One positive dollar limit per budget per month or year; no rollover initially. |
 | Alert basis | Posted net spending strictly greater than the limit; pending shown separately. |
 | Push privacy | Generic lock-screen text; detailed amounts visible after opening the authenticated app. |
-| Expenses split across categories | Deferred; one category per purchase initially. This was an earlier suggestion, not a user requirement. |
+| Expenses split across categories | Requested by the user on 2026-09-25. Categories ship first with one category per purchase; splits follow (see Requested additions). |
 | Friends | Invite into an existing finance group or create a separate group with that person; explicit account sharing determines visibility. |
 | Timeline | Dated purchase feed plus daily net spending and a cumulative spending chart for the selected period. |
 | AI activation | Optional, off until a user adds a key and consents; request-driven insights rather than unattended periodic charges. |
@@ -160,6 +172,26 @@ Provide original bank PDFs where available, owner-only PDF uploads, and printabl
 CSV import supports date, description, amount, and optional category, with a mapping/preview step and an explicit sign convention. Import into an owned account only. Record a file hash and source row number to make exact-file reimport idempotent; overlapping files and Plaid overlap require candidate review rather than deleting legitimate same-day/same-amount purchases. Reject invalid rows with row-specific messages before committing the batch. Escape formula-leading cells in CSV exports.
 
 PDF uploads have a 10 MiB limit, PDF content checks, randomized storage keys, and authenticated attachment downloads. Store outside public static/media paths. Do not publish permanent public PDF URLs.
+
+### Requested additions — 2026-09-25
+
+User-requested features with proposed first defaults. None are implemented. "Covered" means the existing design already includes it.
+
+| Feature | Status | Proposed first default |
+| --- | --- | --- |
+| Automatic bank syncing, including loans; manual entry as backup | Covered, plus loans added | Plaid Transactions for checking, savings and credit. Loan balances and payment details need Plaid Liabilities, a separate product whose Trial availability and cost are unverified; check before enabling and get the user's approval for any cost. Syncing is not real time: banks refresh one to four times a day (section 4). Manual accounts and transactions exist today. |
+| Standard categories and custom rules | Covered | A seeded set of standard categories (groceries, utilities, dining, transport, housing, ...), editable per workspace. The bank's category is a starting suggestion (precedence in Categories and rules). |
+| Split one transaction across categories | New | A split divides a transaction's amount into category lines that sum exactly to it in integer cents, as a per-workspace overlay; the bank record is unchanged. A rule may apply a split template (for example 70% Groceries / 30% Household). Percentages round by largest remainder so the lines always add up exactly. Budgets and reports count each line in its category. |
+| Budget framework: fixed, irregular/annual, flexible | New | Each budget has a kind. **Fixed** bills have an expected amount and due day. **Irregular** costs have a yearly amount shown as a monthly set-aside (yearly ÷ 12), and the set-aside accumulates toward the bill. **Flexible** spending has a period limit. Disposable income = expected monthly income (user-entered, or the average posted income over the last three complete months) − fixed bills − irregular set-asides. Flexible budgets are compared against what remains. Estimates are labeled as estimates. |
+| Visual reports and analytics | Partial (the Timeline running-total chart exists) | Category donut/pie for a period, a monthly trend by category, and budget progress, all with Bklit. Category colors come from theme tokens and are never the only cue: labels and values appear too, and every chart has an equivalent table. |
+| Goal tracking | New | A goal has a name, target amount, optional target date and a kind (savings or debt payoff). Progress comes from a linked account balance where available (savings, or a loan/credit balance for payoff) or from manual contributions. The required monthly amount to hit the date is computed deterministically. A goal belongs to one workspace; group goals use only shared accounts. |
+| Customizable alerts: approaching a limit, bills due, unusual activity; push or email | Partial (budget crossing, in-app and push) | Per-budget thresholds (default 80% and 100% of the limit; each threshold alerts once per period). Bill-due reminders a user-chosen number of days before a fixed bill or confirmed recurring charge. Unusual activity is a deterministic rule, not AI: a transaction over 3× that merchant's median, or a first-seen merchant above a user-set amount. Email is an opt-in channel per user with generic text and a sign-in link, like push. It needs an email provider, which isn't configured; choosing one is the user's decision. |
+| Recurring transaction projection and cash-flow forecast | New | Detect candidate series (same merchant, amount within ±10%, a regular weekly, monthly or yearly interval, at least three occurrences). The user confirms or dismisses each; manual entries are allowed. Confirmed items project forward into a labeled forecast (expected income − upcoming bills) and never count as spending until posted. |
+| Net worth and investment monitoring | New (was deferred) | Net worth = assets (account balances, investment holdings value, manual assets such as a home or car) − liabilities (credit cards, loans). Balances, holdings and loans need Plaid Balance, Investments and Liabilities, whose availability and cost are unverified; manual values are the fallback. Read-only: no trading and no investment advice. Accounts stay private until shared, and a group net worth covers only shared accounts. |
+| Multi-device access | Covered | Data lives on the server, so every browser sees the same state. As of 2026-09-25 the web app is installable to iOS and Android home screens. Native apps are reconsidered only for a concrete missing capability (section 8). |
+| Collaborative sharing for couples and families | Covered | Separate logins, groups, per-account sharing, joint accounts linked once and shared, and shared budgets (Accounts and sharing). |
+
+Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
 ## 4. Plaid feasibility and integration
 
@@ -359,7 +391,7 @@ The ten-Item Trial cap applies to the whole Plaid team/application, not ten per 
 | Required mobile capability is missing | Evaluate a native wrapper/app for that concrete requirement. |
 | Public launch instead of invited friends | Separate work for onboarding, operational support, abuse controls, provider requirements, and legal/privacy review. |
 
-Deferred: billing users, public signup, social feeds, settlements, card issuing/blocking, investments, multiple currencies, arbitrary custom fields, autonomous AI rule/ledger edits, scheduled AI generation, multiple AI providers, OCR, and microservices. Read-only AI insights, finance-sharing invitations, and the spending timeline are in the first release.
+Deferred: billing users, public signup, social feeds, settlements, card issuing/blocking, investment trading or advice (read-only net worth and investment monitoring was requested on 2026-09-25), multiple currencies, arbitrary custom fields, autonomous AI rule/ledger edits, scheduled AI generation, multiple AI providers, OCR, and microservices. Read-only AI insights, finance-sharing invitations, and the spending timeline are in the first release.
 
 ## 9. Release acceptance
 

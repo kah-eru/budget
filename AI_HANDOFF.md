@@ -2,6 +2,15 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, feature list): "make sure the docs have these features as well":
+- Requested: bank sync incl. loans, smart categorization and split rules, fixed/irregular/flexible budgets, visual reports, goals, customizable alerts (push/email, approaching limit, bills due, unusual activity), recurring projection, net worth/investments, multi-device, collaborative sharing.
+- Already covered: bank sync, manual entry, rules, multi-device, sharing.
+- Added to the spec's new "Requested additions — 2026-09-25" section with first defaults. Splits were previously marked "deferred", and net worth/investments were on the deferred list; both are now requested, read-only, no advice.
+- Plan: added to milestones 4 and 5, plus a new milestone 9 (reports, goals, recurring, net worth).
+- Also updated the README agreed scope and the wireframes placement note.
+- Open decisions for the user: Plaid Liabilities/Investments/Balance availability and cost, and an email provider for email alerts.
+- Docs only; no code changed.
+
 Latest request (2026-09-25, chart flash): "the line flashes before animating itself from left to right, prolly cuz of the preload... remove the preload for only the graph line".
 - Frames showed the cause was not the preload: the page crossfade showed the previous page's finished line fading out, plus a brief placeholder line.
 - The chart is now excluded from the crossfade, and the placeholder shows only after 0.4 s. Preloading is kept.

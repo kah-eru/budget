@@ -36,5 +36,15 @@ This is repository guidance, not a background hook. The skill is stored in Codex
 - Invite friends from the start to share selected accounts, budgets, and spending views; no automatic access to personal finances.
 - Optional API-key-based AI insights about spending patterns and budget progress, with separate consent for sending shared data to an AI provider.
 - Scalable module boundaries, multiple web/worker instances, bounded queries, and a measured load-test gate from the first release.
+- Requested 2026-09-25 (designed, not built):
+  - split transactions and standard categories
+  - fixed/irregular/flexible budgets with a disposable-income estimate
+  - pie and trend reports
+  - goals
+  - recurring-bill projection with a cash-flow forecast
+  - alerts for approaching limits, bills due and unusual activity, by push or email
+  - read-only net worth and investment monitoring
+  - loan accounts
+  - Details: spec section "Requested additions — 2026-09-25".
 
 The design uses explicit proposed defaults for decisions we have not discussed. Django, the frontend tools above, and Manus for SEO only are user-confirmed. PostgreSQL is the configured backend; development uses a hosted Neon database (free plan, user-chosen) plus opt-in SQLite for fast local checks. Further mounted React components beyond the Timeline chart, shared-edit permissions, alert calculation, hosting and numeric capacity targets are still unverified. Bklit/Kokonut registries are configured, the Timeline chart uses Bklit; Kokonut awaits Insights. Manus, banks and AI remain disconnected; no provider costs or deployment are authorized.
