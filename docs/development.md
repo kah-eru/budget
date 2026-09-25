@@ -242,4 +242,20 @@ In-app alerts (`BudgetAlert`, migration 0009; `budget/notifications.py`):
 
 Verification: 118 Django tests OK (4 PG-only skipped), including new `test_budgets.py` (5) and `test_notifications.py` (5); `check` and migration drift clean; 7/7 Chrome checks (the categories spec now also covers an over-budget card and a real crossing → header alert → inbox → marked read). Light and dark budget-card and alerts-page screenshots reviewed. The spec now waits for the page crossfade before screenshots.
 
+## Categorize by example — September 25 (night, latest)
+
+Why: the user asked to "choose from the transactions, search from those by keyword, and when selected... detect that certain transactions with that name/description will automatically add/subtract into that category's limit". They chose **both entry points** and **"use my search word"** as the matching rule.
+
+Implemented (no new model or migration; built on rules, budgets and alerts):
+- **From a category** (category edit page → **Add transactions**, or the Timeline's "Add transactions to <category>" chip when filtered by a category): `views.category_add`, `category_add.html`.
+  - Searching lists this workspace's visible transactions whose original description contains the keyword. It uses the same normalization as rules, so the list is exactly what the rule will catch; newest 100 shown, with the total.
+  - Rows start ticked. Rows set by hand to another category start unticked and are labeled.
+  - Saving puts ticked rows in the category as manual choices. With **Future transactions containing this go to <category>** (on by default, keyword editable), it creates a "name contains" rule once (`rules.ensure_rule` skips an equivalent rule). Unticked rows stay unchanged.
+  - Forged or non-matching ids are ignored. Any member may do it, since it only writes this workspace's overlay. In a group, only shared accounts are listed.
+- **From one transaction** (Edit page): **Also put other transactions with this name in this category, now and in the future**, with an editable **Name contains** field.
+  - The field is prefilled by `rules.suggest_keyword`, which drops words starting with # or made of at least half digits and keeps three words. For example, "STARBUCKS #12 SEATTLE WA 98101" becomes "STARBUCKS SEATTLE WA", while "7-ELEVEN" stays.
+  - Saving creates the rule and backfills: other matching rows get the category as rule choices, and rows set by hand elsewhere are kept.
+- **Budget effect:** after either flow, the budgets are evaluated, so a category budget counts these rows and future matches immediately. A crossing alerts as usual.
+- Verification: 124 Django tests OK (4 PG-only skipped), including new `test_categorize_by_example.py` (6); migration drift clean; 7/7 Chrome checks. The categories journey now also covers search → tick → keyword rule, and "also similar" on a transaction; its timeout was raised to 90 s. Light and dark 360 px screenshots reviewed.
+
 Continue: budget kinds (fixed/irregular/flexible) and splits (requested 2026-09-25), then phone push. Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
