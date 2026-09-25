@@ -21,7 +21,7 @@ Update 2026-09-25 (requested features): Reports, Goals, Bills & recurring, and N
 - Goals and Bills & recurring sit under Budgets.
 - Alert preferences (thresholds, bill reminders, unusual activity, email or push) go under Settings.
 
-Update 2026-09-25 (speed pass): charts hold their exact space while loading (a placeholder line appears only if loading takes over 0.4 s, and the chart is excluded from the page crossfade); tab pages are prefetched and pages crossfade (the bottom nav stays put); Add to Home Screen opens the app full screen.
+Update 2026-09-25 (speed pass): charts hold their exact space while loading (a placeholder line appears only if loading takes over 1.5 s, and the chart is excluded from the page crossfade); tab pages are prefetched and pages crossfade (the bottom nav stays put); Add to Home Screen opens the app full screen.
 
 Update 2026-09-25 (categories): Overview has a By category list (bar per category, tap to open the filtered Timeline) and a Manage categories link. Categories → Rules → Add rule has Preview matches and an Also apply to existing transactions option. The transaction Edit page has a Category field.
 

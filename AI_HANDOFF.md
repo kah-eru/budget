@@ -2,6 +2,13 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, chart flash again): "it still is rendering a straight line for like 100ms and then reanimating it on a tab change. fix that and then deploy the fix and then continue with the other features".
+- Cause found by per-frame probing at 6x CPU throttle: one fully drawn chart frame painted before the reveal restarted, and the placeholder line showed because the chart took longer than 0.4 s to mount on a throttled CPU.
+- Fix: the chart starts in its reveal phase, and the placeholder delay is now 1.5 s. The probe confirms neither shows.
+- 7/7 Chrome checks. Pushed to deploy (Render auto-deploys after CI; live site not checked by the agent).
+- Details: [development guide](docs/development.md#speed-and-app-feel-pass--september-25-night-latest).
+- Next: budgets/limits.
+
 Latest request (2026-09-25, categories): "now continue with the features". Built milestone 4's first part in two local commits:
 - `4a58af7` categories: per-workspace, ten seeded standard categories, archive not delete, Overview By category, Timeline filter, CSV column.
 - `6927da6` rules: contains/exact with normalized matching, priority then ID, manual choice always wins, preview and opt-in backfill, auto-apply on new/edited transactions.
