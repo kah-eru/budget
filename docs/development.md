@@ -188,6 +188,10 @@ Measured (lab only, not field data):
 - **Installable.** A web app manifest (standalone display) plus an icon set (SVG, 180/192/512 PNG: the running-total line in Coffee Bean on Bubblegum Pink) and light/dark `theme-color`. On a phone, Add to Home Screen opens full screen without browser chrome. There is deliberately no service worker, so no financial page is ever stored offline.
 - **Font preload tried and dropped.** An A/B test with and without it showed no LCP difference (login 0.91–1.04 s vs 0.92–1.03 s); the font already uses `font-display: swap`.
 - Timings on this machine were noisy between runs (login LCP 0.9–2.1 s). Every run met the LCP ≤ 2.5 s target, and view transitions on vs off were within noise. Deterministic results: CLS 0, a single entry load, 1.17 kB initial JS, and prefetched tab pages.
+- **Chart flash fix (same day, after user report).** The user saw the line appear before its draw-in and suspected the preload. Screencast frames showed two causes: the page crossfade faded the *previous* page's finished line over the new page, and the faint placeholder line showed briefly. Fixes:
+  - The chart slot has its own `view-transition-name`, with no old snapshot and no group or new animation, so the old line vanishes instantly and only the new line draws in.
+  - The placeholder line now appears only if the chart takes more than 0.4 s, which prefetched pages essentially never do.
+  - Re-captured frames confirm no line before the draw-in. 6/6 Chrome checks.
 - **Biggest remaining delay (not code):** Render's free plan sleeps after about 15 idle minutes, so the first visit waits roughly 30–60 s, and Neon's free compute also suspends. The fix is a paid instance (about $7/month) or an external keep-warm ping. That is the user's decision and has not been done.
 - Verification: 93 Django tests OK (4 PG-only skipped); 6/6 Chrome checks (the chart check now requires the real chart and no skeleton, and Settings checks the manifest), including the no-JavaScript journeys.
 

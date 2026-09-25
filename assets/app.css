@@ -167,9 +167,15 @@
   /* The chart's space is held before its code loads, so nothing below it moves. No JavaScript: no slot (the table has the numbers). */
   .chart-slot { display: none; aspect-ratio: 2.4 / 1; }
   :root.js .chart-slot { display: block; }
-  .chart-skeleton { width: 100%; height: 100%; color: var(--line-strong); animation: skeleton-pulse 1.2s ease-in-out infinite alternate; }
+  /* The placeholder line appears only if the chart is slow (over 0.4 s), so a fast chart never shows a line before its draw-in. */
+  .chart-skeleton { width: 100%; height: 100%; color: var(--line-strong); opacity: 0; animation: skeleton-pulse 1.2s ease-in-out 400ms infinite alternate; }
   @keyframes skeleton-pulse { from { opacity: 0.25; } to { opacity: 0.6; } }
-  @media (prefers-reduced-motion: reduce) { .chart-skeleton { animation: none; opacity: 0.4; } }
+  @media (prefers-reduced-motion: reduce) { .chart-skeleton { animation: skeleton-show 0s 400ms forwards; } }
+  @keyframes skeleton-show { to { opacity: 0.4; } }
+  /* Keep the chart out of the page crossfade: the old page's finished line would otherwise fade over the new one while it draws in. */
+  .chart-slot { view-transition-name: chart; }
+  ::view-transition-old(chart) { display: none; }
+  ::view-transition-group(chart), ::view-transition-new(chart) { animation: none; }
   .skip-link { @apply sr-only; }
   .skip-link:focus { @apply not-sr-only fixed top-2 left-2 z-50 rounded bg-surface p-3; }
 }
