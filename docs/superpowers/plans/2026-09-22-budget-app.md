@@ -187,9 +187,9 @@ Create files only when their milestone needs them. Framework-required package fi
 - [x] (2026-09-25; bank-category mapping waits for Plaid) Write rule tests for case/whitespace normalization, missing merchant, empty pattern rejection, explicit priority, stable tie-break, manual override precedence, and workspace isolation.
 - [x] (2026-09-25; exact match is on the description until merchant fields arrive with Plaid) Implement exact-merchant and description-contains rules against bank source fields. Track annotation provenance; preserve manual edits on sync/backfill.
 - [x] (2026-09-25) Add matching-history previews and explicit backfill. Archive categories safely and disable rules targeting them; never delete referenced history.
-- [ ] Add positive-dollar budgets targeting one category or one merchant/name match, with monthly/yearly period selection and no rollover.
-- [ ] Test the boundary: a $100 budget with $100 posted spending is not exceeded; $100.01 is exceeded; pending spending does not trigger; refunds reduce current-period spending.
-- [ ] Test baseline establishment after create/edit/join, recalculation after share changes, and no retroactive alerts for closed periods. Keep the baseline update and any event creation atomic under concurrent evaluations.
+- [x] (2026-09-25) Add positive-dollar budgets targeting one category or one merchant/name match, with monthly/yearly period selection and no rollover.
+- [x] (2026-09-25) Test the boundary: a $100 budget with $100 posted spending is not exceeded; $100.01 is exceeded; pending spending does not trigger; refunds reduce current-period spending.
+- [x] (2026-09-25; atomicity via the database unique constraint, PG concurrent test still to add) Test baseline establishment after create/edit/join, recalculation after share changes, and no retroactive alerts for closed periods. Keep the baseline update and any event creation atomic under concurrent evaluations.
 - [ ] Run `python manage.py test budget.tests.test_rules budget.tests.test_budgets`. Verify a Starbucks rule backfills only authorized history and leaves manual categories unchanged.
 - [ ] (Requested 2026-09-25) Seed standard categories per workspace. Add split transactions: lines sum exactly to the amount in integer cents, split templates on rules, largest-remainder rounding. Test that splits count per category in budgets and reports and never leak into other workspaces.
 - [ ] (Requested 2026-09-25) Budget kinds: fixed (expected amount, due day), irregular (yearly amount → monthly set-aside) and flexible (period limit). Add a disposable-income summary labeled as an estimate. Test the set-aside arithmetic and the income-average fallback.
@@ -201,7 +201,7 @@ Create files only when their milestone needs them. Framework-required package fi
 **Deliverable:** A posted-spending crossing creates an inbox notification and an optional push on each subscribed device.
 
 - [ ] Enforce one alert per recipient/budget/period in the database. Test duplicate evaluation, concurrent workers, refund/recrossing, month rollover, and device retry without duplicate inbox rows.
-- [ ] Add unread/read inbox state and budget links. Recompute financial details from currently authorized records rather than storing stale amounts in notification text.
+- [x] (2026-09-25) Add unread/read inbox state and budget links. Recompute financial details from currently authorized records rather than storing stale amounts in notification text.
 - [ ] Add device-specific push subscription/unsubscription and endpoint validation against SSRF. Request browser permission only on an explicit action.
 - [ ] Use a maintained Web Push library and server-held VAPID keys. Persist per-device attempts, retry temporary failure, expire invalid subscriptions, and use a stable browser notification tag.
 - [ ] Test member removal/share revocation after enqueue but before dispatch: no financial detail or unauthorized push can be sent. Test following an old notification URL after revocation.

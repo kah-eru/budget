@@ -214,4 +214,32 @@ Implemented (milestone 4, first part):
 - Not yet: rules re-running when an account is newly shared (only new or edited transactions and explicit backfill apply them), deleting a rule (turn it off instead), a bank-category mapping (waits for Plaid), splits, and budgets/limits.
 - Verification: 108 Django tests OK (4 PG-only skipped), including new `test_categories.py` (9) and `test_rules.py` (6); `check` and migration drift clean; 7/7 Chrome checks, including a new `categories.spec.ts` (categorize → Overview → filtered Timeline → add a category → rule preview and backfill). Light and dark 360 px screenshots reviewed.
 
-Continue: budgets/limits (milestone 4), then notifications (milestone 5). Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Budgets and in-app alerts — September 25 (night, latest)
+
+Why: the user asked to "continue with the other features" after the chart fix. The agreed order is limits, then notifications.
+
+Budgets (`Budget`, migration 0008; `reporting.budget_progress`):
+- A positive USD limit, monthly or yearly with no rollover, targeting **one** category or **one** name match (contains, same normalization as rules). Both rules are enforced by database check constraints and the form.
+- Any member can manage budgets (Overview → Manage budgets); a Delete button sits on the edit page.
+- Only posted spending counts: expenses minus refunds; transfers never count. Pending shows separately as an estimate. The limit is inclusive: $100 of $100 is not over, $100.01 is.
+- In a group, only accounts shared there count.
+- Overview shows a **Budgets** card: spent of limit, a bar (danger color when over), and left or over. The month view shows monthly budgets for that month plus yearly budgets for its year; the year view shows yearly budgets only.
+
+In-app alerts (`BudgetAlert`, migration 0009; `budget/notifications.py`):
+- When a budget's **current** period goes over its limit, each recipient gets one alert: the owner for personal budgets, the owner plus members for groups.
+- A unique `(budget, recipient, period_start)` constraint plus `ignore_conflicts` make repeated or concurrent evaluations no-ops. A refund followed by another crossing does not alert again, and a new month or year can alert again.
+- Closed periods are never evaluated, so backdated edits change reports but send no old alerts.
+- Baselines: creating or editing a budget that is already over, or joining a group whose budget is already over, records a **silent** row. The first alert is then a real crossing.
+- Budgets are evaluated after:
+  - manual transaction saves, in every workspace that sees the account
+  - transaction edits made in a workspace
+  - rule saves
+  - sharing changes
+  - budget saves (as a baseline)
+  - new members joining (as a baseline)
+- Alerts store no amounts. The **Alerts** page (bell in the header, which shows "N new alerts" while any are unread) recomputes spent/limit from what the viewer can see now. Opening it marks alerts read. Alerts disappear if the viewer loses access to that workspace.
+- Not yet: phone push (needs a service worker and VAPID keys) and email (needs an email provider, which is the user's decision). There is also no PostgreSQL concurrent-worker test for alerts yet; the unique constraint is the guarantee.
+
+Verification: 118 Django tests OK (4 PG-only skipped), including new `test_budgets.py` (5) and `test_notifications.py` (5); `check` and migration drift clean; 7/7 Chrome checks (the categories spec now also covers an over-budget card and a real crossing → header alert → inbox → marked read). Light and dark budget-card and alerts-page screenshots reviewed. The spec now waits for the page crossfade before screenshots.
+
+Continue: budget kinds (fixed/irregular/flexible) and splits (requested 2026-09-25), then phone push. Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

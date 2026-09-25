@@ -2,6 +2,14 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest (2026-09-25, continuing features after the chart fix): budgets and in-app alerts, in local commits:
+- `a95a3d0` budgets: monthly/yearly limit on one category or one name match; posted only, inclusive limit, pending separate; Overview Budgets card.
+- `958ba5e` alerts: one per recipient/budget/current period (database unique), silent baselines on budget save or member join, no closed-period alerts, header bell and Alerts inbox with recomputed amounts.
+- Verification: 118 Django tests OK; 7/7 Chrome checks; screenshots reviewed.
+- **Not pushed.** The user asked only for the chart fix to be deployed; these wait for their "push".
+- Details: [development guide](docs/development.md#budgets-and-in-app-alerts--september-25-night-latest).
+- Next: budget kinds (fixed/irregular/flexible) and disposable income, splits, phone push (VAPID keys; no cost), email alerts (the user must choose a provider), CSV import.
+
 Latest request (2026-09-25, chart flash again): "it still is rendering a straight line for like 100ms and then reanimating it on a tab change. fix that and then deploy the fix and then continue with the other features".
 - Cause found by per-frame probing at 6x CPU throttle: one fully drawn chart frame painted before the reveal restarted, and the placeholder line showed because the chart took longer than 0.4 s to mount on a throttled CPU.
 - Fix: the chart starts in its reveal phase, and the placeholder delay is now 1.5 s. The probe confirms neither shows.
