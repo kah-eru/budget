@@ -1,6 +1,6 @@
 # Low-fidelity wireframes and user flows
 
-Status: full-release wireframes remain a UX draft; a low-fidelity foundation subset now exists. Updated 2026-09-24. All names/amounts below are illustrative.
+Status: full-release wireframes remain a UX draft; a low-fidelity foundation subset now exists. Updated 2026-09-25. All names/amounts below are illustrative.
 
 ## Current foundation subset
 
@@ -13,6 +13,8 @@ Neutral grayscale, system typography, Flowbite-style forms/cards/navigation, loc
 Invitation journey: group owner -> Invite someone -> intended email plus existing-history confirmation -> send/revoke pending invitation. Recipient -> invitation -> Sign in, or Create invited account -> request separate setup email -> open one-hour setup link -> choose username/password -> sign in -> explicitly Join group. Existing accounts use Email verification -> request email -> open link while signed in -> confirm -> return to invitation. Joining shows a notice to existing account owners with a Review your sharing link. It never shares the joining person's accounts. The login page offers password recovery for verified email addresses; expired recovery links offer another request.
 
 Read alongside the [product spec](superpowers/specs/2026-09-22-budget-app-design.md) and [build plan](superpowers/plans/2026-09-22-budget-app.md). Permissions and financial calculations remain defined by the spec.
+
+Implemented 2026-09-25: workspace summary with ← / → and Month/Year (year adds a per-month table linking to each month) -> View <period> transactions -> search/filters (Apply filters, Clear filters, Older transactions) -> Edit -> Save returns to the same filtered list. Filters are a plain form above the list, not yet a dialog.
 
 ## Navigation and reusable components
 
