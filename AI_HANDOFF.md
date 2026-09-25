@@ -2,6 +2,14 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, "ok continue on the list"): two local commits:
+- `7a838a9` rule split templates: two-way, largest-remainder rounding; hand-made splits and manual categories win.
+- `3d41b65` phone push: Settings toggle, push-only `/sw.js`, generic text, SSRF-checked endpoints, gone devices removed; new dependency `pywebpush`.
+- Verification: 144 Django tests OK; 20/20 on Neon; 8/8 Chrome checks.
+- Push delivery can't be tested in automated Chrome. **Owner action to enable push:** run `manage.py vapid_keys` and put both values in Render → Environment ([operations guide](docs/operations.md#phone-push-optional-no-cost)). No cost.
+- **Not pushed**; waiting for "push".
+- Next: email alerts (the user must choose a provider), CSV import, milestone 9 (wireframes first).
+
 Latest request (2026-09-25, "push and go"): pushed budgets, alerts and categorize by example (feat `b583916`, main `6a22d22`), then continued in local commits:
 - `c19b967` budget types: fixed (monthly, due day, Paid), yearly/irregular (÷12 set-aside), flexible; Monthly plan (estimate) with disposable income; income entered, or the 3-month posted average.
 - `4904ae1` splits: per-workspace lines that add up exactly; reports, category budgets, Timeline filter and CSV count each line; remove restores the single category.

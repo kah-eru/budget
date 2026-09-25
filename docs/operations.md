@@ -28,6 +28,16 @@ Progress 2026-09-25: role `budget_site` created by the owner in Neon; database `
 
    It prompts for username, email and password. Then sign in on the site and invite others from Settings → Invite someone to Budget; copy the link from Render → Logs and send it yourself.
 
+## Phone push (optional, no cost)
+
+Push stays off until both keys are set.
+1. In your own terminal, in the worktree with the virtualenv, run `python manage.py vapid_keys` (with `DJANGO_DEBUG=1` and any `DJANGO_SECRET_KEY` set). It prints two lines.
+2. In Render → budget service → Environment, add `WEBPUSH_VAPID_PUBLIC_KEY` and `WEBPUSH_VAPID_PRIVATE_KEY` with those values. Never paste the private key into chat or commit it.
+3. Save. Render redeploys.
+4. On your phone, open the site (on iPhone, from the Home Screen icon) → Settings → Notifications → Turn on for this device.
+
+Replacing the keys later makes existing devices turn notifications on again.
+
 ## Updating
 
 Push to `feat/project-foundation`; CI runs; Render deploys when CI passes. A failed CI run leaves the previous version online. Roll back from Render → Deploys → an earlier deploy.

@@ -23,6 +23,8 @@ Update 2026-09-25 (requested features): Reports, Goals, Bills & recurring, and N
 
 Update 2026-09-25 (speed pass): charts hold their exact space while loading (a placeholder line appears only if loading takes over 1.5 s, and the chart is excluded from the page crossfade); tab pages are prefetched and pages crossfade (the bottom nav stays put); Add to Home Screen opens the app full screen.
 
+Update 2026-09-25 (split rules and push): Add rule has an optional Split with + share (%). Settings has a Notifications card (Turn on/off for this device, with an iPhone Home Screen hint), shown only when push is available.
+
 Update 2026-09-25 (budget types and splits): Add budget has a Type (Fixed bill / Yearly or irregular cost / Flexible spending) and a due day for fixed bills. Budgets shows a Monthly plan (estimate) card: income, fixed bills, set-asides, disposable income, flexible budgets, and what is unplanned. The transaction Edit page links to Split across categories, with up to four category and amount lines that must add up exactly.
 
 Update 2026-09-25 (categorize by example): Category → Add transactions has a search box, a ticked result list (hand-set rows unticked and labeled), a "Future transactions containing this go to <category>" option with an editable keyword, and "Add ticked to <category>". The transaction Edit page has "Also put other transactions with this name in this category" with a prefilled Name contains field. A filtered Timeline has an "Add transactions to <category>" chip.
