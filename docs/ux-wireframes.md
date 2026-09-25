@@ -18,6 +18,8 @@ Implemented 2026-09-25: workspace summary with ← / → and Month/Year (year ad
 
 Implemented later on 2026-09-25: bottom navigation is Overview | Timeline | More (Budgets/Insights join when built). More holds Your login (Change password, Email verification, Sign out) and Add (Add account, New group, Invite someone to Budget). The workspace switcher is a one-line disclosure (Workspace: name). Timeline = filters -> range totals -> Daily totals table (disclosure) -> day-grouped feed -> Older transactions / Start from newest; a changed list restarts with a status note. Standalone invite: More -> Invite someone to Budget -> email + confirmation -> recipient opens link -> Create your login -> setup email -> choose username/password -> sign in -> Finish -> own Personal workspace only.
 
+Implemented 2026-09-25 (night): Robinhood-style visual layout in the user's palette. Overview = workspace name -> big period spending number -> change vs previous month/year -> bare running-total chart -> ← Month Year → chips -> Posted/Pending/Income rows -> View timeline row -> accounts with a per-account spending pill. Timeline = ‹ back link -> title/range -> big number -> chart -> stat rows -> Daily totals table -> Filters (disclosure, open when active) -> day-grouped feed. Bottom nav has icons with labels. Light: white with Bubblegum Pink/Lavender Blush; dark (OS setting): Coffee Bean with Black Cherry.
+
 ## Navigation and reusable components
 
 The active workspace stays visible: Personal, Partner group, or a named Friends group. Switching context changes transactions, budgets, rules, and insights together. Ask before discarding an unsaved edit; never transfer a draft or permission decision silently between workspaces.

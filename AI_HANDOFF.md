@@ -52,7 +52,7 @@ Earlier the same day: "now commit and push." Pushed `feat/project-foundation` (t
 
 Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code is the 2026-09-25 list/yearly commit. Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
 
-Milestone 1 is functionally complete except full responsive navigation and mounted React components; PostgreSQL row-locking checks pass on Neon. Milestone 2 has manual transactions, month/year summaries, the filtered timeline (no chart yet) and workspace annotations. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
+Milestone 1 is functionally complete; PostgreSQL row-locking checks pass on Neon. Milestone 2 has manual transactions, month/year summaries, the filtered timeline with a Bklit running-total chart (also on Overview), workspace annotations, and the pink/coffee-bean Robinhood-style UI. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
 
 ## Commits this turn (local only)
 
