@@ -111,6 +111,16 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 - Found by the browser run: the fixed bottom nav covered a submit button once the workspace list got long; fixed with `scroll-padding-bottom` on `html`. 4/4 Chrome checks pass, including a new `tests/browser/transactions.spec.ts` (search → edit → back to filtered list; reflow 320–1440px). 360px list/year screenshots reviewed. CSS 11.72 kB gzip, JS 4.96 kB.
 - Limits: no category filter (milestone 4); no filtered totals on the list (timeline slice); cursor is not yet invalidated on data-revision change (timeline slice).
 
+## Timeline, More page and standalone invites — September 25 (later)
+
+- 78 Django tests (74 run + 4 PostgreSQL-only skipped on SQLite); `test_reporting`, `test_timeline`, `test_invitations` 45/45 on Neon. New tests failed first (missing routes, missing `daily`).
+- **Timeline** (the `transactions` route, now titled Timeline): empty From/To mean one calendar month (this month; To's month; From's month); ranges over 731 days are rejected. `reporting.daily(rows, start, end)` is one grouped query, zero-filled, with a running posted total; the plan fixture gives daily `[10000, 0, -1500]` and cumulative `[10000, 10000, 8500]`, and sums equal `spending()`. Range totals and a collapsible daily table (the accessible data behind the future Bklit chart) use the same filters as the feed. The feed has day headers with each day's net. Cursor links carry `rev=<data_revision>-<permission_revision>`; a stale cursor restarts from newest with a status message.
+- **Standalone invites**: an Invitation on the inviter's personal workspace (no migration). It reuses the token, mailbox-proof setup and registration flow; accepting creates no membership, so the new login sees only its own Personal workspace. Only the owner can send or revoke. Reached from More or the Personal page ("Invite someone to Budget").
+- **More page** (`more/`): username, email + verified status, Change password (Django `PasswordChangeView` at `settings/password/`, session kept), Email verification, Sign out; Add account, New group, Invite someone to Budget. The header now shows only the username.
+- **Navigation**: bottom nav is Overview | Timeline | More. The workspace switcher is a native `<details>` ("Workspace: <name>"), one line when closed, which fixes the long list on phones.
+- Build CSS 11.82 kB gzip, JS 4.96 kB. 5/5 Chrome checks (new standalone-invite journey with JavaScript disabled). 360px screenshots of Timeline, More and the switcher reviewed; no overflow at 320/360 (plus the existing width matrices).
+- Not done: email change while signed in (operator), a page-size parameter (fixed 50), web-based first-user setup (still `createsuperuser`), Bklit chart.
+
 ## Next
 
-Continue milestone 2: timeline, CSV import/export and Bklit charts. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+Continue milestone 2: Bklit chart over the daily series, then CSV import/export. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

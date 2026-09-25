@@ -2,11 +2,20 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
-Latest request (2026-09-25): "now read the md files and continue." Built handoff next-step 1 in the worktree: transaction list with search/filters/cursor paging, workspace month/year periods with a per-month year table, filtered-list Back after edit, and a bottom-nav overlap fix. Committed (`1be829e`) and, on the user's "do it", pushed to GitHub with the docs sync on `main`; credential scan of outgoing diffs found nothing. Details: [development guide](docs/development.md#transaction-list-and-yearly-view--september-25).
+Latest request (2026-09-25, later): "do it, also if not there already, add the ability to create logins and stuff." Asked about sign-up; the user chose **invite-only + standalone invites** (no public sign-up). Built in the worktree: timeline (daily/cumulative, two-year cap, revision-checked cursor), bottom nav Overview | Timeline | More, collapsible workspace switcher, standalone invites (personal-workspace invitation grants no access), More page with password change. Committed locally; **not pushed** (push only on request). Details: [development guide](docs/development.md#timeline-more-page-and-standalone-invites--september-25-later).
+
+Earlier on 2026-09-25: transaction list/filters/cursor and month/year views (`1be829e`), pushed with docs on the user's "do it".
 
 Earlier the same day: "now commit and push." Pushed `feat/project-foundation` (through `fcee2b6`) and `main` (`9a466d3`) to GitHub `kah-eru/budget` after a credential scan. No PR, merge or deployment.
 
-## Latest slice (2026-09-25)
+## Latest slice (2026-09-25, later)
+
+- `budget/reporting.py::daily(rows, start, end)`; `TransactionFilterForm.clean()` resolves a one-month default range and the 731-day cap; `views.transaction_list` adds range totals, daily table, day headers and `rev` cursor restart (`stale`).
+- `budget/invitations.py::owned_workspace` (was `owned_group`) allows the owner's personal workspace; `accept_invitation` skips membership for personal invites. Personal wording in `InvitationForm`, `AcceptInvitationForm`, `invitations.html`, `invitation_accept.html` and the email.
+- `views.more` + `budget/templates/budget/more.html`; `views.PasswordChange` (`settings/password/`). `page_context` now also returns `personal`. `base.html`: header shows only the username; switcher `<details>`; nav Overview/Timeline/More. CSS `.workspace-summary`.
+- Tests: new `budget/tests/test_timeline.py` (4), `StandaloneInvitationTests` (2) and `AccountSettingsTests` (2) in `test_invitations.py`; list tests now pass explicit ranges. 78 OK (4 PG-only skipped) on SQLite; 45/45 of reporting/timeline/invitations on Neon; check and migration drift clean (no migration). Build CSS 11.82 kB gzip. 5/5 Chrome checks, incl. a new JavaScript-disabled standalone-invite journey. Screenshots reviewed: `.local/transactions-phone.png`, `.local/more-phone.png`, `.local/switcher-phone.png`. Test server stopped.
+
+## Previous slice (2026-09-25)
 
 - `budget/reporting.py`: `visible_transactions()` (visible accounts + workspace overlay), `monthly(user, ws, year)` one grouped query; `spending()` unchanged in behaviour, shares the sum expressions.
 - `budget/forms.py::TransactionFilterForm` (q, account, person, start/end; From ≤ To) with `.apply(rows)`. Search matches the original description or this workspace's display name only.
@@ -25,7 +34,7 @@ Earlier the same day: "now commit and push." Pushed `feat/project-foundation` (t
 
 Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code is the 2026-09-25 list/yearly commit. Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
 
-Milestone 1 is functionally complete except full responsive navigation and mounted React components; PostgreSQL row-locking checks pass on Neon. Milestone 2 has manual transactions, month/year summaries, a filtered transaction list and workspace annotations. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
+Milestone 1 is functionally complete except full responsive navigation and mounted React components; PostgreSQL row-locking checks pass on Neon. Milestone 2 has manual transactions, month/year summaries, the filtered timeline (no chart yet) and workspace annotations. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
 
 ## Commits this turn (local only)
 
@@ -53,17 +62,18 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 - Annotations are per workspace: personal overrides/notes never reach group totals or pages (tested). Only the account owner annotates. No category yet (milestone 4 adds Category; annotation gains a category FK then).
 - Account page still shows newest 100 only; the workspace transaction list has cursor paging. List cursor is not yet invalidated on data-revision change, and there are no filtered totals or category filter yet.
 - Manual transactions are user-originated, so owners may edit amounts; imported (CSV/Plaid) amounts must stay read-only per spec.
-- Pre-existing UX issue: workspace switcher list grows long on phones with many groups.
+- Workspace switcher is now a one-line `<details>` disclosure; with JavaScript disabled it still works (native).
+- Standalone invites: any signed-in user can invite from their personal workspace; the 20/hour-per-workspace and 1/minute-per-address limits apply.
 - Neon holds synthetic data only. SQLite remains a DEBUG-only fast path. Local PostgreSQL 17 service unused. Neon free plan: 0.5 GB, 100 CU-hours/month, scales to zero (first request after idle is slower).
 
 ## Ordered next steps
 
-1. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
-2. UX: collapse the workspace switcher on phones (long list with many groups); apply apple-design springs once Motion drives real transitions (sheets/drawers).
+1. Bklit daily/cumulative chart over `reporting.daily()` (first mounted React component; keep the daily table as the accessible fallback), then CSV import/export.
+2. Optional login follow-ups not built: email change while signed in, web-based first-user setup (still `createsuperuser`). Apply apple-design springs once Motion drives real transitions.
 3. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
 
 ## Git and documentation state
 
-Both branches are pushed to `origin` (GitHub `kah-eru/budget`) including the 2026-09-25 list/yearly slice (`1be829e`) and its docs sync on `main` (`16039bd`), plus this handoff update. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
+`origin` (GitHub `kah-eru/budget`) has `feat/project-foundation` at `d0f656b` and `main` at `b34d86a`. The later 2026-09-25 timeline/invites commit (worktree) and its docs sync (root `main`) are local only. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.

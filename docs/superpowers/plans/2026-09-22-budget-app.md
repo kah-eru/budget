@@ -31,7 +31,9 @@
 
 - [x] 2026-09-25: transaction list with search, account/person/date filters and 50-row `(date, id)` cursor pages; workspace month/year periods; `reporting.monthly()` per-month year table equal to `spending()`; filtered-list Back after edit. Category filter waits for milestone 4.
 
-This is not milestone 1 completion. Milestone 2 remaining: timeline, CSV import/export, charts.
+- [x] 2026-09-25: timeline on the filtered list: one-month default range, two-year cap, `reporting.daily()` zero-filled daily + cumulative (plan fixture `[10000, 0, -1500]` / `[10000, 10000, 8500]`, equal to `spending()`), accessible daily table, day headers, cursor restart on data/permission revision change. Bottom nav Overview/Timeline/More; collapsible workspace switcher. Standalone invites (personal-workspace invitation, no access granted) and password change on More.
+
+This is not milestone 1 completion. Milestone 2 remaining: Bklit charts over the daily series, CSV import/export.
 
 ## Global constraints
 
