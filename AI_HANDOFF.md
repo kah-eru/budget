@@ -8,7 +8,7 @@ Latest request (2026-09-25, speed pass): the user asked whether agency speed win
 - Added speculation-rules prefetch (tab switches confirmed served from prefetch), script-gated cross-document view transitions (no-JS Chrome hang avoided), and an installable manifest with icons.
 - The font preload was A/B-tested and dropped.
 - 93 Django tests OK; 6/6 Chrome checks.
-- Committed locally; **not pushed**.
+- Pushed 2026-09-25 (feat `4b13f7e`, main `ece145e`); Render auto-deploys after CI (live site not checked by the agent).
 - The biggest remaining delay is Render free-plan cold start (a paid plan or keep-warm ping; the user decides, no money spent).
 - Details: [development guide](docs/development.md#speed-and-app-feel-pass--september-25-night-latest).
 - Next: custom categories (milestone 4), then limits, then notifications.
