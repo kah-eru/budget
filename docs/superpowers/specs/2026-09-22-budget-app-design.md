@@ -390,4 +390,4 @@ Deferred: billing users, public signup, social feeds, settlements, card issuing/
 
 ## 10. Review notes
 
-The defaults in section 2 and unimplemented architecture in section 5 remain proposals. The implementation snapshot distinguishes current code from full-release requirements. Installed foundation versions are recorded in requirements.txt/package-lock.json and the development guide. Hosting, domain and production credentials remain unselected; no cost or provider enrollment is authorized by this document.
+The defaults in section 2 and unimplemented architecture in section 5 remain proposals. The implementation snapshot distinguishes current code from full-release requirements. Installed foundation versions are recorded in requirements.txt/package-lock.json and the development guide. For a synthetic-data preview the user chose Render's free web service (deploys from GitHub after CI passes) with a separate Neon database; see [operations](../../operations.md). The real-data host, domain and production credentials remain unselected; no cost or provider enrollment is authorized by this document.

@@ -20,6 +20,7 @@ This is repository guidance, not a background hook. The skill is stored in Codex
 - [Low-fidelity wireframes and user flows](docs/ux-wireframes.md): phone layouts, key journeys, error states, and frontend component mapping.
 - [Build plan](docs/superpowers/plans/2026-09-22-budget-app.md): delivery order, proposed files, checks, and expansion triggers.
 - [Development setup and verification](docs/development.md): local startup, dependencies, checks, and current limitations.
+- [Operations: online preview](docs/operations.md): Render + GitHub Actions + Neon setup for the synthetic-data preview.
 
 ## Agreed scope
 

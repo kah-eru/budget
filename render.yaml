@@ -1,0 +1,31 @@
+# Render Blueprint. Synthetic data only until the release gates in docs/ pass.
+# Secrets (PG*) are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: budget
+    runtime: python
+    plan: free
+    branch: feat/project-foundation  # application code lives here until it is merged to main
+    autoDeployTrigger: checksPass    # deploy only after the GitHub Actions CI run passes
+    buildCommand: node --version && pip install -r requirements.txt && npm ci && npm run build && python manage.py collectstatic --noinput
+    # ponytail: migrations run at start because free instances have no pre-deploy shell; move to preDeployCommand on a paid plan.
+    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi --workers 2 --bind 0.0.0.0:$PORT
+    healthCheckPath: /health/
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: BUDGET_BEHIND_PROXY
+        value: "1"
+      # No mail provider yet: invitation/setup/reset emails are written to the service log (owner-only).
+      - key: DJANGO_EMAIL_BACKEND
+        value: django.core.mail.backends.console.EmailBackend
+      - key: PGSSLMODE
+        value: require
+      - key: PGHOST
+        sync: false
+      - key: PGDATABASE
+        sync: false
+      - key: PGUSER
+        sync: false
+      - key: PGPASSWORD
+        sync: false

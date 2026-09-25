@@ -10,12 +10,15 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 if not SECRET_KEY:
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY before starting Budget.")
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):  # set by Render on its web services
+    ALLOWED_HOSTS.append(render_host)
 INSTALLED_APPS = [
     "django.contrib.auth", "django.contrib.contenttypes", "django.contrib.sessions",
     "django.contrib.messages", "django.contrib.staticfiles", "axes", "budget.apps.BudgetConfig",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # serves collected static files; skips the no-store middleware
     "budget.middleware.PrivateResponseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -70,6 +73,10 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
+SECURE_REDIRECT_EXEMPT = [r"^health/$", r"^ready/$"]  # host health checks may call plain HTTP internally
+if os.environ.get("BUDGET_BEHIND_PROXY") == "1":
+    # Only behind a proxy that overwrites this header (Render does); otherwise clients could spoof HTTPS.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
@@ -99,5 +106,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 BUDGET_PRIVATE_STORAGE_ROOT = os.environ.get("BUDGET_PRIVATE_STORAGE_ROOT") or str(BASE_DIR / ".local" / "private-files")
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage", "OPTIONS": {"location": BUDGET_PRIVATE_STORAGE_ROOT}},
-    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage" if DEBUG else "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }

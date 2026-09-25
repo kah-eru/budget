@@ -2,6 +2,8 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, evening): "now i want to see this site online. can we use something like github actions". Explained Actions runs CI but cannot host Django. User chose **Render (free)** and **public URL, synthetic data only**. Added Gunicorn/WhiteNoise, proxy-aware settings, `render.yaml`, `.github/workflows/ci.yml`, `.python-version`, and [operations guide](docs/operations.md). Committed and pushed so CI runs and Render can read the Blueprint. **Blocked on the owner:** create a separate Neon role/database, create the Render Blueprint service and enter PG values in the Render dashboard, then create the first user from the PC (steps in the operations guide). No Render service exists yet; nothing is paid.
+
 Latest request (2026-09-25, later): "do it, also if not there already, add the ability to create logins and stuff." Asked about sign-up; the user chose **invite-only + standalone invites** (no public sign-up). Built in the worktree: timeline (daily/cumulative, two-year cap, revision-checked cursor), bottom nav Overview | Timeline | More, collapsible workspace switcher, standalone invites (personal-workspace invitation grants no access), More page with password change. Committed (`43ddb13`) and pushed with the docs sync on `main` when the user asked ("update docs ... then commit and push"); outgoing diffs scanned for credentials, none found. Details: [development guide](docs/development.md#timeline-more-page-and-standalone-invites--september-25-later).
 
 Earlier on 2026-09-25: transaction list/filters/cursor and month/year views (`1be829e`), pushed with docs on the user's "do it".
@@ -68,9 +70,10 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 
 ## Ordered next steps
 
-1. Bklit daily/cumulative chart over `reporting.daily()` (first mounted React component; keep the daily table as the accessible fallback), then CSV import/export.
-2. Optional login follow-ups not built: email change while signed in, web-based first-user setup (still `createsuperuser`). Apply apple-design springs once Motion drives real transitions.
-3. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
+1. Owner completes the Render/Neon setup in `docs/operations.md`; then confirm the live URL, `/health/`, login and a synthetic invite (link from Render logs). If the Render build fails on Node version, pin Node for the build.
+2. Bklit daily/cumulative chart over `reporting.daily()` (first mounted React component; keep the daily table as the accessible fallback), then CSV import/export.
+3. Optional login follow-ups not built: email change while signed in, web-based first-user setup (still `createsuperuser`). Apply apple-design springs once Motion drives real transitions.
+4. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
 
 ## Git and documentation state
 
