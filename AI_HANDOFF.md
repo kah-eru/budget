@@ -2,6 +2,15 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, categorize by example): search transactions by keyword, pick them, and have same-name transactions count toward that category's limit automatically. The user chose both entry points and "use my search word".
+- Built in `ea37c7b`:
+  - category → Add transactions: search, tick, keyword rule, no backfill of unticked rows
+  - on a transaction: "also similar" with a prefilled, editable keyword that creates the rule and backfills non-manual matches
+  - budgets are re-evaluated afterwards
+- Verification: 124 Django tests OK; 7/7 Chrome checks; screenshots reviewed.
+- **Not pushed** (budgets and alerts are also still unpushed); waiting for "push".
+- Details: [development guide](docs/development.md#categorize-by-example--september-25-night-latest).
+
 Latest (2026-09-25, continuing features after the chart fix): budgets and in-app alerts, in local commits:
 - `a95a3d0` budgets: monthly/yearly limit on one category or one name match; posted only, inclusive limit, pending separate; Overview Budgets card.
 - `958ba5e` alerts: one per recipient/budget/current period (database unique), silent baselines on budget save or member join, no closed-period alerts, header bell and Alerts inbox with recomputed amounts.

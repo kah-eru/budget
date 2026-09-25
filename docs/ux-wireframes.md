@@ -23,6 +23,8 @@ Update 2026-09-25 (requested features): Reports, Goals, Bills & recurring, and N
 
 Update 2026-09-25 (speed pass): charts hold their exact space while loading (a placeholder line appears only if loading takes over 1.5 s, and the chart is excluded from the page crossfade); tab pages are prefetched and pages crossfade (the bottom nav stays put); Add to Home Screen opens the app full screen.
 
+Update 2026-09-25 (categorize by example): Category → Add transactions has a search box, a ticked result list (hand-set rows unticked and labeled), a "Future transactions containing this go to <category>" option with an editable keyword, and "Add ticked to <category>". The transaction Edit page has "Also put other transactions with this name in this category" with a prefilled Name contains field. A filtered Timeline has an "Add transactions to <category>" chip.
+
 Update 2026-09-25 (budgets and alerts): Overview has a Budgets card above By category (spent of limit, bar, left/over) with Manage budgets. The header has a bell that becomes an "N new alerts" pill; it opens Alerts, a list of over-budget events with current amounts.
 
 Update 2026-09-25 (categories): Overview has a By category list (bar per category, tap to open the filtered Timeline) and a Manage categories link. Categories → Rules → Add rule has Preview matches and an Also apply to existing transactions option. The transaction Edit page has a Category field.
