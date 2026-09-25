@@ -32,4 +32,34 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
     await plan.screenshot({ path: `.local/plan-${scheme}.png` });
   }
+
+  await page.emulateMedia({ colorScheme: "light" });
+
+  // Split one purchase across two categories; the lines must add up exactly.
+  const suffix = Date.now().toString();
+  const accountName = "Split card " + suffix;
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("link", { name: /^Add account/ }).click();
+  await page.getByLabel("Name", { exact: true }).fill(accountName);
+  await page.getByRole("button", { name: "Create private account" }).click();
+  await page.getByRole("link", { name: accountName }).click();
+  await page.getByRole("link", { name: "Add transaction" }).click();
+  await page.getByLabel("Date").fill("2026-04-12");
+  await page.getByLabel("Amount (USD)").fill("50.00");
+  await page.getByLabel("Description").fill("Superstore " + suffix);
+  await page.getByRole("button", { name: "Save transaction" }).click();
+  await page.getByRole("link", { name: new RegExp("^Edit Superstore " + suffix) }).click();
+  await page.getByRole("link", { name: "Split across categories" }).click();
+  await page.getByLabel("Line 1 category").selectOption({ label: "Groceries" });
+  await page.getByLabel("Line 1 amount (USD)").fill("30");
+  await page.getByLabel("Line 2 category").selectOption({ label: "Shopping" });
+  await page.getByLabel("Line 2 amount (USD)").fill("19.99");
+  await page.getByRole("button", { name: "Save split" }).click();
+  await expect(page.getByRole("alert")).toContainText("$0.01 left to split");
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+  await page.screenshot({ path: ".local/split-phone.png", fullPage: true });
+  await page.getByLabel("Line 2 amount (USD)").fill("20");
+  await page.getByRole("button", { name: "Save split" }).click();
+  await expect(page.locator("main")).toContainText("Split: Groceries $30.00, Shopping $20.00");
 });

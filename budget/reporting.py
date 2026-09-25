@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from django.db.models import F, FilteredRelation, Q, Sum
 from django.db.models.functions import Coalesce, ExtractMonth
 
-from .models import Transaction
+from .models import SplitLine, Transaction
 from .permissions import visible_accounts
 from .rules import normalize
 
@@ -65,12 +65,30 @@ def monthly(user, workspace, year):
     return [{"month": date(year, m, 1), **found.get(m, ZERO)} for m in range(1, 13)]
 
 
-def by_category(rows, start, end):
-    """spending() per category of this workspace for already-filtered visible rows, largest posted first;
-    rows without a category are "Uncategorized" (id None). One grouped query; empty categories are skipped."""
-    grouped = (rows.filter(posted_on__range=(start, end)).values("ann__category", "ann__category__name")
-               .annotate(**_sums()).order_by())
-    totals = [{"id": r["ann__category"], "name": r["ann__category__name"] or "Uncategorized", **_shape(r)} for r in grouped]
+def split_ids(workspace):
+    return SplitLine.objects.filter(workspace=workspace).values("transaction_id")
+
+
+def category_totals(rows, workspace, start, end):
+    """{category id or None: {name, spending totals}} for already-filtered visible rows in [start, end].
+    A split transaction counts each line in its category with the parent's classification and status;
+    any other row counts in its overlay category. One grouped query plus one for split lines."""
+    in_range = rows.filter(posted_on__range=(start, end))
+    found = {r["ann__category"]: {"name": r["ann__category__name"] or "Uncategorized", **_shape(r)}
+             for r in in_range.exclude(pk__in=split_ids(workspace)).values("ann__category", "ann__category__name").annotate(**_sums()).order_by()}
+    parents = {r["pk"]: r for r in in_range.filter(pk__in=split_ids(workspace)).values("pk", "effective", "pending")}
+    for line in SplitLine.objects.filter(workspace=workspace, transaction_id__in=list(parents)).select_related("category"):
+        parent, totals = parents[line.transaction_id], found.setdefault(line.category_id, {"name": line.category.name, **ZERO})
+        sign = {"expense": 1, "refund": -1}.get(parent["effective"], 0)
+        totals["pending_cents" if parent["pending"] else "posted_cents"] += sign * line.amount_cents
+        if parent["effective"] == "income" and not parent["pending"]:
+            totals["income_cents"] += line.amount_cents
+    return found
+
+
+def by_category(rows, start, end, workspace):
+    """category_totals() as a list, largest posted first; rows without a category are "Uncategorized" (id None)."""
+    totals = [{"id": key, **t} for key, t in category_totals(rows, workspace, start, end).items()]
     return sorted((t for t in totals if t["posted_cents"] or t["pending_cents"]), key=lambda t: (-t["posted_cents"], t["name"]))
 
 
@@ -85,14 +103,17 @@ def budget_progress(user, workspace, budgets, day):
     """Each budget's period containing `day`: posted net spending (refunds reduce it), pending as a separate
     estimate, remaining (negative when over) and whether posted spending is strictly above the limit."""
     rows = visible_transactions(user, workspace)
-    result = []
-    # ponytail: one query per budget; group by period if a workspace ever has dozens of budgets.
+    result, per_period = [], {}
     for budget in budgets:
         start, end = period_bounds(budget.period, day)
         in_period = rows.filter(posted_on__range=(start, end))
         if budget.category_id:
-            totals = _shape(in_period.filter(ann__category=budget.category_id).aggregate(**_sums()))
+            # Category totals once per period, shared by every category budget in it (splits count per line).
+            if (start, end) not in per_period:
+                per_period[start, end] = category_totals(rows, workspace, start, end)
+            totals = per_period[start, end].get(budget.category_id, ZERO)
         else:
+            # ponytail: one scan per name budget; name matches count whole transactions, splits do not apply.
             pattern, totals = normalize(budget.name_match), dict(ZERO)
             for row in in_period.filter(effective__in=("expense", "refund")).only("description", "amount_cents", "pending", "classification"):
                 if pattern in normalize(row.description):

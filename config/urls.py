@@ -40,6 +40,7 @@ urlpatterns = [
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/new/", views.transaction_edit, name="transaction_create"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/<int:transaction_id>/", views.transaction_edit, name="transaction_edit"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/<int:transaction_id>/annotate/", views.annotation_edit, name="annotation_edit"),
+    path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/<int:transaction_id>/split/", views.transaction_split, name="transaction_split"),
     path("workspaces/<int:workspace_id>/categories/", views.category_list, name="categories"),
     path("workspaces/<int:workspace_id>/categories/<int:category_id>/", views.category_edit, name="category_edit"),
     path("workspaces/<int:workspace_id>/categories/<int:category_id>/add/", views.category_add, name="category_add"),

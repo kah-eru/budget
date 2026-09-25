@@ -2,6 +2,7 @@ import csv
 from datetime import date, timedelta
 from decimal import Decimal
 from smtplib import SMTPException
+from urllib.parse import quote
 
 from django import forms
 from django.contrib import messages
@@ -25,10 +26,10 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .account_mail import notify
 from .forms import (
-    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, IncomeForm, RuleForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, IncomeForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice, Rule, Transaction, TransactionAnnotation, User, Workspace
+from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
@@ -203,10 +204,15 @@ def period(value, today):
     return "month", start, (start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
 
-def labelled(rows):
+def labelled(rows, workspace):
+    """Classification labels plus this workspace's split lines (row.splits, empty when not split)."""
     labels = dict(Transaction.CLASSIFICATIONS)
+    lines = {}
+    for line in SplitLine.objects.filter(workspace=workspace, transaction__in=[r.pk for r in rows]).select_related("category").order_by("pk"):
+        lines.setdefault(line.transaction_id, []).append(line)
     for row in rows:
         row.effective_label = labels[row.effective]
+        row.splits = lines.get(row.pk, [])
     return rows
 
 
@@ -239,7 +245,7 @@ def workspace_detail(request, workspace_id):
     # Month view: monthly budgets for that month and yearly ones for its year; year view: yearly budgets only.
     budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
     context["budgets"] = budget_progress(request.user, workspace, budgets if kind == "month" else budgets.filter(period="year"), start)
-    context["categories"] = by_category(visible_transactions(request.user, workspace), start, end)
+    context["categories"] = by_category(visible_transactions(request.user, workspace), start, end, workspace)
     top = max((c["posted_cents"] for c in context["categories"]), default=0)
     for c in context["categories"]:
         c["share"] = max(0, round(100 * c["posted_cents"] / top)) if top > 0 else 0
@@ -252,7 +258,7 @@ def account_detail(request, workspace_id, account_id):
     workspace = get_workspace(request.user, workspace_id)
     account = get_object_or_404(visible_accounts(request.user, workspace), pk=account_id)
     # ponytail: newest 100 only; the workspace timeline has the cursor-paged full history.
-    transactions = labelled(list(annotated(account.transactions.order_by("-posted_on", "-pk"), workspace)[:100]))
+    transactions = labelled(list(annotated(account.transactions.order_by("-posted_on", "-pk"), workspace)[:100]), workspace)
     return render(request, "budget/account.html", {**page_context(request.user, workspace), "account": account, "transactions": transactions})
 
 
@@ -282,7 +288,7 @@ def transaction_list(request, workspace_id):
             raise Http404
         rows = rows.filter(Q(posted_on__lt=day) | Q(posted_on=day, pk__lt=pk))
     # ponytail: keyset over all visible accounts; add a (posted_on, id) index if the load gate shows it matters.
-    page = labelled(list(rows.order_by("-posted_on", "-pk")[:PAGE_SIZE + 1]))
+    page = labelled(list(rows.order_by("-posted_on", "-pk")[:PAGE_SIZE + 1]), workspace)
     if len(page) > PAGE_SIZE:
         page, last = page[:PAGE_SIZE], page[PAGE_SIZE - 1]
         params = request.GET.copy()
@@ -318,13 +324,15 @@ def transaction_export(request, workspace_id):
         return HttpResponse(" ".join(e for errors in form.errors.values() for e in errors), status=400, content_type="text/plain")
     start, end = form.cleaned_data["start"], form.cleaned_data["end"]
     rows = labelled(list(form.apply(visible_transactions(request.user, workspace)).filter(posted_on__range=(start, end))
-                         .select_related("account__owner").order_by("-posted_on", "-pk")))
+                         .select_related("account__owner").order_by("-posted_on", "-pk")), workspace)
     response = HttpResponse(content_type="text/csv; charset=utf-8", headers={
         "Content-Disposition": f'attachment; filename="budget-{start:%Y-%m-%d}-{end:%Y-%m-%d}.csv"', "Cache-Control": "no-store"})
     writer = csv.writer(response)
     writer.writerow(["Date", "Account", "Owner", "Name", "Original description", "Category", "Classification", "Status", "Amount (USD)", "Note"])
     for row in rows:
-        names = [row.account.name, row.account.owner.username, row.ann_name or row.description, row.description, row.ann_category or "", row.effective_label]
+        category = ("Split: " + "; ".join(f"{line.category.name} {line.amount_cents // 100}.{line.amount_cents % 100:02d}" for line in row.splits)
+                    if row.splits else row.ann_category or "")
+        names = [row.account.name, row.account.owner.username, row.ann_name or row.description, row.description, category, row.effective_label]
         writer.writerow([f"{row.posted_on:%Y-%m-%d}", *map(csv_cell, names), "Pending" if row.pending else "Posted",
                          f"{row.amount_cents // 100}.{row.amount_cents % 100:02d}", csv_cell(row.ann_note or "")])
     return response
@@ -376,7 +384,8 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
     where = "your personal view" if workspace.is_personal else workspace.name
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": row.description or "Transaction", "action": "Save changes", "cancel_url": back,
                   "help": f"{date_format(row.posted_on)} · {dollars(row.amount_cents)} original. Changes here apply to {where} only; the original entry stays as recorded.",
-                  "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit original entry"}, status=400 if request.method == "POST" else 200)
+                  "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit original entry",
+                  "split_url": reverse("transaction_split", args=[workspace.pk, account.pk, row.pk]) + (f"?next={quote(back)}" if request.GET.get("next") else "")}, status=400 if request.method == "POST" else 200)
 
 
 @login_required
@@ -543,6 +552,33 @@ def rule_edit(request, workspace_id, rule_id=None):
         messages.success(request, "Rule saved." + (f" {changed} existing transaction{'s' if changed != 1 else ''} updated." if form.cleaned_data["apply_existing"] else ""))
         return redirect(back)
     return render(request, "budget/rule_form.html", context, status=400 if request.method == "POST" else 200)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def transaction_split(request, workspace_id, account_id, transaction_id):
+    """Split one transaction across categories in this workspace only; the original entry never changes."""
+    workspace = get_workspace(request.user, workspace_id)
+    account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
+    row = get_object_or_404(Transaction, account=account, pk=transaction_id)
+    existing = list(SplitLine.objects.filter(transaction=row, workspace=workspace).order_by("pk"))
+    back = request.GET.get("next", "")
+    if not url_has_allowed_host_and_scheme(back, allowed_hosts=None):
+        back = reverse("account_detail", args=[workspace.pk, account.pk])
+    form = SplitForm(request.POST if request.method == "POST" and "remove" not in request.POST else None,
+                     workspace=workspace, source=row, existing=existing)
+    if request.method == "POST" and ("remove" in request.POST or form.is_valid()):
+        with transaction.atomic():
+            SplitLine.objects.filter(transaction=row, workspace=workspace).delete()
+            if "remove" not in request.POST:
+                SplitLine.objects.bulk_create(SplitLine(transaction=row, workspace=workspace, category=c, amount_cents=cents)
+                                              for c, cents in form.cleaned_data["lines"])
+            Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
+            evaluate(workspace)
+        messages.success(request, "Split removed." if "remove" in request.POST else "Split saved for this workspace only.")
+        return redirect(back)
+    return render(request, "budget/split.html", {**page_context(request.user, workspace), "form": form, "row": row, "existing": existing,
+                  "cancel_url": back}, status=400 if request.method == "POST" else 200)
 
 
 @login_required

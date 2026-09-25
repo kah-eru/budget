@@ -40,7 +40,7 @@ class CategoryTests(TestCase):
         self.assertEqual(names, set(Category.objects.filter(workspace=self.group).values_list("name", flat=True)))
 
     def test_by_category_nets_refunds_skips_transfers_and_private_accounts(self):
-        totals = {t["name"]: t["posted_cents"] for t in by_category(visible_transactions(self.bob, self.group), *MAY)}
+        totals = {t["name"]: t["posted_cents"] for t in by_category(visible_transactions(self.bob, self.group), *MAY, self.group)}
         self.assertEqual(totals, {"Groceries": 4500, "Dining": 1200, "Uncategorized": 700})
         self.assertEqual(list(totals), ["Groceries", "Dining", "Uncategorized"])  # largest first
 

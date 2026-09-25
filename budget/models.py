@@ -167,3 +167,16 @@ class BudgetAlert(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["budget", "recipient", "period_start"], name="budget_alert_once_per_period")]
+
+
+class SplitLine(models.Model):
+    # A per-workspace split: lines sum exactly to the transaction amount (checked in SplitForm) and replace the
+    # overlay category in that workspace's reports and budgets. The line takes the parent's classification and status.
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="split_lines")
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="split_lines")
+    category = models.ForeignKey(Category, on_delete=models.RESTRICT, related_name="split_lines")
+    amount_cents = models.BigIntegerField()
+
+    class Meta:
+        indexes = [models.Index(fields=["workspace", "transaction"])]
+        constraints = [models.CheckConstraint(condition=Q(amount_cents__gt=0), name="split_line_amount_positive")]

@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .invitations import claim_email_send
-from .models import Account, Budget, Category, Rule, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, Budget, Category, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .rules import normalize, suggest_keyword
 
 
@@ -85,6 +85,7 @@ class TransactionFilterForm(forms.Form):
 
     def __init__(self, *args, accounts, workspace, **kwargs):
         super().__init__(*args, **kwargs)
+        self.workspace = workspace
         self.fields["category"].choices = [("", "All categories"), ("none", "Uncategorized"),
                                            *((str(c.pk), f"{c.name} (archived)" if c.archived else c.name) for c in workspace.categories.order_by("archived", "name"))]
         self.fields["account"].queryset = accounts.order_by("name", "pk")
@@ -118,7 +119,14 @@ class TransactionFilterForm(forms.Form):
         if data["person"]:
             rows = rows.filter(account__owner=data["person"])
         if data["category"]:
-            rows = rows.filter(ann__category=None) if data["category"] == "none" else rows.filter(ann__category=int(data["category"]))
+            # A split row belongs to each of its lines' categories, never to its overlay category.
+            split = SplitLine.objects.filter(workspace=self.workspace)
+            if data["category"] == "none":
+                rows = rows.filter(ann__category=None).exclude(pk__in=split.values("transaction_id"))
+            else:
+                chosen = int(data["category"])
+                rows = rows.filter(Q(ann__category=chosen) & ~Q(pk__in=split.values("transaction_id"))
+                                   | Q(pk__in=split.filter(category_id=chosen).values("transaction_id")))
         return rows
 
 
@@ -204,6 +212,49 @@ class BudgetForm(forms.ModelForm):
 class IncomeForm(forms.Form):
     income = forms.DecimalField(label="Expected monthly income (USD)", min_value=Decimal("0"), max_digits=12, decimal_places=2, required=False,
                                 help_text="After tax, for everyone this workspace covers. Leave blank to use the average of your last three complete months.")
+
+
+class SplitForm(forms.Form):
+    """Up to SLOTS category lines that must add up exactly to the transaction amount."""
+    SLOTS = 4
+
+    def __init__(self, *args, workspace, source, existing=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.source = source
+        categories = workspace.categories.filter(Q(archived=False) | Q(pk__in=[line.category_id for line in existing])).order_by("name")
+        for i in range(max(self.SLOTS, len(existing))):
+            line = existing[i] if i < len(existing) else None
+            self.fields[f"category_{i}"] = forms.ModelChoiceField(categories, required=False, label=f"Line {i + 1} category",
+                                                                  empty_label="—", initial=line and line.category_id)
+            self.fields[f"amount_{i}"] = forms.DecimalField(label=f"Line {i + 1} amount (USD)", min_value=Decimal("0.01"), max_digits=12,
+                                                            decimal_places=2, required=False,
+                                                            initial=line and Decimal(line.amount_cents) / 100)
+        self.slots = [(self[f"category_{i}"], self[f"amount_{i}"]) for i in range(len(self.fields) // 2)]
+
+    def clean(self):
+        data = super().clean()
+        lines = []
+        for i in range(len(self.slots)):
+            category, amount = data.get(f"category_{i}"), data.get(f"amount_{i}")
+            if bool(category) != bool(amount):
+                if f"amount_{i}" not in self.errors:
+                    raise forms.ValidationError(f"Line {i + 1} needs both a category and an amount.")
+            elif category:
+                lines.append((category, int(amount * 100)))
+        if self.errors:
+            return data
+        if len(lines) < 2:
+            raise forms.ValidationError("A split needs at least two lines.")
+        if len({c.pk for c, _ in lines}) != len(lines):
+            raise forms.ValidationError("Use each category once.")
+        total = sum(cents for _, cents in lines)
+        if total != self.source.amount_cents:
+            diff = self.source.amount_cents - total
+            raise forms.ValidationError(f"The lines add up to ${total // 100:,}.{total % 100:02d}; the transaction is "
+                                        f"${self.source.amount_cents // 100:,}.{self.source.amount_cents % 100:02d} "
+                                        f"({'$%d.%02d left to split' % divmod(diff, 100) if diff > 0 else '$%d.%02d too much' % divmod(-diff, 100)}).")
+        data["lines"] = lines
+        return data
 
 
 class GroupForm(forms.ModelForm):
