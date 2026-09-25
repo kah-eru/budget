@@ -9,7 +9,7 @@ Latest request (2026-09-25, feature list): "make sure the docs have these featur
 - Plan: added to milestones 4 and 5, plus a new milestone 9 (reports, goals, recurring, net worth).
 - Also updated the README agreed scope and the wireframes placement note.
 - Open decisions for the user: Plaid Liabilities/Investments/Balance availability and cost, and an email provider for email alerts.
-- Docs only; no code changed.
+- Docs only; no code changed. Pushed 2026-09-25 (feat `f3cac84`, main `9475add`); a later "push and commit" found nothing left to commit.
 
 Latest request (2026-09-25, chart flash): "the line flashes before animating itself from left to right, prolly cuz of the preload... remove the preload for only the graph line".
 - Frames showed the cause was not the preload: the page crossfade showed the previous page's finished line fading out, plus a brief placeholder line.
