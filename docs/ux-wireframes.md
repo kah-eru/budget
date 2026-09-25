@@ -16,7 +16,7 @@ Read alongside the [product spec](superpowers/specs/2026-09-22-budget-app-design
 
 Implemented 2026-09-25: workspace summary with ← / → and Month/Year (year adds a per-month table linking to each month) -> View <period> transactions -> search/filters (Apply filters, Clear filters, Older transactions) -> Edit -> Save returns to the same filtered list. Filters are a plain form above the list, not yet a dialog.
 
-Update 2026-09-25 (speed pass): charts show a same-size skeleton until they load; tab pages are prefetched and pages crossfade (the bottom nav stays put); Add to Home Screen opens the app full screen.
+Update 2026-09-25 (speed pass): charts hold their exact space while loading (a placeholder line appears only if loading takes over 0.4 s, and the chart is excluded from the page crossfade); tab pages are prefetched and pages crossfade (the bottom nav stays put); Add to Home Screen opens the app full screen.
 
 Update 2026-09-25 (latest): More is now **Settings** (Your login: change username/email/password; Appearance: System/Light/Dark; Your data: CSV export; Add; Sign out), and the Timeline has an Export CSV chip.
 

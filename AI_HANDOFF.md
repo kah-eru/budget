@@ -5,7 +5,7 @@ Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 Latest request (2026-09-25, chart flash): "the line flashes before animating itself from left to right, prolly cuz of the preload... remove the preload for only the graph line".
 - Frames showed the cause was not the preload: the page crossfade showed the previous page's finished line fading out, plus a brief placeholder line.
 - The chart is now excluded from the crossfade, and the placeholder shows only after 0.4 s. Preloading is kept.
-- 6/6 Chrome checks. Committed locally; **not pushed**.
+- 6/6 Chrome checks. Pushed with the docs update below (live site not checked by the agent).
 
 Latest request (2026-09-25, speed pass): the user asked whether agency speed wins (WebP/AVIF, lazy loading, CDN, trimming scripts, Next.js + headless CMS, SSR) or features (custom categories, limits, notifications) come first, then asked for skeleton loaders and preloading for an app feel. The user chose "speed pass, then features". SSR and lazy loading were already true; images and CMS don't apply.
 - Found and fixed a production-only double load of `app.js` (the chart chunk imported the unhashed entry). Initial JS is now 1.17 kB gzip.
@@ -105,12 +105,12 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 ## Ordered next steps
 
 1. Done 2026-09-25: Render preview live, owner signed in. Optional: try a synthetic invite (link appears in Render Logs).
-2. Done 2026-09-25 (local commit): Bklit chart. CSV export done; speed pass done. Next per user: custom categories, then limits (budgets), then notifications (in-app inbox first). CSV import still open (imported amounts read-only per spec). Optional: trim the chart chunk (mostly React DOM + Motion).
+2. Done and pushed 2026-09-25: Bklit chart, Settings, CSV export, speed/app-feel pass, chart flash fix. Next per user: custom categories, then limits (budgets), then notifications (in-app inbox first). CSV import still open (imported amounts read-only per spec). Optional: trim the chart chunk (mostly React DOM + Motion).
 3. Optional login follow-ups not built: web-based first-user setup (still `createsuperuser`). Apply apple-design springs once Motion drives real transitions.
 4. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
 
 ## Git and documentation state
 
-Both branches are pushed to `origin` (GitHub `kah-eru/budget`), including the timeline/invites slice (`43ddb13`), its docs sync on `main` (`b3dea00`) and this handoff update. No PR, merge or deployment. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
+Both branches are pushed to `origin` (GitHub `kah-eru/budget`) through the chart flash fix and this docs update (2026-09-25). Each push to `feat/project-foundation` auto-deploys the Render preview after CI. Older handoff entries marked "not pushed" have since been pushed. No PR or merge. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.
