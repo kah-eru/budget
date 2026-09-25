@@ -184,9 +184,9 @@ Create files only when their milestone needs them. Framework-required package fi
 
 **Deliverable:** Users can create categories, preview/backfill name rules, and inspect monthly/yearly merchant/category budget progress.
 
-- [ ] Write rule tests for case/whitespace normalization, missing merchant, empty pattern rejection, explicit priority, stable tie-break, manual override precedence, and workspace isolation.
-- [ ] Implement exact-merchant and description-contains rules against bank source fields. Track annotation provenance; preserve manual edits on sync/backfill.
-- [ ] Add matching-history previews and explicit backfill. Archive categories safely and disable rules targeting them; never delete referenced history.
+- [x] (2026-09-25; bank-category mapping waits for Plaid) Write rule tests for case/whitespace normalization, missing merchant, empty pattern rejection, explicit priority, stable tie-break, manual override precedence, and workspace isolation.
+- [x] (2026-09-25; exact match is on the description until merchant fields arrive with Plaid) Implement exact-merchant and description-contains rules against bank source fields. Track annotation provenance; preserve manual edits on sync/backfill.
+- [x] (2026-09-25) Add matching-history previews and explicit backfill. Archive categories safely and disable rules targeting them; never delete referenced history.
 - [ ] Add positive-dollar budgets targeting one category or one merchant/name match, with monthly/yearly period selection and no rollover.
 - [ ] Test the boundary: a $100 budget with $100 posted spending is not exceeded; $100.01 is exceeded; pending spending does not trigger; refunds reduce current-period spending.
 - [ ] Test baseline establishment after create/edit/join, recalculation after share changes, and no retroactive alerts for closed periods. Keep the baseline update and any event creation atomic under concurrent evaluations.

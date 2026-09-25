@@ -195,4 +195,19 @@ Measured (lab only, not field data):
 - **Biggest remaining delay (not code):** Render's free plan sleeps after about 15 idle minutes, so the first visit waits roughly 30–60 s, and Neon's free compute also suspends. The fix is a paid instance (about $7/month) or an external keep-warm ping. That is the user's decision and has not been done.
 - Verification: 93 Django tests OK (4 PG-only skipped); 6/6 Chrome checks (the chart check now requires the real chart and no skeleton, and Settings checks the manifest), including the no-JavaScript journeys.
 
-Continue milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Categories and rules — September 25 (night, latest)
+
+Why: the user said "continue with the features". The agreed order is custom categories, then limits, then notifications.
+
+Implemented (milestone 4, first part):
+- **Categories** (`Category`, migration 0006). Categories belong to one workspace. Each new workspace gets ten standard ones (Groceries, Dining, Housing, Utilities, Transport, Shopping, Health, Entertainment, Subscriptions, Travel), and the migration seeds existing workspaces. Names are unique per workspace, case-insensitive, and backed by a database constraint.
+- **Managing categories.** Any workspace member can add, rename or archive them (Overview → Manage categories). Archiving hides a category from pickers, keeps it on past transactions, and turns off its rules. The foreign key is `RESTRICT`: a category still used by history can't be deleted, but deleting a workspace or user still cascades.
+- **Setting a category.** The transaction Edit page has a Category field (this workspace's active categories; empty means Uncategorized). It is saved in the per-workspace overlay, so the original entry never changes.
+- **Where categories show.** Overview has a **By category** list for the period: net of refunds, transfers excluded, largest first, with a proportional bar. Each row opens the Timeline filtered to that category. The Timeline has a Category filter (including Uncategorized), rows show their category, and the CSV export has a Category column.
+- **Rules** (`Rule`, `budget/rules.py`, migration 0007). "Name contains" or "Name is exactly", matched against the original description after trimming, collapsing spaces and Unicode case folding. Any member can manage rules (Categories → Rules).
+- **Rule order:** a category picked by hand (`category_source="manual"`, including a manual Uncategorized) wins. Otherwise the first enabled rule by priority, then by rule ID. Otherwise Uncategorized. Categories set before rules existed were marked manual by the migration.
+- **When rules apply.** New and edited manual transactions get the current rules of every workspace that can see the account. Saving a rule offers **Preview matches** (a count plus the newest 20; nothing is saved) and an opt-in **Also apply to existing transactions**, which keeps manual choices.
+- Not yet: rules re-running when an account is newly shared (only new or edited transactions and explicit backfill apply them), deleting a rule (turn it off instead), a bank-category mapping (waits for Plaid), splits, and budgets/limits.
+- Verification: 108 Django tests OK (4 PG-only skipped), including new `test_categories.py` (9) and `test_rules.py` (6); `check` and migration drift clean; 7/7 Chrome checks, including a new `categories.spec.ts` (categorize → Overview → filtered Timeline → add a category → rule preview and backfill). Light and dark 360 px screenshots reviewed.
+
+Continue: budgets/limits (milestone 4), then notifications (milestone 5). Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
