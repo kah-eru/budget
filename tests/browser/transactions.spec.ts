@@ -48,7 +48,7 @@ test("search transactions, edit from a filtered list and return to it; year view
   await expect(page.getByRole("heading", { name: "2026", exact: true })).toBeVisible();
   for (const width of [320, 360]) {
     await page.setViewportSize({ width, height: 900 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
   await page.screenshot({ path: ".local/year-phone.png", fullPage: true });
 });

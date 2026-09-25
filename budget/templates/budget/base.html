@@ -13,7 +13,7 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-8">
     <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
-      <a href="{% url 'home' %}" class="font-display text-2xl tracking-tight">Budget<span class="text-accent" aria-hidden="true">.</span></a>
+      <a href="{% url 'home' %}" class="text-xl font-bold tracking-tight">Budget<span class="text-accent" aria-hidden="true">.</span></a>
       {% if user.is_authenticated %}
       <span class="break-all rounded-full bg-surface px-3 py-1 text-sm text-muted">{{ user.username }}</span>
       {% endif %}
@@ -38,9 +38,9 @@
   <nav aria-label="Main navigation" class="bottom-nav fixed inset-x-0 bottom-0 border-t border-line">
     <div class="mx-auto grid max-w-md grid-cols-3 gap-1 px-3 py-2">
       {% with here=request.resolver_match.url_name %}
-      <a href="{% if workspace %}{% url 'workspace' workspace.pk %}{% else %}{% url 'home' %}{% endif %}" class="nav-link" {% if here == 'workspace' or here == 'account_detail' %}aria-current="page"{% endif %}>Overview</a>
-      <a href="{% if workspace %}{% url 'transactions' workspace.pk %}{% elif personal %}{% url 'transactions' personal.pk %}{% else %}{% url 'home' %}{% endif %}" class="nav-link" {% if here == 'transactions' %}aria-current="page"{% endif %}>Timeline</a>
-      <a href="{% url 'more' %}" class="nav-link" {% if here == 'more' or here == 'account_create' or here == 'group_create' or here == 'password_change' or here == 'email_verify' or here == 'invitation_create' %}aria-current="page"{% endif %}>More</a>
+      <a href="{% if workspace %}{% url 'workspace' workspace.pk %}{% else %}{% url 'home' %}{% endif %}" class="nav-link" {% if here == 'workspace' or here == 'account_detail' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 4 8-9"/><path d="M3 21h18"/></svg>Overview</a>
+      <a href="{% if workspace %}{% url 'transactions' workspace.pk %}{% elif personal %}{% url 'transactions' personal.pk %}{% else %}{% url 'home' %}{% endif %}" class="nav-link" {% if here == 'transactions' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>Timeline</a>
+      <a href="{% url 'more' %}" class="nav-link" {% if here == 'more' or here == 'account_create' or here == 'group_create' or here == 'password_change' or here == 'email_verify' or here == 'invitation_create' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>More</a>
       {% endwith %}
     </div>
   </nav>

@@ -150,4 +150,14 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 - Gotcha: `tests/browser/server.py` runs without the reloader, so Django's cached template loader keeps old templates; restart it after template edits.
 - Not done: a manual light/dark toggle (OS setting only), restyling the chart tooltip beyond tokens, a real-device check.
 
+## Robinhood-style layout — September 25 (night, later)
+
+- User asked for a UI "more like" a Robinhood reference (three phone screens). Superseded the receipt signature and the serif/mono fonts (Young Serif and Martian Mono removed; Hanken Grotesk only).
+- Flat layout: no bordered cards (`.card` is spacing only); light canvas is white, dark is Coffee Bean; hairline `stat-row` label/value rows; pill-shaped primary buttons.
+- Overview: workspace name, the period's posted spending as a big number (`.hero-amount`), change versus the previous month/year (one extra `spending()` query), the running-total chart directly below with no grid or axis, then period chips (←, Month, Year, →). Accounts list rows end in a pink value pill with each account's posted spending for the period (one grouped query). Year view feeds the chart a monthly running total.
+- Timeline: same hero number + chart, stat rows, filters folded into a `Filters` disclosure (open when filters are set or invalid), back link is a `‹ Workspace` chip (accessible name still "Back to …").
+- Bottom nav: inline SVG icons with labels; the current item turns pink.
+- Chart containers clip overflow; the chart re-measures after a resize, so browser width checks poll.
+- Verified: 78 Django tests OK (4 PG-only skipped); 5/5 Chrome checks; light/dark 390px screenshots reviewed (`.local/r-{light,dark}-{overview,timeline}.png`). CSS 15.83 kB gzip, initial JS 4.64 kB gzip, chart chunk 158.87 kB gzip.
+
 Continue milestone 2: CSV import/export. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

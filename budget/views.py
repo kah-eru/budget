@@ -18,7 +18,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from .forms import AccountForm, AnnotationForm, GroupForm, SharingForm, TransactionFilterForm, TransactionForm
 from .models import Membership, MembershipNotice, Transaction, TransactionAnnotation, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import annotated, daily, monthly, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, daily, monthly, spending, visible_transactions
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
 
@@ -90,14 +90,28 @@ def labelled(rows):
 def workspace_detail(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
     context = page_context(request.user, workspace)
-    context["accounts"] = visible_accounts(request.user, workspace).select_related("owner").order_by("name", "pk")
     context["memberships"] = Membership.objects.filter(workspace=workspace).select_related("user").exclude(user=workspace.owner)
     kind, start, end = period(request.GET.get("period", ""), timezone.localdate())
     context.update(kind=kind, start=start, end=end, month=spending(request.user, workspace, start, end))
     if kind == "year":
-        context.update(label=str(start.year), prev=str(start.year - 1), next=str(start.year + 1), months=monthly(request.user, workspace, start.year))
+        months, running = monthly(request.user, workspace, start.year), 0
+        for m in months:
+            running += m["posted_cents"]
+            m.update(day=m["month"], cumulative_cents=running)
+        context.update(label=str(start.year), prev=str(start.year - 1), next=str(start.year + 1), months=months, series=months)
+        _, prev_start, prev_end = period(str(start.year - 1), start)
     else:
-        context.update(label=date_format(start, "F Y"), prev=f"{start - timedelta(days=1):%Y-%m}", next=f"{end + timedelta(days=1):%Y-%m}")
+        context.update(label=date_format(start, "F Y"), prev=f"{start - timedelta(days=1):%Y-%m}", next=f"{end + timedelta(days=1):%Y-%m}",
+                       series=daily(visible_transactions(request.user, workspace), start, end))
+        _, prev_start, prev_end = period(f"{start - timedelta(days=1):%Y-%m}", start)
+    context["prev_label"] = str(prev_start.year) if kind == "year" else date_format(prev_start, "F")
+    context["change_cents"] = context["month"]["posted_cents"] - spending(request.user, workspace, prev_start, prev_end)["posted_cents"]
+    # One grouped query for each account's posted spending in the period (the row pill).
+    per_account = {r["account"]: _shape(r)["posted_cents"] for r in visible_transactions(request.user, workspace)
+                   .filter(posted_on__range=(start, end)).values("account").annotate(**_sums()).order_by()}
+    context["accounts"] = list(visible_accounts(request.user, workspace).select_related("owner").order_by("name", "pk"))
+    for account in context["accounts"]:
+        account.period_cents = per_account.get(account.pk, 0)
     context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
     return render(request, "budget/workspace.html", context)
 

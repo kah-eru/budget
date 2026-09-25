@@ -28,7 +28,7 @@ test("sign-in, private account creation, explicit sharing, reflow and reduced mo
   expect(await page.getByRole("status").evaluate((element) => element.getAnimations().length)).toBe(0);
   for (const width of [320, 360, 390, 430, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: ".local/foundation-phone.png", fullPage: true });

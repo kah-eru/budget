@@ -1,6 +1,6 @@
 {% extends 'budget/base.html' %}
 {% block content %}
-<section class="max-w-2xl card p-6">
+<section class="max-w-2xl card">
   <h1 class="mb-2 text-3xl">Sharing · {{ workspace.name }}</h1>
   <p class="mb-5 text-muted">Choose accounts to share with {{ workspace.owner.username }}{% for membership in memberships %}, {{ membership.user.username }}{% endfor %}. Future members will also see this group's shared history.</p>
   <div class="mb-6 rounded-lg bg-accent-soft p-4 text-sm">Selected accounts share past and future transactions. Personal notes and statement PDFs stay private. This does not grant AI consent. Uncheck an account to revoke access; previously downloaded information cannot be recalled.</div>

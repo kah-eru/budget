@@ -1,8 +1,8 @@
 {% extends 'budget/base.html' %}
 {% load money %}
 {% block content %}
-<a class="secondary mb-5" href="{% url 'workspace' workspace.pk %}">Back to {{ workspace.name }}</a>
-<section class="card p-6">
+<a class="chip -ml-3 mb-2 font-semibold" href="{% url 'workspace' workspace.pk %}" aria-label="Back to {{ workspace.name }}"><span aria-hidden="true" class="mr-1 text-xl leading-none">‹</span>{{ workspace.name }}</a>
+<section class="card">
   <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
     <div><h1 class="mb-2 break-words text-3xl">{{ account.name }}</h1>
     <p class="text-muted">Owned by {{ account.owner.username }} · Manual account</p></div>

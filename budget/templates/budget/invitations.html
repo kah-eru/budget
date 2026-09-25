@@ -1,6 +1,6 @@
 {% extends 'budget/base.html' %}
 {% block content %}
-<section class="max-w-xl card p-6">
+<section class="max-w-xl card">
   {% if workspace.is_personal %}
   <h1 class="mb-2 break-words text-3xl">Invite someone to Budget</h1>
   <p class="mb-6 text-muted">They get their own private login with an empty personal workspace. Nothing of yours is shared. To share accounts later, create a group and invite them there.</p>
@@ -12,7 +12,7 @@
     <div class="flex flex-wrap gap-3"><button class="primary" type="submit">Send invitation</button><a class="secondary" href="{% url 'workspace' workspace.pk %}">Back to {{ workspace.name }}</a></div>
   </form>
 </section>
-<section class="mt-6 max-w-xl card p-6">
+<section class="mt-6 max-w-xl card">
   <h2 class="mb-3 text-xl font-semibold">Pending invitations</h2>
   <ul class="divide-y divide-line">
     {% for invitation in invitations %}

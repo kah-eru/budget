@@ -1,6 +1,6 @@
 {% extends 'budget/base.html' %}
 {% block content %}
-<section class="max-w-xl card p-6">
+<section class="max-w-xl card">
   <h1 class="mb-2 text-3xl">{{ title }}</h1>
   <p class="mb-6 text-muted">{{ help }}</p>
   <form method="post">{% csrf_token %}{% include 'budget/components/form_fields.html' %}

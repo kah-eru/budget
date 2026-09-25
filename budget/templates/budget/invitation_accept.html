@@ -1,6 +1,6 @@
 {% extends 'budget/base.html' %}
 {% block content %}
-<section class="mx-auto max-w-xl card p-6">
+<section class="mx-auto max-w-xl card">
   {% if invitation.workspace.is_personal %}
   <h1 class="mb-3 break-words text-3xl">Create your Budget login</h1>
   <p class="mb-5 text-muted">{{ invitation.workspace.owner.username }} invited you to Budget. You get your own private workspace; nobody else sees your accounts unless you share them. This invitation expires {{ invitation.expires_at|date:'M j, Y' }}.</p>
