@@ -8,14 +8,14 @@ Latest request (2026-09-25, categorize by example): search transactions by keywo
   - on a transaction: "also similar" with a prefilled, editable keyword that creates the rule and backfills non-manual matches
   - budgets are re-evaluated afterwards
 - Verification: 124 Django tests OK; 7/7 Chrome checks; screenshots reviewed.
-- **Not pushed** (budgets and alerts are also still unpushed); waiting for "push".
+- Pushed 2026-09-25 on "push and go", together with budgets and alerts (`a95a3d0`, `958ba5e`). Render auto-deploys after CI and runs migrations 0008-0009; live site not checked by the agent.
 - Details: [development guide](docs/development.md#categorize-by-example--september-25-night-latest).
 
 Latest (2026-09-25, continuing features after the chart fix): budgets and in-app alerts, in local commits:
 - `a95a3d0` budgets: monthly/yearly limit on one category or one name match; posted only, inclusive limit, pending separate; Overview Budgets card.
 - `958ba5e` alerts: one per recipient/budget/current period (database unique), silent baselines on budget save or member join, no closed-period alerts, header bell and Alerts inbox with recomputed amounts.
 - Verification: 118 Django tests OK; 7/7 Chrome checks; screenshots reviewed.
-- **Not pushed.** The user asked only for the chart fix to be deployed; these wait for their "push".
+- Pushed 2026-09-25 with categorize by example (see above).
 - Details: [development guide](docs/development.md#budgets-and-in-app-alerts--september-25-night-latest).
 - Next: budget kinds (fixed/irregular/flexible) and disposable income, splits, phone push (VAPID keys; no cost), email alerts (the user must choose a provider), CSV import.
 
