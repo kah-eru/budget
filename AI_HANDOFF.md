@@ -2,7 +2,7 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
-Latest (2026-09-25, night): "continue with the checklist". Built the **Bklit running-total chart** on the Timeline (first mounted React component, lazy chunk 162.56 kB gzip, initial JS 4.63 kB gzip); switched Vite from library mode to a minified app build. 78 Django tests OK, 5/5 Chrome checks, production collectstatic OK. Committed locally in the worktree; **not pushed** (a push to `feat/project-foundation` auto-deploys to Render after CI). Details: [development guide](docs/development.md#timeline-chart--september-25-night).
+Latest (2026-09-25, night): "continue with the checklist". Built the **Bklit running-total chart** on the Timeline (first mounted React component, lazy chunk 162.56 kB gzip, initial JS 4.63 kB gzip); switched Vite from library mode to a minified app build. 78 Django tests OK, 5/5 Chrome checks, production collectstatic OK. Pushed on the user's "push and commit": `feat/project-foundation` `90f8ad2`, `main` `68d176e`; Render redeploys after CI passes (not checked by the agent). Details: [development guide](docs/development.md#timeline-chart--september-25-night).
 
 Latest (2026-09-25): **preview is live and the owner is signed in** at https://budget-4aek.onrender.com. First deploy failed on a mistyped Render `PGPASSWORD`; fixed by the owner. The owner's site login password appeared in chat; they were told they can change it under More -> Change password. Next: Bklit chart, then CSV import/export (see Ordered next steps; step 1 is done).
 
