@@ -93,6 +93,11 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
 EMAIL_TIMEOUT = 10
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "budget@localhost")
+
+# Phone push (Web Push). Both keys unset = push is off and Settings hides it. Generate with `manage.py vapid_keys`.
+WEBPUSH_VAPID_PUBLIC_KEY = os.environ.get("WEBPUSH_VAPID_PUBLIC_KEY", "")
+WEBPUSH_VAPID_PRIVATE_KEY = os.environ.get("WEBPUSH_VAPID_PRIVATE_KEY", "")
+WEBPUSH_CONTACT = os.environ.get("WEBPUSH_CONTACT", "mailto:" + DEFAULT_FROM_EMAIL)
 PASSWORD_RESET_TIMEOUT = 3600
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "America/Denver"

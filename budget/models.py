@@ -189,3 +189,12 @@ class SplitLine(models.Model):
     class Meta:
         indexes = [models.Index(fields=["workspace", "transaction"])]
         constraints = [models.CheckConstraint(condition=Q(amount_cents__gt=0), name="split_line_amount_positive")]
+
+
+class PushSubscription(models.Model):
+    # One browser/device's Web Push subscription. The endpoint is validated against known push services (push.py).
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_subscriptions")
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)

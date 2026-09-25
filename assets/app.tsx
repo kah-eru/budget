@@ -21,6 +21,10 @@ if (chart && series) {
     .catch(() => chart.remove()); // the totals and the daily table stay
 }
 
+// Push notification controls exist only on Settings when the server has push keys.
+const pushSection = document.querySelector<HTMLElement>("[data-push]");
+if (pushSection) import("./push").then(({ setup }) => setup(pushSection)).catch(() => {});
+
 // Theme choice for this device. base.html applies the saved value before paint; without JS the picker stays hidden.
 const picker = document.querySelector<HTMLFieldSetElement>("[data-theme-picker]");
 if (picker) {

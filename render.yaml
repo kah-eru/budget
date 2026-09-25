@@ -29,3 +29,8 @@ services:
         sync: false
       - key: PGPASSWORD
         sync: false
+      # Phone push (optional): values from `python manage.py vapid_keys`, entered in the Render dashboard. Unset = push off.
+      - key: WEBPUSH_VAPID_PUBLIC_KEY
+        sync: false
+      - key: WEBPUSH_VAPID_PRIVATE_KEY
+        sync: false

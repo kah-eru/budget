@@ -21,6 +21,12 @@ test("theme choice applies, survives reload and returns to system; Timeline expo
   expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(255, 255, 255)");
   await page.locator("label.segment", { hasText: "System" }).click();
   await expect(root).not.toHaveAttribute("data-theme");
+  // Push controls appear when the server has keys; the service worker only handles push.
+  const notifications = page.getByRole("region", { name: "Notifications" });
+  await expect(notifications.getByRole("button", { name: "Turn on for this device" })).toBeVisible();
+  const sw = await page.request.get("/sw.js");
+  expect(sw.headers()["content-type"]).toBe("application/javascript");
+  expect(await sw.text()).not.toContain('addEventListener("fetch"');
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 800 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);

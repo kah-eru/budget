@@ -1,10 +1,12 @@
 import csv
+import json
 from datetime import date, timedelta
 from decimal import Decimal
 from smtplib import SMTPException
 from urllib.parse import quote
 
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.contrib.messages.views import SuccessMessageMixin
@@ -16,6 +18,7 @@ from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.db.models import F, Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare, salted_hmac
@@ -29,10 +32,11 @@ from .forms import (
     AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, IncomeForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
+from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
+from . import push
 from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
@@ -83,7 +87,55 @@ def email_verified(user):
 
 @login_required
 def settings_page(request):
-    return render(request, "budget/settings.html", {**page_context(request.user), "verified": email_verified(request.user)})
+    return render(request, "budget/settings.html", {**page_context(request.user), "verified": email_verified(request.user),
+                  "push_public_key": settings.WEBPUSH_VAPID_PUBLIC_KEY if push.enabled() else ""})
+
+
+SERVICE_WORKER = """// Push only: no fetch handler, so no page or financial data is ever cached or intercepted.
+self.addEventListener("push", (event) => {
+  const d = event.data ? event.data.json() : {};
+  event.waitUntil(self.registration.showNotification(d.title || "Budget", { body: d.body || "", tag: "budget-alert", icon: "%s", data: { url: d.url || "/alerts/" } }));
+});
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data.url));
+});
+"""
+
+
+def service_worker(request):
+    # Served from the site root so its scope covers the app; never cached so updates apply on the next visit.
+    return HttpResponse(SERVICE_WORKER % static("budget/icons/icon-192.png"), content_type="application/javascript", headers={"Cache-Control": "no-cache"})
+
+
+def _push_body(request):
+    try:
+        body = json.loads(request.body)
+        return body if isinstance(body, dict) else {}
+    except ValueError:
+        return {}
+
+
+@login_required
+@require_POST
+def push_subscribe(request):
+    body = _push_body(request)
+    endpoint, keys = body.get("endpoint"), body.get("keys") if isinstance(body.get("keys"), dict) else {}
+    p256dh, auth = keys.get("p256dh"), keys.get("auth")
+    fields_ok = all(isinstance(v, str) and 0 < len(v) <= limit for v, limit in ((endpoint, 500), (p256dh, 200), (auth, 100)))
+    if not fields_ok or not push.valid_endpoint(endpoint):
+        return HttpResponse("Not a supported push subscription.", status=400, content_type="text/plain")
+    PushSubscription.objects.update_or_create(endpoint=endpoint, defaults={"user": request.user, "p256dh": p256dh, "auth": auth})
+    return HttpResponse(status=204)
+
+
+@login_required
+@require_POST
+def push_unsubscribe(request):
+    endpoint = _push_body(request).get("endpoint")
+    if isinstance(endpoint, str):
+        PushSubscription.objects.filter(user=request.user, endpoint=endpoint).delete()
+    return HttpResponse(status=204)
 
 
 def settings_form(request, form, status=200, **context):

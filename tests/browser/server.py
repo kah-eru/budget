@@ -17,6 +17,15 @@ from django.core.management import call_command
 settings.DATABASES["default"]["NAME"] = ROOT / ".local" / "browser.sqlite3"
 settings.EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 django.setup()
+
+# Throwaway push keys per run, like the secret above, so Settings shows the Notifications controls.
+from cryptography.hazmat.primitives import serialization
+from py_vapid import Vapid01, b64urlencode
+
+vapid = Vapid01()
+vapid.generate_keys()
+settings.WEBPUSH_VAPID_PUBLIC_KEY = b64urlencode(vapid.public_key.public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint))
+settings.WEBPUSH_VAPID_PRIVATE_KEY = b64urlencode(vapid.private_key.private_numbers().private_value.to_bytes(32, "big"))
 call_command("migrate", interactive=False, verbosity=0)
 
 from budget.models import User

@@ -20,6 +20,14 @@
   </fieldset>
   <p class="mt-2 text-sm text-muted">System follows your phone or computer. The choice is saved on this device only.</p>
 </section>
+{% if push_public_key %}
+<section aria-labelledby="notify-title" class="card" data-push data-key="{{ push_public_key }}" data-subscribe="{% url 'push_subscribe' %}" data-unsubscribe="{% url 'push_unsubscribe' %}" data-csrf="{{ csrf_token }}" hidden>
+  <h2 id="notify-title" class="mb-2 text-sm font-semibold text-accent-text">Notifications</h2>
+  <p data-push-status role="status">Get a notification on this device when a budget goes over. It never shows amounts or names.</p>
+  <button class="primary mt-3" type="button" data-push-toggle>Turn on for this device</button>
+  <p class="mt-3 text-sm text-muted">On iPhone, add Budget to your Home Screen first (Share → Add to Home Screen), then turn this on from there.</p>
+</section>
+{% endif %}
 <section aria-labelledby="data-title" class="card">
   <h2 id="data-title" class="text-sm font-semibold text-accent-text">Your data</h2>
   {% if personal %}<a class="stat-row chevron" href="{% url 'transaction_export' personal.pk %}" download><span class="min-w-0 flex-1"><span class="block font-medium">Export transactions (CSV)</span><span class="block text-sm text-muted">This month, all your accounts. For another range or a group, use Export on its Timeline.</span></span></a>{% endif %}
