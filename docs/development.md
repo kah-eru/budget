@@ -121,6 +121,12 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 - Build CSS 11.82 kB gzip, JS 4.96 kB. 5/5 Chrome checks (new standalone-invite journey with JavaScript disabled). 360px screenshots of Timeline, More and the switcher reviewed; no overflow at 320/360 (plus the existing width matrices).
 - Not done: email change while signed in (operator), a page-size parameter (fixed 50), web-based first-user setup (still `createsuperuser`), Bklit chart.
 
+## Online preview configuration — September 25
+
+- User chose Render (free) for a public preview URL with synthetic data only; GitHub Actions runs CI, it does not host. Setup steps: [operations guide](operations.md).
+- Added `gunicorn` 26.2.0 and `whitenoise` 6.12.0; `render.yaml`; `.github/workflows/ci.yml`; `.python-version` (3.14). Settings: WhiteNoise middleware and compressed manifest storage when DEBUG is off; `RENDER_EXTERNAL_HOSTNAME` joins ALLOWED_HOSTS; `SECURE_PROXY_SSL_HEADER` only with `BUDGET_BEHIND_PROXY=1`; `/health/` and `/ready/` exempt from the HTTPS redirect.
+- Checked locally: 78 tests OK; `check --deploy --fail-level WARNING` clean with production env; `collectstatic` post-processes; in production mode the hashed CSS is served 200 with immutable caching, `/health/` 200 over HTTP, pages 301 to HTTPS, proxied HTTPS 200, unknown host 400. Gunicorn itself does not run on Windows, so it is first exercised on Render.
+
 ## Next
 
 Continue milestone 2: Bklit chart over the daily series, then CSV import/export. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
