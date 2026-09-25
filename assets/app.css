@@ -31,16 +31,19 @@
   .primary { @apply inline-flex min-h-11 items-center justify-center rounded-lg bg-gray-900 px-5 py-3 text-center text-base font-medium text-white hover:bg-gray-800; }
   .secondary { @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium hover:bg-gray-100; }
   .workspace-link { @apply inline-flex min-h-11 items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium; }
+  .workspace-summary { @apply inline-flex min-h-11 max-w-full cursor-pointer list-none items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm; }
+  .workspace-summary::-webkit-details-marker { display: none; }
+  details[open] > .workspace-summary > [aria-hidden] { transform: rotate(180deg); }
   .workspace-link[aria-current="page"] { @apply border-gray-900 bg-gray-900 text-white; }
   .nav-link { @apply flex min-h-14 items-center justify-center rounded-lg px-2 py-3 text-center text-sm font-medium hover:bg-gray-100; }
   .nav-link[aria-current="page"] { @apply bg-gray-100 font-semibold; }
   /* Instant press feedback on pointer-down; scale is dropped for reduced motion, the colour change stays. */
-  .primary, .secondary, .workspace-link, .nav-link, .row-link { transition: transform 100ms ease-out, background-color 100ms ease-out; }
-  .primary:active, .secondary:active, .workspace-link:active, .nav-link:active { transform: scale(0.97); }
+  .primary, .secondary, .workspace-link, .workspace-summary, .nav-link, .row-link { transition: transform 100ms ease-out, background-color 100ms ease-out; }
+  .primary:active, .secondary:active, .workspace-link:active, .workspace-summary:active, .nav-link:active { transform: scale(0.97); }
   .secondary:active, .nav-link:active, .row-link:active { @apply bg-gray-100; }
   .primary:active { @apply bg-gray-700; }
   @media (prefers-reduced-motion: reduce) {
-    .primary:active, .secondary:active, .workspace-link:active, .nav-link:active { transform: none; }
+    .primary:active, .secondary:active, .workspace-link:active, .workspace-summary:active, .nav-link:active { transform: none; }
   }
   .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .skip-link { @apply sr-only; }

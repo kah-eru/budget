@@ -1,13 +1,15 @@
 from datetime import date, timedelta
 
 from django.contrib import messages
+from django.contrib.auth import views as auth_views
+from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, connection, transaction
 from django.db.models import F, Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -16,7 +18,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from .forms import AccountForm, AnnotationForm, GroupForm, SharingForm, TransactionFilterForm, TransactionForm
 from .models import Membership, MembershipNotice, Transaction, TransactionAnnotation, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import annotated, monthly, spending, visible_transactions
+from .reporting import annotated, daily, monthly, spending, visible_transactions
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
 
@@ -39,7 +41,25 @@ def robots(request):
 
 
 def page_context(user, workspace=None):
-    return {"workspace": workspace, "workspaces": visible_workspaces(user).order_by("-is_personal", "name", "pk")}
+    workspaces = list(visible_workspaces(user).order_by("-is_personal", "name", "pk"))
+    return {"workspace": workspace, "workspaces": workspaces, "personal": workspaces[0] if workspaces else None}
+
+
+@login_required
+def more(request):
+    user = request.user
+    return render(request, "budget/more.html", {**page_context(user), "verified": bool(user.email and user.verified_email == user.email.lower())})
+
+
+class PasswordChange(SuccessMessageMixin, auth_views.PasswordChangeView):
+    template_name = "budget/form.html"
+    success_url = reverse_lazy("more")
+    success_message = "Password changed."
+    extra_context = {"title": "Change password", "action": "Change password", "cancel_url": reverse_lazy("more"),
+                     "help": "Enter your current password, then a new one. You stay signed in on this device."}
+
+    def get_context_data(self, **kwargs):
+        return {**super().get_context_data(**kwargs), **page_context(self.request.user)}
 
 
 @login_required
@@ -86,7 +106,7 @@ def workspace_detail(request, workspace_id):
 def account_detail(request, workspace_id, account_id):
     workspace = get_workspace(request.user, workspace_id)
     account = get_object_or_404(visible_accounts(request.user, workspace), pk=account_id)
-    # ponytail: newest 100 only; the timeline slice adds (date, id) cursor paging.
+    # ponytail: newest 100 only; the workspace timeline has the cursor-paged full history.
     transactions = labelled(list(annotated(account.transactions.order_by("-posted_on", "-pk"), workspace)[:100]))
     return render(request, "budget/account.html", {**page_context(request.user, workspace), "account": account, "transactions": transactions})
 
@@ -101,8 +121,15 @@ def transaction_list(request, workspace_id):
     context = {**page_context(request.user, workspace), "form": form, "rows": [], "next_query": None}
     if not form.is_valid():
         return render(request, "budget/transactions.html", context, status=400)
-    rows = form.apply(visible_transactions(request.user, workspace)).select_related("account__owner")
-    if before := request.GET.get("before"):
+    start, end = form.cleaned_data["start"], form.cleaned_data["end"]
+    filtered_rows = form.apply(visible_transactions(request.user, workspace))
+    days = daily(filtered_rows, start, end)
+    rows = filtered_rows.filter(posted_on__range=(start, end)).select_related("account__owner")
+    # A cursor from before a data or sharing change could skip or repeat rows, so restart from newest.
+    rev = f"{workspace.data_revision}-{workspace.permission_revision}"
+    before = request.GET.get("before")
+    stale = bool(before) and request.GET.get("rev") != rev
+    if before and not stale:
         try:
             day, pk = before.split("_")
             day, pk = date.fromisoformat(day), int(pk)
@@ -114,9 +141,18 @@ def transaction_list(request, workspace_id):
     if len(page) > PAGE_SIZE:
         page, last = page[:PAGE_SIZE], page[PAGE_SIZE - 1]
         params = request.GET.copy()
-        params["before"] = f"{last.posted_on:%Y-%m-%d}_{last.pk}"
+        params["before"], params["rev"] = f"{last.posted_on:%Y-%m-%d}_{last.pk}", rev
         context["next_query"] = "?" + params.urlencode()
-    context.update(rows=page, back=request.get_full_path(), filtered=any(form.cleaned_data.values()) or bool(before))
+    by_day = {d["day"]: d["posted_cents"] for d in days}
+    for row in page:
+        row.day_posted = by_day[row.posted_on]
+    newest = request.GET.copy()
+    for key in ("before", "rev"):
+        newest.pop(key, None)
+    context.update(rows=page, days=days, start=start, end=end, rev=rev, stale=stale, back=request.get_full_path(),
+                   newest_query="?" + newest.urlencode(), paged=bool(before) and not stale,
+                   totals={k: sum(d[k] for d in days) for k in ("posted_cents", "pending_cents", "income_cents")},
+                   filtered=any(request.GET.get(name) for name in form.fields))
     return render(request, "budget/transactions.html", context)
 
 

@@ -1,4 +1,5 @@
 from datetime import date
+from urllib.parse import quote
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -183,7 +184,7 @@ class TransactionListTests(TestCase):
 
     def get(self, user, **params):
         self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
-        return self.client.get(f"/workspaces/{self.group.pk}/transactions/", params)
+        return self.client.get(f"/workspaces/{self.group.pk}/transactions/", {"start": "2026-01-01", "end": "2026-12-31", **params})
 
     def test_lists_shared_rows_only(self):
         page = self.get(self.bob)
@@ -218,15 +219,16 @@ class TransactionListTests(TestCase):
         Transaction.objects.bulk_create(Transaction(account=self.card, amount_cents=100 + i, posted_on=date(2026, 1, 1), description=f"Same day {i}") for i in range(60))
         self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
         url = f"/workspaces/{self.group.pk}/transactions/"
-        with self.assertNumQueries(self.count_queries(url, {"q": "hardware"})):
-            first = self.client.get(url)
+        year = {"start": "2026-01-01", "end": "2026-12-31"}
+        with self.assertNumQueries(self.count_queries(url, {"q": "hardware", **year})):
+            first = self.client.get(url, year)
         self.assertEqual(len(first.context["rows"]), 50)
         second = self.client.get(url + first.context["next_query"])
         seen = [r.pk for r in first.context["rows"]] + [r.pk for r in second.context["rows"]]
         self.assertEqual(len(seen), 62)
         self.assertEqual(len(set(seen)), 62)
         self.assertIsNone(second.context["next_query"])
-        self.assertEqual(self.client.get(url, {"before": "garbage"}).status_code, 404)
+        self.assertEqual(self.client.get(url, {"before": "garbage", "rev": first.context["rev"], **year}).status_code, 404)
 
     def count_queries(self, url, params):
         from django.db import connection
@@ -239,7 +241,7 @@ class TransactionListTests(TestCase):
         self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
         row = Transaction.objects.get(description="Hardware store")
         edit = f"/workspaces/{self.group.pk}/accounts/{self.bobs.pk}/transactions/{row.pk}/annotate/"
-        back = f"/workspaces/{self.group.pk}/transactions/?q=hard"
+        back = f"/workspaces/{self.group.pk}/transactions/?q=hard&start=2026-01-01"
         payload = {"display_name": "Tools", "classification": "", "note": ""}
-        self.assertRedirects(self.client.post(edit + "?next=" + back.replace("?", "%3F").replace("=", "%3D"), payload), back, fetch_redirect_response=False)
+        self.assertRedirects(self.client.post(edit + "?next=" + quote(back), payload), back, fetch_redirect_response=False)
         self.assertRedirects(self.client.post(edit + "?next=https://evil.example/", payload), f"/workspaces/{self.group.pk}/accounts/{self.bobs.pk}/", fetch_redirect_response=False)

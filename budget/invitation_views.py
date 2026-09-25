@@ -16,7 +16,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from .forms import AcceptInvitationForm, InvitationForm, InvitedUserForm
 from .invitations import (
     accept_invitation, claim_email_send, create_invitation, email_verification_token,
-    create_signup_token, get_invitation, get_signup_invitation, owned_group, revoke_invitation, verify_email,
+    create_signup_token, get_invitation, get_signup_invitation, owned_workspace, revoke_invitation, verify_email,
 )
 from .models import Invitation, User, Workspace
 from .views import page_context
@@ -25,21 +25,24 @@ from .views import page_context
 @login_required
 @require_http_methods(["GET", "POST"])
 def invitation_create(request, workspace_id):
-    workspace = owned_group(request.user, workspace_id)
-    form = InvitationForm(request.POST if request.method == "POST" else None)
+    workspace = owned_workspace(request.user, workspace_id)
+    form = InvitationForm(request.POST if request.method == "POST" else None, personal=workspace.is_personal)
     if request.method == "POST" and form.is_valid():
         try:
             invitation, token = create_invitation(request.user, workspace.pk, form.cleaned_data["email"])
             link = request.build_absolute_uri(reverse("invitation_accept", args=[token]))
             try:
-                send_mail("Budget group invitation", f"You are invited to a Budget group. Sign in or create an account, verify your email, then choose whether to join. The invitation expires in seven days.\n\n{link}\n", None, [invitation.email])
+                if workspace.is_personal:
+                    send_mail("Your Budget invitation", f"You are invited to Budget. Open this link to create your own private login. The invitation expires in seven days.\n\n{link}\n", None, [invitation.email])
+                else:
+                    send_mail("Budget group invitation", f"You are invited to a Budget group. Sign in or create an account, verify your email, then choose whether to join. The invitation expires in seven days.\n\n{link}\n", None, [invitation.email])
             except (OSError, SMTPException):
                 Invitation.objects.filter(pk=invitation.pk).update(revoked_at=timezone.now())
                 raise ValidationError("The invitation could not be sent. Please try again in a minute.")
         except ValidationError as error:
             form.add_error(None, error)
         else:
-            messages.success(request, "Invitation sent. The recipient must verify their email before joining.")
+            messages.success(request, "Invitation sent." if workspace.is_personal else "Invitation sent. The recipient must verify their email before joining.")
             return redirect("invitation_create", workspace_id=workspace.pk)
     pending = workspace.invitations.filter(accepted_at__isnull=True, revoked_at__isnull=True, expires_at__gt=timezone.now()).order_by("-pk")
     return render(request, "budget/invitations.html", {
@@ -59,7 +62,7 @@ def invitation_revoke(request, workspace_id, invitation_id):
 @require_http_methods(["GET", "POST"])
 def invitation_accept(request, token):
     invitation = get_invitation(token)
-    form = AcceptInvitationForm(request.POST if request.method == "POST" else None)
+    form = AcceptInvitationForm(request.POST if request.method == "POST" else None, personal=invitation.workspace.is_personal)
     if request.method == "POST":
         if not request.user.is_authenticated:
             return redirect(f"{reverse('login')}?next={request.path}")
@@ -69,6 +72,9 @@ def invitation_accept(request, token):
             except ValidationError as error:
                 form.add_error(None, error)
             else:
+                if workspace.is_personal:
+                    messages.success(request, "Your login is ready.")
+                    return redirect("home")
                 messages.success(request, "You joined the group. Your own accounts are still private.")
                 return redirect("workspace", workspace_id=workspace.pk)
     return render(request, "budget/invitation_accept.html", {"invitation": invitation, "form": form, "token": token}, status=400 if request.method == "POST" else 200)

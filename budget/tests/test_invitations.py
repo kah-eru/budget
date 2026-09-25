@@ -228,3 +228,62 @@ class RecoveryTests(TestCase):
         user.refresh_from_db()
         self.assertTrue(user.check_password("New-synthetic-passphrase-42"))
         self.assertContains(self.client.get(path), "invalid")
+
+
+class StandaloneInvitationTests(TestCase):
+    """An invitation on the inviter's personal workspace creates a login and grants no access."""
+    sign_in, email_path, invite = InvitationTests.sign_in, InvitationTests.email_path, InvitationTests.invite
+
+    def setUp(self):
+        InvitationTests.setUp(self)
+        self.personal = Workspace.objects.get(owner=self.owner, is_personal=True)
+        self.invite_url = f"/workspaces/{self.personal.pk}/invitations/"
+
+    def test_standalone_invite_creates_private_login_only(self):
+        self.assertContains(self.client.get(self.invite_url), "Invite someone to Budget")
+        path = self.invite("new@example.com")
+        self.assertIn("invited to Budget", mail.outbox[-1].body)
+        self.client.logout()
+        self.assertContains(self.client.get(path), "Create your Budget login")
+        self.client.post(path + "register/")
+        proof_path = self.email_path()
+        password = "A-long-synthetic-passphrase-83"
+        self.assertEqual(self.client.post(proof_path, {"username": "newbie", "password1": password, "password2": password}).status_code, 302)
+        user = User.objects.get(username="newbie")
+        self.sign_in(user)
+        self.assertRedirects(self.client.post(path, {"confirm": "on"}), "/", fetch_redirect_response=False)
+        self.assertFalse(Membership.objects.filter(user=user).exists())
+        self.assertEqual(apps.get_model("budget", "Invitation").objects.get(email="new@example.com").accepted_at is not None, True)
+        self.assertEqual(self.client.get(f"/workspaces/{self.personal.pk}/").status_code, 404)
+        self.assertEqual(self.client.get(f"/workspaces/{self.group.pk}/").status_code, 404)
+
+    def test_only_owner_invites_from_personal_workspace_and_can_revoke(self):
+        self.sign_in(self.other)
+        self.assertEqual(self.client.post(self.invite_url, {"email": "x@example.com", "confirm": "on"}).status_code, 404)
+        path = self.invite("new@example.com")
+        invitation = apps.get_model("budget", "Invitation").objects.get(email="new@example.com")
+        self.assertEqual(self.client.post(f"{self.invite_url}{invitation.pk}/revoke/").status_code, 302)
+        self.client.logout()
+        self.assertEqual(self.client.get(path).status_code, 404)
+
+
+class AccountSettingsTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("alice", email="alice@example.com", password="synthetic-password")
+
+    def test_more_page_needs_login_and_lists_actions(self):
+        self.assertEqual(self.client.get("/more/").status_code, 302)
+        self.client.force_login(self.user, backend="django.contrib.auth.backends.ModelBackend")
+        page = self.client.get("/more/")
+        for text in ("Change password", "Email verification", "Sign out", "Add account", "New group", "Invite someone to Budget", "alice@example.com"):
+            self.assertContains(page, text)
+
+    def test_password_change_keeps_session(self):
+        self.client.force_login(self.user, backend="django.contrib.auth.backends.ModelBackend")
+        new = "Another-long-synthetic-passphrase-19"
+        response = self.client.post("/settings/password/", {"old_password": "synthetic-password", "new_password1": new, "new_password2": new})
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(new))
+        self.assertEqual(self.client.get("/more/").status_code, 200)
+        self.assertEqual(self.client.post("/settings/password/", {"old_password": "wrong", "new_password1": new, "new_password2": new}).status_code, 200)

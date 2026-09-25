@@ -1,8 +1,10 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
 from django.db.models import Q
+from django.utils import timezone
 
 from .invitations import claim_email_send
 from .models import Account, Transaction, TransactionAnnotation, User, Workspace
@@ -60,10 +62,22 @@ class TransactionFilterForm(forms.Form):
         self.fields["person"].queryset = User.objects.filter(pk__in=accounts.values("owner_id")).order_by("username")
         self.fields["person"].label_from_instance = lambda u: u.username
 
+    MAX_DAYS = 731  # two-year interactive range; older history by moving the range
+
     def clean(self):
+        """Missing dates default to one calendar month: this month, To's month, or From's month."""
         data = super().clean()
-        if data.get("start") and data.get("end") and data["start"] > data["end"]:
+        start, end = data.get("start"), data.get("end")
+        if "start" in self.errors or "end" in self.errors:
+            return data
+        if not end:
+            end = (start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1) if start else timezone.localdate()
+        start = start or end.replace(day=1)
+        if start > end:
             raise forms.ValidationError("The From date must be on or before the To date.")
+        if (end - start).days > self.MAX_DAYS:
+            raise forms.ValidationError("Choose a range of two years or less.")
+        data.update(start=start, end=end)
         return data
 
     def apply(self, rows):
@@ -74,10 +88,6 @@ class TransactionFilterForm(forms.Form):
             rows = rows.filter(account=data["account"])
         if data["person"]:
             rows = rows.filter(account__owner=data["person"])
-        if data["start"]:
-            rows = rows.filter(posted_on__gte=data["start"])
-        if data["end"]:
-            rows = rows.filter(posted_on__lte=data["end"])
         return rows
 
 
@@ -104,9 +114,19 @@ class InvitationForm(forms.Form):
     email = forms.EmailField(label="Their email address", max_length=254)
     confirm = forms.BooleanField(label="I understand that this person will see the group's existing shared history and future shared transactions.")
 
+    def __init__(self, *args, personal=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if personal:
+            self.fields["confirm"].label = "I understand they get their own private login. Nothing of mine is shared with them."
+
 
 class AcceptInvitationForm(forms.Form):
     confirm = forms.BooleanField(label="I want to join this group. My own accounts will remain private until I choose to share them.")
+
+    def __init__(self, *args, personal=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if personal:
+            self.fields["confirm"].label = "I want to finish setting up my private Budget login."
 
 
 class InvitedUserForm(UserCreationForm):

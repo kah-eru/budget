@@ -8,7 +8,8 @@ test("search transactions, edit from a filtered list and return to it; year view
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   const suffix = Date.now().toString();
   const accountName = "Synthetic card " + suffix;
-  await page.getByRole("link", { name: "Add account", exact: true }).click();
+  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: /^Add account/ }).click();
   await page.getByLabel("Name", { exact: true }).fill(accountName);
   await page.getByRole("button", { name: "Create private account" }).click();
   for (const [description, amount] of [["Coffee " + suffix, "4.50"], ["Hardware " + suffix, "90.00"]]) {
@@ -21,7 +22,7 @@ test("search transactions, edit from a filtered list and return to it; year view
     await page.getByRole("link", { name: /^Back to / }).click();
   }
   await page.goto(page.url() + "?period=2026-03");
-  await page.getByRole("link", { name: "View March 2026 transactions" }).click();
+  await page.getByRole("link", { name: "View March 2026 timeline" }).click();
   await page.getByLabel("Search").fill("coffee " + suffix);
   await page.getByRole("button", { name: "Apply filters" }).click();
   const filtered = page.url();

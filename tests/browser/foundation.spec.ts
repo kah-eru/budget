@@ -10,10 +10,12 @@ test("sign-in, private account creation, explicit sharing, reflow and reduced mo
   await expect(page.getByRole("heading", { name: "Your accounts" })).toBeVisible();
   const suffix = Date.now().toString();
   const accountName = "Synthetic checking " + suffix;
-  await page.getByRole("link", { name: "Add account", exact: true }).click();
+  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: /^Add account/ }).click();
   await page.getByLabel("Name", { exact: true }).fill(accountName);
   await page.getByRole("button", { name: "Create private account" }).click();
-  await page.getByRole("link", { name: "New group", exact: true }).click();
+  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: /^New group/ }).click();
   await page.getByLabel("Name", { exact: true }).fill("Synthetic group " + suffix);
   await page.getByRole("button", { name: "Create group", exact: true }).click();
   await expect(page.locator("main")).not.toContainText(accountName);
@@ -42,7 +44,8 @@ test("sign-in and server-rendered controls work without JavaScript", async ({ br
   await page.getByLabel("Password", { exact: true }).fill("synthetic-browser-check-only");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Your accounts" })).toBeVisible();
-  await page.getByRole("link", { name: "Add account", exact: true }).click();
+  await page.getByRole("link", { name: "More", exact: true }).click();
+  await page.getByRole("link", { name: /^Add account/ }).click();
   await page.getByLabel("Name", { exact: true }).fill("No JavaScript synthetic account");
   await page.getByRole("button", { name: "Create private account" }).click();
   await expect(page.locator("main")).toContainText("No JavaScript synthetic account");

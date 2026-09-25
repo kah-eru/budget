@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.db.models import F, FilteredRelation, Q, Sum
 from django.db.models.functions import Coalesce, ExtractMonth
@@ -39,10 +39,26 @@ def spending(user, workspace, start, end):
     return _shape(visible_transactions(user, workspace).filter(posted_on__range=(start, end)).aggregate(**_sums()))
 
 
+ZERO = {"posted_cents": 0, "pending_cents": 0, "income_cents": 0}
+
+
+def daily(rows, start, end):
+    """spending() per day of [start, end] for already-filtered visible rows: one grouped query, zero-filled,
+    plus the running posted total (refunds can make a day negative and pull the line down)."""
+    grouped = rows.filter(posted_on__range=(start, end)).values("posted_on").annotate(**_sums()).order_by()
+    found = {r["posted_on"]: _shape(r) for r in grouped}
+    days, running = [], 0
+    for offset in range((end - start).days + 1):
+        day = start + timedelta(days=offset)
+        totals = found.get(day, ZERO)
+        running += totals["posted_cents"]
+        days.append({"day": day, **totals, "cumulative_cents": running})
+    return days
+
+
 def monthly(user, workspace, year):
     """spending() for each calendar month of the year, from one grouped query; empty months are zero."""
     rows = (visible_transactions(user, workspace).filter(posted_on__range=(date(year, 1, 1), date(year, 12, 31)))
             .annotate(m=ExtractMonth("posted_on")).values("m").annotate(**_sums()).order_by("m"))
     found = {r["m"]: _shape(r) for r in rows}
-    zero = {"posted_cents": 0, "pending_cents": 0, "income_cents": 0}
-    return [{"month": date(year, m, 1), **found.get(m, zero)} for m in range(1, 13)]
+    return [{"month": date(year, m, 1), **found.get(m, ZERO)} for m in range(1, 13)]

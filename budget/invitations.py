@@ -35,16 +35,17 @@ def claim_email_send(user):
 
 def get_invitation(token):
     return get_object_or_404(
-        Invitation.objects.select_related("workspace"),
+        Invitation.objects.select_related("workspace__owner"),
         token_hash=hashlib.sha256(token.encode()).hexdigest(),
         accepted_at__isnull=True, revoked_at__isnull=True,
-        expires_at__gt=timezone.now(), workspace__is_personal=False,
+        expires_at__gt=timezone.now(),
     )
 
 
-def owned_group(user, workspace_id, *, lock=False):
+def owned_workspace(user, workspace_id, *, lock=False):
+    """A group or personal workspace the user owns; invitations on a personal one only create a login."""
     workspace = get_workspace(user, workspace_id, lock=lock)
-    if workspace.is_personal or workspace.owner_id != user.pk:
+    if workspace.owner_id != user.pk:
         raise Http404
     return workspace
 
@@ -77,7 +78,7 @@ def get_signup_invitation(token, proof):
 
 @transaction.atomic
 def create_invitation(user, workspace_id, email):
-    workspace = owned_group(user, workspace_id, lock=True)
+    workspace = owned_workspace(user, workspace_id, lock=True)
     email = email.strip().lower()
     Invitation._meta.get_field("email").clean(email, None)
     now = timezone.now()
@@ -96,7 +97,7 @@ def create_invitation(user, workspace_id, email):
 
 @transaction.atomic
 def revoke_invitation(user, workspace_id, invitation_id):
-    workspace = owned_group(user, workspace_id, lock=True)
+    workspace = owned_workspace(user, workspace_id, lock=True)
     invitation = get_object_or_404(Invitation, workspace=workspace, pk=invitation_id)
     if invitation.accepted_at is None:
         invitation.revoked_at = timezone.now()
@@ -115,7 +116,7 @@ def accept_invitation(user, token):
     if user.verified_email != user.email.lower():
         raise ValidationError("Verify your email address before joining this group.")
     workspace = invitation.workspace
-    if user.pk != workspace.owner_id:
+    if user.pk != workspace.owner_id and not workspace.is_personal:
         _, created = Membership.objects.get_or_create(workspace=workspace, user=user)
         if created:
             recipients = set(workspace.account_shares.values_list("account__owner_id", flat=True))
