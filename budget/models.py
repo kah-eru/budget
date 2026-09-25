@@ -19,6 +19,8 @@ class Workspace(models.Model):
     is_personal = models.BooleanField(default=False)
     data_revision = models.PositiveBigIntegerField(default=0)
     permission_revision = models.PositiveBigIntegerField(default=0)
+    # Null = estimate from the last three complete months of posted income (reporting.disposable).
+    expected_income_cents = models.BigIntegerField(null=True, blank=True)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["owner"], condition=Q(is_personal=True), name="one_personal_workspace")]
@@ -132,7 +134,11 @@ class Rule(models.Model):
 class Budget(models.Model):
     # Targets one category or one name match (contains, same normalization as rules). No rollover between periods.
     PERIODS = [("month", "Monthly"), ("year", "Yearly")]
+    # fixed: a monthly bill (limit = expected amount); irregular: a yearly total set aside monthly; flexible: a limit.
+    KINDS = [("flexible", "Flexible spending"), ("fixed", "Fixed bill"), ("irregular", "Yearly or irregular cost")]
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="budgets")
+    kind = models.CharField(max_length=9, choices=KINDS, default="flexible")
+    due_day = models.PositiveSmallIntegerField(null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True, related_name="budgets")
     name_match = models.CharField(max_length=100, blank=True)
     period = models.CharField(max_length=5, choices=PERIODS, default="month")

@@ -45,6 +45,7 @@ urlpatterns = [
     path("workspaces/<int:workspace_id>/categories/<int:category_id>/add/", views.category_add, name="category_add"),
     path("workspaces/<int:workspace_id>/budgets/", views.budget_list, name="budgets"),
     path("workspaces/<int:workspace_id>/budgets/new/", views.budget_edit, name="budget_create"),
+    path("workspaces/<int:workspace_id>/budgets/income/", views.income_edit, name="income_edit"),
     path("workspaces/<int:workspace_id>/budgets/<int:budget_id>/", views.budget_edit, name="budget_edit"),
     path("workspaces/<int:workspace_id>/budgets/<int:budget_id>/delete/", views.budget_delete, name="budget_delete"),
     path("workspaces/<int:workspace_id>/rules/", views.rule_list, name="rules"),

@@ -1,5 +1,6 @@
 import csv
 from datetime import date, timedelta
+from decimal import Decimal
 from smtplib import SMTPException
 
 from django import forms
@@ -24,12 +25,12 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .account_mail import notify
 from .forms import (
-    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, RuleForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, IncomeForm, RuleForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
 from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice, Rule, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, budget_progress, by_category, daily, monthly, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from .rules import categorize, categorize_everywhere, ensure_rule, matches, normalize
 from .templatetags.money import dollars
@@ -456,8 +457,26 @@ def category_edit(request, workspace_id, category_id):
 def budget_list(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
     budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
+    today = timezone.localdate()
     return render(request, "budget/budgets.html", {**page_context(request.user, workspace),
-                  "budgets": budget_progress(request.user, workspace, budgets, timezone.localdate())})
+                  "budgets": budget_progress(request.user, workspace, budgets, today), "plan": disposable(request.user, workspace, today)})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def income_edit(request, workspace_id):
+    workspace = get_workspace(request.user, workspace_id)
+    initial = {"income": Decimal(workspace.expected_income_cents) / 100} if workspace.expected_income_cents is not None else {}
+    form = IncomeForm(request.POST if request.method == "POST" else None, initial=initial)
+    back = reverse("budgets", args=[workspace.pk])
+    if request.method == "POST" and form.is_valid():
+        income = form.cleaned_data["income"]
+        Workspace.objects.filter(pk=workspace.pk).update(expected_income_cents=None if income is None else int(income * 100))
+        messages.success(request, "Income saved." if income is not None else "Using your recent average income.")
+        return redirect(back)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "cancel_url": back,
+                  "title": "Monthly income", "action": "Save income", "help": "Used only for the disposable income estimate on Budgets."},
+                  status=400 if request.method == "POST" else 200)
 
 
 @login_required

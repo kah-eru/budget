@@ -101,5 +101,31 @@ def budget_progress(user, workspace, budgets, day):
         spent = totals["posted_cents"]
         result.append({"budget": budget, "start": start, "end": end, "spent_cents": spent, "pending_cents": totals["pending_cents"],
                        "remaining_cents": budget.limit_cents - spent, "over": spent > budget.limit_cents,
-                       "share": min(100, max(0, round(100 * spent / budget.limit_cents)))})
+                       "share": min(100, max(0, round(100 * spent / budget.limit_cents))),
+                       "paid": spent >= budget.limit_cents,  # fixed bills
+                       "set_aside_monthly_cents": round(budget.limit_cents / 12),  # irregular costs
+                       "set_aside_to_date_cents": budget.limit_cents * day.month // 12})
     return result
+
+
+def monthly_equivalent(budget):
+    return budget.limit_cents if budget.period == "month" else budget.limit_cents / 12
+
+
+def disposable(user, workspace, day):
+    """Estimated monthly plan: income - fixed bills - irregular set-asides = disposable; flexible budgets
+    (monthly equivalents) are then compared against it. Income is the workspace's expected income, or the
+    average posted income of the three complete months before `day`'s month. Everything here is an estimate."""
+    if workspace.expected_income_cents is not None:
+        income, source = workspace.expected_income_cents, "expected"
+    else:
+        end = day.replace(day=1) - timedelta(days=1)
+        months = day.year * 12 + day.month - 1 - 3  # three complete months back
+        start = date(months // 12, months % 12 + 1, 1)
+        income, source = round(spending(user, workspace, start, end)["income_cents"] / 3), "average"
+    totals = {"fixed": 0, "irregular": 0, "flexible": 0}
+    for budget in workspace.budgets.all():
+        totals[budget.kind] += monthly_equivalent(budget)
+    fixed, set_aside, flexible = (round(totals[k]) for k in ("fixed", "irregular", "flexible"))
+    return {"income_cents": income, "income_source": source, "fixed_cents": fixed, "set_aside_cents": set_aside,
+            "disposable_cents": income - fixed - set_aside, "flexible_cents": flexible, "left_cents": income - fixed - set_aside - flexible}

@@ -1,10 +1,22 @@
 {% extends 'budget/base.html' %}
+{% load money %}
 {% block content %}
 <section aria-labelledby="budgets-title" class="card">
   <h1 id="budgets-title" class="mb-1 text-3xl">Budgets</h1>
-  <p class="mb-4 text-muted">{% if workspace.is_personal %}Limits on your own spending.{% else %}Shared by everyone in {{ workspace.name }}, using only accounts shared here.{% endif %} This month and this year so far.</p>
+  <p class="mb-4 text-muted">{% if workspace.is_personal %}Limits on your own spending.{% else %}Shared by everyone in {{ workspace.name }}, using only accounts shared here.{% endif %} This month and this year so far. Fixed bills are monthly; yearly costs are set aside a twelfth each month.</p>
   <a class="primary mb-2" href="{% url 'budget_create' workspace.pk %}">Add budget</a>
   <ul>{% for p in budgets %}{% include 'budget/components/budget_row.html' %}{% empty %}<li class="py-5 text-muted">No budgets yet. Example: Dining, $300 a month.</li>{% endfor %}</ul>
+</section>
+<section aria-labelledby="plan-title" class="card">
+  <h2 id="plan-title" class="mb-1 text-2xl font-medium">Monthly plan <span class="text-base font-normal text-muted">(estimate)</span></h2>
+  <dl>
+    <div class="stat-row"><dt><a class="font-medium text-accent-text underline underline-offset-4" href="{% url 'income_edit' workspace.pk %}">Income</a><span class="block text-sm text-muted">{% if plan.income_source == 'expected' %}What you entered{% else %}Average of your last three complete months{% endif %}</span></dt><dd class="amount font-semibold">{{ plan.income_cents|dollars }}</dd></div>
+    <div class="stat-row"><dt>Fixed bills</dt><dd class="amount font-semibold">− {{ plan.fixed_cents|dollars }}</dd></div>
+    <div class="stat-row"><dt>Set aside for yearly costs</dt><dd class="amount font-semibold">− {{ plan.set_aside_cents|dollars }}</dd></div>
+    <div class="stat-row"><dt class="font-semibold">Disposable income</dt><dd class="amount text-lg font-bold{% if plan.disposable_cents < 0 %} text-danger{% endif %}">{{ plan.disposable_cents|dollars }}</dd></div>
+    <div class="stat-row"><dt>Flexible budgets</dt><dd class="amount font-semibold">− {{ plan.flexible_cents|dollars }}</dd></div>
+  </dl>
+  <p class="mt-3 text-sm{% if plan.left_cents < 0 %} font-semibold text-danger{% else %} text-muted{% endif %}">{% if plan.left_cents < 0 %}Your flexible budgets are {{ plan.left_cents|dollars|cut:'-' }} more than your disposable income.{% else %}{{ plan.left_cents|dollars }} a month is not planned yet.{% endif %} Yearly amounts count as one twelfth a month.</p>
 </section>
 <a class="secondary" href="{% url 'workspace' workspace.pk %}">Back to overview</a>
 {% endblock %}

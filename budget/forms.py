@@ -160,12 +160,14 @@ class RuleForm(forms.ModelForm):
 
 
 class BudgetForm(forms.ModelForm):
-    limit = forms.DecimalField(label="Limit (USD)", min_value=Decimal("0.01"), max_digits=12, decimal_places=2)
+    limit = forms.DecimalField(label="Limit (USD)", min_value=Decimal("0.01"), max_digits=12, decimal_places=2,
+                               help_text="Fixed bill: the monthly amount. Yearly or irregular cost: the total for the year. Flexible: your limit.")
+    due_day = forms.IntegerField(label="Due day of the month", min_value=1, max_value=31, required=False, help_text="Fixed bills only.")
 
     class Meta:
         model = Budget
-        fields = ["category", "name_match", "period", "limit"]
-        labels = {"name_match": "Or a name containing", "period": "Period"}
+        fields = ["kind", "category", "name_match", "period", "limit", "due_day"]
+        labels = {"kind": "Type", "name_match": "Or a name containing", "period": "Period", "due_day": "Due day of the month"}
         help_texts = {"name_match": "For one merchant across categories, like “STARBUCKS”. Leave blank when you pick a category."}
 
     def __init__(self, *args, **kwargs):
@@ -173,6 +175,7 @@ class BudgetForm(forms.ModelForm):
         self.fields["category"].queryset = self.instance.workspace.categories.filter(
             Q(archived=False) | Q(pk=self.instance.category_id)).order_by("name")
         self.fields["category"].empty_label = "No category (use a name)"
+        self.fields["kind"].required = False  # blank means flexible, the original behaviour
         if self.instance.pk:
             self.initial["limit"] = Decimal(self.instance.limit_cents) / 100
 
@@ -181,12 +184,26 @@ class BudgetForm(forms.ModelForm):
         data["name_match"] = " ".join(data.get("name_match", "").split())
         if bool(data.get("category")) == bool(data["name_match"]):
             raise forms.ValidationError("Choose a category or enter a name, not both.")
+        # The type decides the period: fixed bills are monthly, irregular costs yearly; only fixed bills have a due day.
+        kind = data["kind"] = data.get("kind") or "flexible"
+        if kind == "fixed":
+            data["period"] = "month"
+        elif kind == "irregular":
+            data["period"] = "year"
+        if kind != "fixed":
+            data["due_day"] = None
         return data
 
     def save(self, commit=True):
         self.instance.name_match = self.cleaned_data["name_match"]
+        self.instance.period, self.instance.due_day = self.cleaned_data["period"], self.cleaned_data["due_day"]
         self.instance.limit_cents = int(self.cleaned_data["limit"] * 100)
         return super().save(commit)
+
+
+class IncomeForm(forms.Form):
+    income = forms.DecimalField(label="Expected monthly income (USD)", min_value=Decimal("0"), max_digits=12, decimal_places=2, required=False,
+                                help_text="After tax, for everyone this workspace covers. Leave blank to use the average of your last three complete months.")
 
 
 class GroupForm(forms.ModelForm):
