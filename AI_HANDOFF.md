@@ -2,7 +2,7 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
-Latest request (2026-09-25): "now read the md files and continue." Built handoff next-step 1 in the worktree: transaction list with search/filters/cursor paging, workspace month/year periods with a per-month year table, filtered-list Back after edit, and a bottom-nav overlap fix. Committed locally on `feat/project-foundation`; **not pushed** (push only on request). Details: [development guide](docs/development.md#transaction-list-and-yearly-view--september-25).
+Latest request (2026-09-25): "now read the md files and continue." Built handoff next-step 1 in the worktree: transaction list with search/filters/cursor paging, workspace month/year periods with a per-month year table, filtered-list Back after edit, and a bottom-nav overlap fix. Committed (`1be829e`) and, on the user's "do it", pushed to GitHub with the docs sync on `main`; credential scan of outgoing diffs found nothing. Details: [development guide](docs/development.md#transaction-list-and-yearly-view--september-25).
 
 Earlier the same day: "now commit and push." Pushed `feat/project-foundation` (through `fcee2b6`) and `main` (`9a466d3`) to GitHub `kah-eru/budget` after a credential scan. No PR, merge or deployment.
 
@@ -64,6 +64,6 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 
 ## Git and documentation state
 
-`origin` (GitHub `kah-eru/budget`) has `main` at `9a466d3` and `feat/project-foundation` at `fcee2b6`. The 2026-09-25 list/yearly slice and its doc updates are local commits on top (worktree) plus a local docs-sync commit on root `main`; neither is pushed. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
+Both branches are pushed to `origin` (GitHub `kah-eru/budget`) including the 2026-09-25 list/yearly slice (`1be829e`) and its docs sync on `main` (`16039bd`), plus this handoff update. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.
