@@ -1,0 +1,5 @@
+{% load money %}<li><a class="row-link -mx-2 block rounded-lg px-2 py-3" href="{% url 'budget_edit' workspace.pk p.budget.pk %}">
+  <span class="flex flex-wrap items-baseline justify-between gap-x-3"><span class="min-w-0 break-words font-semibold">{{ p.budget }}</span><span class="amount text-sm font-medium">{{ p.spent_cents|dollars }} of {{ p.budget.limit_cents|dollars }}</span></span>
+  <span class="category-bar{% if p.over %} is-over{% endif %}" aria-hidden="true"><span style="width: {{ p.share }}%"></span></span>
+  <span class="mt-1 block text-sm text-muted">{% if p.over %}<span class="font-semibold text-danger">{{ p.remaining_cents|dollars|cut:'-' }} over</span>{% else %}{{ p.remaining_cents|dollars }} left{% endif %} · {% if p.budget.period == 'year' %}{{ p.start.year }}{% else %}{{ p.start|date:'F' }}{% endif %}{% if p.pending_cents %} · + {{ p.pending_cents|dollars }} pending{% endif %}</span>
+</a></li>

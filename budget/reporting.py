@@ -5,6 +5,7 @@ from django.db.models.functions import Coalesce, ExtractMonth
 
 from .models import Transaction
 from .permissions import visible_accounts
+from .rules import normalize
 
 
 def annotated(transactions, workspace):
@@ -71,3 +72,34 @@ def by_category(rows, start, end):
                .annotate(**_sums()).order_by())
     totals = [{"id": r["ann__category"], "name": r["ann__category__name"] or "Uncategorized", **_shape(r)} for r in grouped]
     return sorted((t for t in totals if t["posted_cents"] or t["pending_cents"]), key=lambda t: (-t["posted_cents"], t["name"]))
+
+
+def period_bounds(kind, day):
+    if kind == "year":
+        return date(day.year, 1, 1), date(day.year, 12, 31)
+    start = day.replace(day=1)
+    return start, (start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+
+def budget_progress(user, workspace, budgets, day):
+    """Each budget's period containing `day`: posted net spending (refunds reduce it), pending as a separate
+    estimate, remaining (negative when over) and whether posted spending is strictly above the limit."""
+    rows = visible_transactions(user, workspace)
+    result = []
+    # ponytail: one query per budget; group by period if a workspace ever has dozens of budgets.
+    for budget in budgets:
+        start, end = period_bounds(budget.period, day)
+        in_period = rows.filter(posted_on__range=(start, end))
+        if budget.category_id:
+            totals = _shape(in_period.filter(ann__category=budget.category_id).aggregate(**_sums()))
+        else:
+            pattern, totals = normalize(budget.name_match), dict(ZERO)
+            for row in in_period.filter(effective__in=("expense", "refund")).only("description", "amount_cents", "pending", "classification"):
+                if pattern in normalize(row.description):
+                    sign = 1 if row.effective == "expense" else -1
+                    totals["pending_cents" if row.pending else "posted_cents"] += sign * row.amount_cents
+        spent = totals["posted_cents"]
+        result.append({"budget": budget, "start": start, "end": end, "spent_cents": spent, "pending_cents": totals["pending_cents"],
+                       "remaining_cents": budget.limit_cents - spent, "over": spent > budget.limit_cents,
+                       "share": min(100, max(0, round(100 * spent / budget.limit_cents)))})
+    return result

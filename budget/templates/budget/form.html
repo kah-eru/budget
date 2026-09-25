@@ -6,5 +6,6 @@
   <form method="post">{% csrf_token %}{% include 'budget/components/form_fields.html' %}
     <div class="flex flex-wrap gap-3">{% if not hide_submit %}<button class="primary" type="submit">{{ action }}</button>{% endif %}{% if extra_url %}<a class="secondary" href="{{ extra_url }}">{{ extra_label }}</a>{% endif %}<a class="secondary" href="{% if cancel_url %}{{ cancel_url }}{% else %}{% url 'home' %}{% endif %}">Cancel</a></div>
   </form>
+  {% if delete_url %}<form method="post" action="{{ delete_url }}" class="mt-6 border-t border-line pt-4">{% csrf_token %}<button class="secondary text-danger" type="submit">Delete</button></form>{% endif %}
 </section>
 {% endblock %}

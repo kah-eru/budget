@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .invitations import claim_email_send
-from .models import Account, Category, Rule, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, Budget, Category, Rule, Transaction, TransactionAnnotation, User, Workspace
 from .rules import normalize
 
 
@@ -141,6 +141,36 @@ class RuleForm(forms.ModelForm):
         if not normalize(self.cleaned_data["pattern"]):
             raise forms.ValidationError("Enter the text to match.")
         return " ".join(self.cleaned_data["pattern"].split())
+
+
+class BudgetForm(forms.ModelForm):
+    limit = forms.DecimalField(label="Limit (USD)", min_value=Decimal("0.01"), max_digits=12, decimal_places=2)
+
+    class Meta:
+        model = Budget
+        fields = ["category", "name_match", "period", "limit"]
+        labels = {"name_match": "Or a name containing", "period": "Period"}
+        help_texts = {"name_match": "For one merchant across categories, like “STARBUCKS”. Leave blank when you pick a category."}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = self.instance.workspace.categories.filter(
+            Q(archived=False) | Q(pk=self.instance.category_id)).order_by("name")
+        self.fields["category"].empty_label = "No category (use a name)"
+        if self.instance.pk:
+            self.initial["limit"] = Decimal(self.instance.limit_cents) / 100
+
+    def clean(self):
+        data = super().clean()
+        data["name_match"] = " ".join(data.get("name_match", "").split())
+        if bool(data.get("category")) == bool(data["name_match"]):
+            raise forms.ValidationError("Choose a category or enter a name, not both.")
+        return data
+
+    def save(self, commit=True):
+        self.instance.name_match = self.cleaned_data["name_match"]
+        self.instance.limit_cents = int(self.cleaned_data["limit"] * 100)
+        return super().save(commit)
 
 
 class GroupForm(forms.ModelForm):

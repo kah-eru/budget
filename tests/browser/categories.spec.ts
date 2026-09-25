@@ -58,4 +58,22 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByRole("button", { name: "Save rule" }).click();
   await expect(page.locator("body")).toContainText("0 existing transactions updated");
   await expect(page.getByRole("link", { name: new RegExp("Name contains “market " + suffix) })).toBeVisible();
+
+  // A name-match budget below the April spend shows as over on Overview.
+  await page.goto("/");
+  await page.goto(page.url().split("?")[0] + "?period=2026-04");
+  await page.getByRole("link", { name: "Manage budgets" }).click();
+  await page.getByRole("link", { name: "Add budget" }).click();
+  await page.getByLabel("Or a name containing").fill("market " + suffix);
+  await page.getByLabel("Limit (USD)").fill("50");
+  await page.getByRole("button", { name: "Save budget" }).click();
+  await page.goto("/");
+  await page.goto(page.url().split("?")[0] + "?period=2026-04");
+  const budgets = page.getByRole("region", { name: "Budgets" });
+  await expect(budgets.getByRole("link", { name: new RegExp("market " + suffix) })).toContainText("$12.10 over");
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await budgets.getByRole("link", { name: new RegExp("market " + suffix) }).screenshot({ path: `.local/budget-${scheme}.png` });
+  }
 });

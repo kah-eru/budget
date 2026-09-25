@@ -24,12 +24,12 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .account_mail import notify
 from .forms import (
-    AccountForm, AnnotationForm, CategoryForm, EmailChangeForm, GroupForm, RuleForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, RuleForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Category, Membership, MembershipNotice, Rule, Transaction, TransactionAnnotation, User, Workspace
+from .models import Budget, Category, Membership, MembershipNotice, Rule, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, by_category, daily, monthly, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, budget_progress, by_category, daily, monthly, spending, visible_transactions
 from .rules import categorize, categorize_everywhere, matches
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
@@ -217,6 +217,9 @@ def workspace_detail(request, workspace_id):
     context["accounts"] = list(visible_accounts(request.user, workspace).select_related("owner").order_by("name", "pk"))
     for account in context["accounts"]:
         account.period_cents = per_account.get(account.pk, 0)
+    # Month view: monthly budgets for that month and yearly ones for its year; year view: yearly budgets only.
+    budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
+    context["budgets"] = budget_progress(request.user, workspace, budgets if kind == "month" else budgets.filter(period="year"), start)
     context["categories"] = by_category(visible_transactions(request.user, workspace), start, end)
     top = max((c["posted_cents"] for c in context["categories"]), default=0)
     for c in context["categories"]:
@@ -380,6 +383,42 @@ def category_edit(request, workspace_id, category_id):
         return redirect(back)
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": f"Edit {category.name}", "action": "Save category",
                   "cancel_url": back, "help": f"Renaming changes the label on every {workspace.name} transaction in this category."}, status=400 if request.method == "POST" else 200)
+
+
+@login_required
+def budget_list(request, workspace_id):
+    workspace = get_workspace(request.user, workspace_id)
+    budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
+    return render(request, "budget/budgets.html", {**page_context(request.user, workspace),
+                  "budgets": budget_progress(request.user, workspace, budgets, timezone.localdate())})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def budget_edit(request, workspace_id, budget_id=None):
+    """Any member may manage budgets; they only read spending this workspace can already see."""
+    workspace = get_workspace(request.user, workspace_id)
+    budget = get_object_or_404(workspace.budgets, pk=budget_id) if budget_id else Budget(workspace=workspace)
+    form = BudgetForm(request.POST if request.method == "POST" else None, instance=budget)
+    back = reverse("budgets", args=[workspace.pk])
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Budget saved.")
+        return redirect(back)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "cancel_url": back,
+                  "title": "Edit budget" if budget.pk else "Add a budget", "action": "Save budget",
+                  "help": "Posted spending counts; pending shows separately. Refunds reduce it and transfers never count. Nothing rolls over.",
+                  "delete_url": reverse("budget_delete", args=[workspace.pk, budget.pk]) if budget.pk else None},
+                  status=400 if request.method == "POST" else 200)
+
+
+@login_required
+@require_POST
+def budget_delete(request, workspace_id, budget_id):
+    workspace = get_workspace(request.user, workspace_id)
+    get_object_or_404(workspace.budgets, pk=budget_id).delete()
+    messages.success(request, "Budget deleted.")
+    return redirect("budgets", workspace_id=workspace.pk)
 
 
 @login_required

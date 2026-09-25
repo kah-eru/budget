@@ -1,0 +1,10 @@
+{% extends 'budget/base.html' %}
+{% block content %}
+<section aria-labelledby="budgets-title" class="card">
+  <h1 id="budgets-title" class="mb-1 text-3xl">Budgets</h1>
+  <p class="mb-4 text-muted">{% if workspace.is_personal %}Limits on your own spending.{% else %}Shared by everyone in {{ workspace.name }}, using only accounts shared here.{% endif %} This month and this year so far.</p>
+  <a class="primary mb-2" href="{% url 'budget_create' workspace.pk %}">Add budget</a>
+  <ul>{% for p in budgets %}{% include 'budget/components/budget_row.html' %}{% empty %}<li class="py-5 text-muted">No budgets yet. Example: Dining, $300 a month.</li>{% endfor %}</ul>
+</section>
+<a class="secondary" href="{% url 'workspace' workspace.pk %}">Back to overview</a>
+{% endblock %}

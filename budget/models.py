@@ -127,3 +127,22 @@ class Rule(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="rules")
     priority = models.PositiveIntegerField(default=100)
     enabled = models.BooleanField(default=True)
+
+
+class Budget(models.Model):
+    # Targets one category or one name match (contains, same normalization as rules). No rollover between periods.
+    PERIODS = [("month", "Monthly"), ("year", "Yearly")]
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="budgets")
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True, related_name="budgets")
+    name_match = models.CharField(max_length=100, blank=True)
+    period = models.CharField(max_length=5, choices=PERIODS, default="month")
+    limit_cents = models.BigIntegerField()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(limit_cents__gt=0), name="budget_limit_positive"),
+            models.CheckConstraint(condition=Q(category__isnull=False, name_match="") | Q(category__isnull=True) & ~Q(name_match=""), name="budget_one_target"),
+        ]
+
+    def __str__(self):
+        return self.category.name if self.category_id else f"Name contains “{self.name_match}”"

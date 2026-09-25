@@ -165,6 +165,7 @@
   .stat-row { @apply flex min-h-12 items-center justify-between gap-3 border-b border-line py-3; }
   .category-bar { @apply mt-2 block h-1.5 overflow-hidden rounded-full bg-sunken; }
   .category-bar > span { @apply block h-full rounded-full bg-accent; }
+  .category-bar.is-over > span { @apply bg-danger; }
   .chevron::after { content: "›"; @apply ml-2 text-lg text-muted; }
   /* The chart's space is held before its code loads, so nothing below it moves. No JavaScript: no slot (the table has the numbers). */
   .chart-slot { display: none; aspect-ratio: 2.4 / 1; }
