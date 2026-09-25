@@ -2,6 +2,14 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, categories): "now continue with the features". Built milestone 4's first part in two local commits:
+- `4a58af7` categories: per-workspace, ten seeded standard categories, archive not delete, Overview By category, Timeline filter, CSV column.
+- `6927da6` rules: contains/exact with normalized matching, priority then ID, manual choice always wins, preview and opt-in backfill, auto-apply on new/edited transactions.
+- Verification: 108 Django tests OK; 7/7 Chrome checks; light/dark 360 px screenshots reviewed.
+- Committed locally; **not pushed**.
+- Details: [development guide](docs/development.md#categories-and-rules--september-25-night-latest).
+- Next: budgets/limits (monthly/yearly per category or name match, overview progress), then in-app notifications. Splits and fixed/irregular/flexible budget kinds are queued after basic limits.
+
 Latest request (2026-09-25, feature list): "make sure the docs have these features as well":
 - Requested: bank sync incl. loans, smart categorization and split rules, fixed/irregular/flexible budgets, visual reports, goals, customizable alerts (push/email, approaching limit, bills due, unusual activity), recurring projection, net worth/investments, multi-device, collaborative sharing.
 - Already covered: bank sync, manual entry, rules, multi-device, sharing.
