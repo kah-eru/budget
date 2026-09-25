@@ -12,6 +12,22 @@ def matches(rule, description):
     return text == pattern if rule.kind == "exact" else pattern in text
 
 
+def suggest_keyword(description):
+    """A starting keyword from a bank name: drop store numbers and codes (words starting with # or at least
+    half digits, so 7-ELEVEN stays), keep the first three words."""
+    words = [w for w in description.split() if not w.startswith("#") and sum(c.isdigit() for c in w) * 2 < len(w)]
+    return " ".join(words[:3])
+
+
+def ensure_rule(workspace, keyword, category):
+    """A 'name contains' rule for keyword -> category, unless an enabled equivalent already exists."""
+    keyword = " ".join(keyword.split())
+    for rule in Rule.objects.filter(workspace=workspace, category=category, kind="contains", enabled=True):
+        if normalize(rule.pattern) == normalize(keyword):
+            return rule
+    return Rule.objects.create(workspace=workspace, kind="contains", pattern=keyword, category=category)
+
+
 def categorize(transactions, workspace):
     """Set the rule category in this workspace's overlay for each transaction; manual choices are never changed.
     Rows no rule matches lose an earlier rule category. Returns how many annotations changed."""

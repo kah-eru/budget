@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from .invitations import claim_email_send
 from .models import Account, Budget, Category, Rule, Transaction, TransactionAnnotation, User, Workspace
-from .rules import normalize
+from .rules import normalize, suggest_keyword
 
 
 class AccountForm(forms.ModelForm):
@@ -38,10 +38,15 @@ class TransactionForm(forms.ModelForm):
 
 
 class AnnotationForm(forms.ModelForm):
+    also_similar = forms.BooleanField(required=False, label="Also put other transactions with this name in this category, now and in the future")
+    match_text = forms.CharField(label="Name contains", max_length=100, required=False,
+                                 help_text="Store numbers are left out so every visit matches. Categories picked by hand elsewhere are kept.")
     class Meta:
         model = TransactionAnnotation
         fields = ["display_name", "category", "classification", "note"]
         labels = {"classification": "Type"}
+
+    field_order = ["display_name", "category", "also_similar", "match_text", "classification", "note"]
 
     def __init__(self, *args, source, personal, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,9 +54,20 @@ class AnnotationForm(forms.ModelForm):
         workspace = self.instance.workspace
         self.fields["category"].queryset = workspace.categories.filter(Q(archived=False) | Q(pk=self.instance.category_id)).order_by("name")
         self.fields["category"].empty_label = "Uncategorized"
+        self.fields["match_text"].initial = suggest_keyword(source.description)
         self.fields["display_name"].help_text = f"Leave blank to show the original: {source.description or '(no description)'}"
         self.fields["classification"].choices = [("", f"Original ({source.get_classification_display()})"), *Transaction.CLASSIFICATIONS]
         self.fields["note"].label = "Personal note (only you)" if personal else "Group note (everyone in this group)"
+
+    def clean(self):
+        data = super().clean()
+        if data.get("also_similar"):
+            data["match_text"] = " ".join(data.get("match_text", "").split())
+            if not data.get("category"):
+                raise forms.ValidationError("Choose a category to apply to similar transactions.")
+            if not normalize(data["match_text"]):
+                self.add_error("match_text", "Enter the text to match.")
+        return data
 
     def save(self, commit=True):
         if "category" in self.changed_data:

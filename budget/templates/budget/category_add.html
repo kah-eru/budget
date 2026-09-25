@@ -1,0 +1,37 @@
+{% extends 'budget/base.html' %}
+{% load money %}
+{% block content %}
+<section aria-labelledby="add-title" class="card">
+  <h1 id="add-title" class="mb-1 text-3xl">Add to {{ category.name }}</h1>
+  <p class="mb-4 text-muted">Search by name, tick what belongs here, and future purchases with that name can go here too{% if not workspace.is_personal %} for everyone in {{ workspace.name }}{% endif %}.</p>
+  <form method="get" role="search" class="mb-2 flex gap-2">
+    <label for="q" class="sr-only">Search transaction names</label>
+    <input id="q" name="q" type="search" value="{{ q }}" placeholder="e.g. starbucks" class="min-w-0 flex-1">
+    <button class="primary" type="submit">Search</button>
+  </form>
+  {% if q %}
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="q" value="{{ q }}">
+    <p class="mb-2 text-sm text-muted" role="status">{{ match_count }} transaction{{ match_count|pluralize }} contain{{ match_count|pluralize:"s," }} “{{ q }}”{% if match_count > rows|length %}; showing the newest {{ rows|length }}{% endif %}.</p>
+    <ul class="divide-y divide-line">
+      {% for row in rows %}
+      <li><label class="flex min-h-14 cursor-pointer items-center gap-3 py-3">
+        <input type="checkbox" name="ids" value="{{ row.pk }}" {% if not row.locked %}checked{% endif %}>
+        <span class="min-w-0 flex-1 break-words"><span class="block font-medium">{{ row.description|default:"(no description)" }}</span><span class="block text-sm text-muted">{{ row.posted_on }}{% if row.locked %} · Set by hand: {{ row.ann_category }}{% elif row.ann_category %} · {{ row.ann_category }}{% endif %}</span></span>
+        <span class="amount font-medium">{% if row.effective == 'refund' %}−{% endif %}{{ row.amount_cents|dollars }}</span>
+      </label></li>
+      {% empty %}
+      <li class="py-5 text-muted">No transaction names contain “{{ q }}”. Try a shorter word.</li>
+      {% endfor %}
+    </ul>
+    <div class="mt-4 rounded-lg border border-line p-4">
+      <label class="flex items-start gap-3"><input type="checkbox" name="make_rule" checked class="mt-1"><span>Future transactions containing this go to {{ category.name }}</span></label>
+      <label for="keyword" class="mb-2 mt-3 block text-sm font-medium">Name contains</label>
+      <input id="keyword" name="keyword" value="{{ q }}" maxlength="100" class="w-full">
+    </div>
+    <button class="primary mt-4" type="submit">Add ticked to {{ category.name }}</button>
+  </form>
+  {% endif %}
+</section>
+<a class="secondary" href="{% url 'category_edit' workspace.pk category.pk %}">Back to {{ category.name }}</a>
+{% endblock %}

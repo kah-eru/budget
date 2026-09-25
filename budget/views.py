@@ -31,7 +31,7 @@ from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice,
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, daily, monthly, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
-from .rules import categorize, categorize_everywhere, matches
+from .rules import categorize, categorize_everywhere, ensure_rule, matches, normalize
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
 
@@ -293,6 +293,8 @@ def transaction_list(request, workspace_id):
     newest = request.GET.copy()
     for key in ("before", "rev"):
         newest.pop(key, None)
+    chosen = form.cleaned_data["category"]
+    context["add_category"] = workspace.categories.filter(pk=int(chosen), archived=False).first() if chosen not in ("", "none") else None
     context.update(rows=page, days=days, start=start, end=end, rev=rev, stale=stale, back=request.get_full_path(),
                    newest_query="?" + newest.urlencode(), paged=bool(before) and not stale,
                    totals={k: sum(d[k] for d in days) for k in ("posted_cents", "pending_cents", "income_cents")},
@@ -361,9 +363,14 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             form.save()
+            if form.cleaned_data["also_similar"]:
+                ensure_rule(workspace, form.cleaned_data["match_text"], form.cleaned_data["category"])
+                categorize(Transaction.objects.filter(account__in=visible_accounts(request.user, workspace)).only("pk", "description"), workspace)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
             evaluate(workspace)
-        messages.success(request, "Changes saved for this workspace only.")
+        similar = form.cleaned_data["also_similar"]
+        messages.success(request, "Changes saved for this workspace only." + (
+            f" Transactions containing “{form.cleaned_data['match_text']}” now go to {form.cleaned_data['category']}." if similar else ""))
         return redirect(back)
     where = "your personal view" if workspace.is_personal else workspace.name
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": row.description or "Transaction", "action": "Save changes", "cancel_url": back,
@@ -386,6 +393,45 @@ def category_list(request, workspace_id):
                   "categories": workspace.categories.order_by("archived", "name")}, status=400 if request.method == "POST" else 200)
 
 
+SEARCH_LIMIT = 100
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def category_add(request, workspace_id, category_id):
+    """Search this workspace's transactions by keyword, tick the ones that belong, and optionally make the
+    keyword a rule so future matches land here too. Any member may do it: it only writes this overlay."""
+    workspace = get_workspace(request.user, workspace_id)
+    category = get_object_or_404(workspace.categories, pk=category_id, archived=False)
+    data = request.POST if request.method == "POST" else request.GET
+    q = " ".join(data.get("q", "").split())[:100]
+    probe = Rule(kind="contains", pattern=q)
+    # Matches the original description, exactly as the rule will. ponytail: Python scan of visible rows, like rules.
+    rows = visible_transactions(request.user, workspace).annotate(ann_source=F("ann__category_source")).order_by("-posted_on", "-pk")
+    found = [row for row in rows if matches(probe, row.description)] if normalize(q) else []
+    if request.method == "POST":
+        chosen = set(request.POST.getlist("ids"))
+        picked = [row for row in found if str(row.pk) in chosen]
+        keyword = " ".join(request.POST.get("keyword", q).split())
+        make_rule = request.POST.get("make_rule") == "on" and bool(normalize(keyword))
+        with transaction.atomic():
+            existing = {a.transaction_id: a for a in TransactionAnnotation.objects.filter(workspace=workspace, transaction__in=[r.pk for r in picked])}
+            for row in picked:
+                annotation = existing.get(row.pk) or TransactionAnnotation(transaction=row, workspace=workspace)
+                annotation.category, annotation.category_source = category, "manual"
+                annotation.save()
+            if make_rule:
+                ensure_rule(workspace, keyword, category)
+            Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
+            evaluate(workspace)
+        messages.success(request, f"Added {len(picked)} to {category.name}." + (f" Future “{keyword}” purchases will go there too." if make_rule else ""))
+        return redirect("category_edit", workspace_id=workspace.pk, category_id=category.pk)
+    for row in found:
+        row.locked = row.ann_source == "manual" and bool(row.ann_category) and row.ann_category != category.name
+    return render(request, "budget/category_add.html", {**page_context(request.user, workspace), "category": category, "q": q,
+                  "rows": found[:SEARCH_LIMIT], "match_count": len(found)})
+
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def category_edit(request, workspace_id, category_id):
@@ -402,7 +448,8 @@ def category_edit(request, workspace_id, category_id):
         messages.success(request, "Category saved." + (" Its rules are now off." if category.archived else ""))
         return redirect(back)
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": f"Edit {category.name}", "action": "Save category",
-                  "cancel_url": back, "help": f"Renaming changes the label on every {workspace.name} transaction in this category."}, status=400 if request.method == "POST" else 200)
+                  "cancel_url": back, "help": f"Renaming changes the label on every {workspace.name} transaction in this category.",
+                  "extra_url": reverse("category_add", args=[workspace.pk, category.pk]), "extra_label": "Add transactions"}, status=400 if request.method == "POST" else 200)
 
 
 @login_required

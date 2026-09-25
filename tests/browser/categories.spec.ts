@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // Synthetic data on the disposable local database only.
 test("categorize a transaction, see it by category on Overview, filter the timeline, add a category", async ({ page }) => {
+  test.setTimeout(90_000);  // one long journey: categories, rules, budgets, alerts, categorize by example
   await page.goto("/login/");
   await page.getByLabel("Username", { exact: true }).fill("browser-check");
   await page.getByLabel("Password", { exact: true }).fill("synthetic-browser-check-only");
@@ -19,7 +20,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByLabel("Description").fill("Market " + suffix);
   await page.getByRole("button", { name: "Save transaction" }).click();
   await page.getByRole("link", { name: new RegExp("^Edit Market " + suffix) }).click();
-  await page.getByLabel("Category").selectOption({ label: "Groceries" });
+  await page.getByLabel("Category", { exact: true }).selectOption({ label: "Groceries" });
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.locator("main")).toContainText("Groceries");
 
@@ -34,7 +35,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
     await section.screenshot({ path: `.local/categories-${scheme}.png` });
   }
   await section.getByRole("link", { name: /^Groceries/ }).click();
-  await expect(page.getByLabel("Category")).toHaveValue(/\d+/);
+  await expect(page.getByLabel("Category", { exact: true })).toHaveValue(/\d+/);
   await expect(page.locator("main")).toContainText("Market " + suffix);
 
   await page.goBack();
@@ -47,7 +48,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByRole("link", { name: /^Rules/ }).click();
   await page.getByRole("link", { name: "Add rule" }).click();
   await page.getByLabel("Text").fill("market " + suffix);
-  await page.getByLabel("Category").selectOption({ label: "Pets " + suffix });
+  await page.getByLabel("Category", { exact: true }).selectOption({ label: "Pets " + suffix });
   await page.getByRole("button", { name: "Preview matches" }).click();
   await expect(page.getByRole("status")).toContainText("1 transaction matches");
   await expect(page.getByRole("status")).toContainText("Market " + suffix);
@@ -101,4 +102,46 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.screenshot({ path: ".local/alerts-phone.png" });
   await page.reload();
   await expect(page.getByRole("link", { name: /new alert/ })).toHaveCount(0);
+
+  // Categorize by example: search, tick, keep the keyword as a rule; then one transaction "also similar".
+  const tag = suffix.replace(/\d/g, (d) => "abcdefghij"[Number(d)]);  // letters only, like a real merchant name
+  const addTxn = async (description: string) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: accountName }).click();
+    await page.getByRole("link", { name: "Add transaction" }).click();
+    await page.getByLabel("Date").fill("2026-04-10");
+    await page.getByLabel("Amount (USD)").fill("3.25");
+    await page.getByLabel("Description").fill(description);
+    await page.getByRole("button", { name: "Save transaction" }).click();
+  };
+  for (const d of [`Bagels${tag} #12`, `Bagels${tag} #34`, `Deli${tag} #1`, `Deli${tag} #2`]) await addTxn(d);
+  await page.goto("/");
+  await page.goto(page.url().split("?")[0] + "?period=2026-04");
+  await page.getByRole("link", { name: "Manage categories" }).click();
+  await page.getByRole("link", { name: /^Dining( ›)?$/ }).click();
+  await page.getByRole("link", { name: "Add transactions" }).click();
+  await page.getByLabel("Search transaction names").fill(`bagels${tag}`);
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("status")).toContainText("2 transactions contain");
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await page.screenshot({ path: `.local/category-add-${scheme}.png`, fullPage: true });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.getByRole("button", { name: "Add ticked to Dining" }).click();
+  await expect(page.locator("body")).toContainText(`Added 2 to Dining. Future “bagels${tag}” purchases will go there too.`);
+
+  await page.goto("/");
+  await page.getByRole("link", { name: accountName }).click();
+  await page.getByRole("link", { name: new RegExp(`^Edit Deli${tag} #1`) }).click();
+  await page.getByLabel("Category", { exact: true }).selectOption({ label: "Entertainment" });
+  await expect(page.getByLabel("Name contains")).toHaveValue(`Deli${tag}`);
+  await page.getByLabel(/^Also put other transactions/).check();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator("main")).toContainText(`Deli${tag} #2`);
+  const deli2 = page.locator("li", { hasText: `Deli${tag} #2` });
+  await expect(deli2).toContainText("Entertainment");
+  await expect(page.locator("li", { hasText: `Bagels${tag} #34` })).toContainText("Dining");
 });
