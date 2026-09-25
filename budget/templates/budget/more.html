@@ -1,11 +1,11 @@
 {% extends 'budget/base.html' %}
 {% block content %}
-<h1 class="mb-5 text-2xl font-semibold">More</h1>
-<section aria-labelledby="login-title" class="mb-6 max-w-xl rounded-lg border border-gray-200 bg-white p-5">
+<h1 class="mb-5 text-3xl">More</h1>
+<section aria-labelledby="login-title" class="mb-6 max-w-xl card">
   <h2 id="login-title" class="mb-3 text-xl font-semibold">Your login</h2>
   <dl class="mb-4 grid grid-cols-1 gap-2">
-    <div><dt class="text-sm text-gray-600">Username</dt><dd class="break-all font-medium">{{ user.username }}</dd></div>
-    <div><dt class="text-sm text-gray-600">Email</dt><dd class="break-all font-medium">{{ user.email|default:"No email set" }}{% if user.email %} · {% if verified %}Verified{% else %}Not verified{% endif %}{% endif %}</dd></div>
+    <div><dt class="text-sm text-muted">Username</dt><dd class="break-all font-medium">{{ user.username }}</dd></div>
+    <div><dt class="text-sm text-muted">Email</dt><dd class="break-all font-medium">{{ user.email|default:"No email set" }}{% if user.email %} · {% if verified %}Verified{% else %}Not verified{% endif %}{% endif %}</dd></div>
   </dl>
   <div class="flex flex-wrap gap-3">
     <a class="secondary" href="{% url 'password_change' %}">Change password</a>
@@ -13,12 +13,12 @@
     <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="secondary" type="submit">Sign out</button></form>
   </div>
 </section>
-<section aria-labelledby="create-title" class="max-w-xl rounded-lg border border-gray-200 bg-white p-5">
+<section aria-labelledby="create-title" class="max-w-xl card">
   <h2 id="create-title" class="mb-3 text-xl font-semibold">Add</h2>
-  <ul class="divide-y divide-gray-200">
-    <li><a class="row-link -mx-2 flex min-h-14 flex-col justify-center rounded-lg px-2 py-2" href="{% url 'account_create' %}"><span class="font-medium">Add account</span><span class="text-sm text-gray-600">A manual account. It starts private.</span></a></li>
-    <li><a class="row-link -mx-2 flex min-h-14 flex-col justify-center rounded-lg px-2 py-2" href="{% url 'group_create' %}"><span class="font-medium">New group</span><span class="text-sm text-gray-600">Share chosen accounts with a partner or friends.</span></a></li>
-    {% if personal %}<li><a class="row-link -mx-2 flex min-h-14 flex-col justify-center rounded-lg px-2 py-2" href="{% url 'invitation_create' personal.pk %}"><span class="font-medium">Invite someone to Budget</span><span class="text-sm text-gray-600">They get their own private login. Nothing is shared.</span></a></li>{% endif %}
+  <ul class="divide-y divide-line">
+    <li><a class="row-link -mx-2 flex min-h-14 flex-col justify-center rounded-lg px-2 py-2" href="{% url 'account_create' %}"><span class="font-medium">Add account</span><span class="text-sm text-muted">A manual account. It starts private.</span></a></li>
+    <li><a class="row-link -mx-2 flex min-h-14 flex-col justify-center rounded-lg px-2 py-2" href="{% url 'group_create' %}"><span class="font-medium">New group</span><span class="text-sm text-muted">Share chosen accounts with a partner or friends.</span></a></li>
+    {% if personal %}<li><a class="row-link -mx-2 flex min-h-14 flex-col justify-center rounded-lg px-2 py-2" href="{% url 'invitation_create' personal.pk %}"><span class="font-medium">Invite someone to Budget</span><span class="text-sm text-muted">They get their own private login. Nothing is shared.</span></a></li>{% endif %}
   </ul>
 </section>
 {% endblock %}

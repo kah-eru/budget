@@ -1,12 +1,12 @@
 {% extends 'budget/base.html' %}
 {% block content %}
-<section class="mx-auto max-w-xl rounded-lg border border-gray-200 bg-white p-6">
+<section class="mx-auto max-w-xl card p-6">
   {% if invitation.workspace.is_personal %}
-  <h1 class="mb-3 break-words text-2xl font-semibold">Create your Budget login</h1>
-  <p class="mb-5 text-gray-600">{{ invitation.workspace.owner.username }} invited you to Budget. You get your own private workspace; nobody else sees your accounts unless you share them. This invitation expires {{ invitation.expires_at|date:'M j, Y' }}.</p>
+  <h1 class="mb-3 break-words text-3xl">Create your Budget login</h1>
+  <p class="mb-5 text-muted">{{ invitation.workspace.owner.username }} invited you to Budget. You get your own private workspace; nobody else sees your accounts unless you share them. This invitation expires {{ invitation.expires_at|date:'M j, Y' }}.</p>
   {% else %}
-  <h1 class="mb-3 break-words text-2xl font-semibold">Join {{ invitation.workspace.name }}</h1>
-  <p class="mb-5 text-gray-600">Joining gives you access to this group's existing shared history. Your own accounts stay private until you choose to share them. This invitation expires {{ invitation.expires_at|date:'M j, Y' }}.</p>
+  <h1 class="mb-3 break-words text-3xl">Join {{ invitation.workspace.name }}</h1>
+  <p class="mb-5 text-muted">Joining gives you access to this group's existing shared history. Your own accounts stay private until you choose to share them. This invitation expires {{ invitation.expires_at|date:'M j, Y' }}.</p>
   {% endif %}
   {% if user.is_authenticated %}
   <p class="mb-4">Sign in with the invited email address and <a class="secondary" href="{% url 'email_verify' %}">Verify your email</a> before {% if invitation.workspace.is_personal %}finishing{% else %}joining{% endif %}. Return to this invitation after verification.</p>

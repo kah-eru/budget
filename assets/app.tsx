@@ -5,7 +5,9 @@ import { animate } from "motion/mini";
 // Confirmed text is always server-rendered, including when scripts fail.
 if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
   document.querySelectorAll<HTMLElement>("[data-feedback]").forEach((element) => {
-    animate(element, { backgroundColor: ["#e5e7eb", "#ffffff"] }, { duration: 0.2 });
+    // Flash from the accent to the element's own themed background, so dark mode ends dark.
+    const rest = getComputedStyle(element).backgroundColor;
+    animate(element, { backgroundColor: [getComputedStyle(document.documentElement).getPropertyValue("--accent"), rest] }, { duration: 0.3 });
   });
 }
 

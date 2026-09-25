@@ -9,13 +9,13 @@
   <link rel="stylesheet" href="{% static 'budget/dist/app.css' %}">
   <script type="module" src="{% static 'budget/dist/app.js' %}"></script>
 </head>
-<body class="bg-gray-50 text-gray-900 antialiased">
+<body class="antialiased">
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-8">
-    <header class="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-5">
-      <a href="{% url 'home' %}" class="text-xl font-semibold tracking-tight">Budget</a>
+    <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <a href="{% url 'home' %}" class="font-display text-2xl tracking-tight">Budget<span class="text-accent" aria-hidden="true">.</span></a>
       {% if user.is_authenticated %}
-      <span class="break-all text-sm text-gray-600">{{ user.username }}</span>
+      <span class="break-all rounded-full bg-surface px-3 py-1 text-sm text-muted">{{ user.username }}</span>
       {% endif %}
     </header>
     {% if workspaces %}
@@ -29,14 +29,14 @@
     </details>
     {% endif %}
     {% for message in messages %}
-    <div role="status" data-feedback class="mb-4 rounded-lg border border-gray-300 bg-white p-4 text-sm">{{ message }}</div>
+    <div role="status" data-feedback class="mb-4 rounded-2xl border border-accent bg-accent-soft p-4 text-sm">{{ message }}</div>
     {% endfor %}
     <main id="main" tabindex="-1">{% block content %}{% endblock %}</main>
-    <footer class="mt-10 border-t border-gray-200 pt-4 text-sm text-gray-600">Local development · No bank data connected</footer>
+    <footer class="mt-10 border-t border-line pt-4 text-sm text-muted">Local development · No bank data connected</footer>
   </div>
   {% if user.is_authenticated %}
-  <nav aria-label="Main navigation" class="bottom-nav fixed inset-x-0 bottom-0 border-t border-gray-200 bg-white">
-    <div class="mx-auto grid max-w-5xl grid-cols-3 gap-1 px-2">
+  <nav aria-label="Main navigation" class="bottom-nav fixed inset-x-0 bottom-0 border-t border-line">
+    <div class="mx-auto grid max-w-md grid-cols-3 gap-1 px-3 py-2">
       {% with here=request.resolver_match.url_name %}
       <a href="{% if workspace %}{% url 'workspace' workspace.pk %}{% else %}{% url 'home' %}{% endif %}" class="nav-link" {% if here == 'workspace' or here == 'account_detail' %}aria-current="page"{% endif %}>Overview</a>
       <a href="{% if workspace %}{% url 'transactions' workspace.pk %}{% elif personal %}{% url 'transactions' personal.pk %}{% else %}{% url 'home' %}{% endif %}" class="nav-link" {% if here == 'transactions' %}aria-current="page"{% endif %}>Timeline</a>

@@ -1,62 +1,143 @@
 @import "tailwindcss";
+@import "@fontsource/young-serif/latin-400.css";
+@import "@fontsource-variable/hanken-grotesk/wght.css";
+@import "@fontsource-variable/martian-mono/wdth.css";
 @plugin "flowbite/plugin";
 @source "../budget/templates";
 @source "./**/*.{ts,tsx}";
 @source "../node_modules/flowbite";
 
-@layer base {
-  body { font-family: ui-sans-serif, system-ui, sans-serif; }
-  /* Bklit chart tokens mapped onto the app's gray palette. */
+/* Palette: the only place raw colours live. Add new colours here, then point a role at them below. */
+:root {
+  --bubblegum-pink: #f45b69;
+  --lavender-blush: #f6e8ea;
+  --coffee-bean: #22181c;
+  --black-cherry: #5a0001;
+}
+
+/* Roles. Light: white and pink. Dark: coffee bean and black cherry. */
+:root {
+  color-scheme: light;
+  --canvas: var(--lavender-blush);
+  --surface: #fff;
+  --sunken: #fbf3f4;
+  --ink: var(--coffee-bean);
+  --muted: #6e5b62;
+  --line: #ecd3d7;
+  --line-strong: #d4aab1;
+  --accent: var(--bubblegum-pink);
+  --on-accent: var(--coffee-bean);
+  --accent-text: var(--black-cherry);
+  --accent-soft: #fde3e6;
+  --pressed: #f9dade;
+  --danger: var(--black-cherry);
+  --danger-soft: #fde3e6;
+  --focus: var(--black-cherry);
+}
+@media (prefers-color-scheme: dark) {
   :root {
-    --foreground: var(--color-gray-900); --muted-foreground: var(--color-gray-600);
-    --chart-1: var(--color-blue-700); --chart-2: var(--color-gray-500); --chart-3: var(--color-gray-400); --chart-4: var(--color-gray-300); --chart-5: var(--color-gray-200);
-    --chart-background: #fff; --chart-foreground: var(--color-gray-900); --chart-foreground-muted: var(--color-gray-600); --chart-label: var(--color-gray-600);
-    --chart-line-primary: var(--color-blue-700); --chart-line-secondary: var(--color-gray-500); --chart-crosshair: var(--color-gray-400); --chart-grid: var(--color-gray-200);
-    --chart-indicator-color: var(--color-gray-400); --chart-indicator-secondary-color: var(--color-gray-300); --chart-tooltip-background: rgb(255 255 255 / 0.95);
-    --chart-marker-background: #fff; --chart-marker-border: var(--color-gray-300); --chart-marker-foreground: var(--color-gray-900);
-    --chart-marker-badge-background: var(--color-gray-900); --chart-marker-badge-foreground: #fff;
-    --chart-segment-background: var(--color-gray-100); --chart-segment-line: var(--color-gray-400); --chart-brush-border: var(--color-gray-300); --shimmering-color: var(--color-gray-400);
+    color-scheme: dark;
+    --canvas: var(--coffee-bean);
+    --surface: #33161b;
+    --sunken: #1a1215;
+    --ink: var(--lavender-blush);
+    --muted: #c4a9af;
+    --line: var(--black-cherry);
+    --line-strong: #8a2530;
+    --accent: var(--bubblegum-pink);
+    --on-accent: var(--coffee-bean);
+    --accent-text: var(--bubblegum-pink);
+    --accent-soft: #4a1017;
+    --pressed: var(--black-cherry);
+    --danger: #ff9aa3;
+    --danger-soft: #4a1017;
+    --focus: var(--bubblegum-pink);
+  }
+}
+@media (prefers-contrast: more) {
+  :root { --muted: var(--ink); --line: var(--line-strong); }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-brand: var(--accent); /* Flowbite focus ring */
+  --color-body: var(--muted); /* Flowbite placeholder */
+  --font-sans: "Hanken Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Young Serif", ui-serif, Georgia, serif;
+  --font-mono: "Martian Mono Variable", ui-monospace, monospace;
+}
+
+@layer base {
+  body { @apply bg-canvas font-sans text-ink; }
+  /* Bklit chart tokens follow the same roles. */
+  :root {
+    --foreground: var(--ink); --muted-foreground: var(--muted);
+    --chart-1: var(--accent); --chart-2: var(--muted); --chart-3: var(--line-strong); --chart-4: var(--line); --chart-5: var(--sunken);
+    --chart-background: var(--surface); --chart-foreground: var(--ink); --chart-foreground-muted: var(--muted); --chart-label: var(--muted);
+    --chart-line-primary: var(--accent); --chart-line-secondary: var(--muted); --chart-crosshair: var(--line-strong); --chart-grid: var(--line);
+    --chart-indicator-color: var(--line-strong); --chart-indicator-secondary-color: var(--line); --chart-tooltip-background: var(--surface);
+    --chart-marker-background: var(--surface); --chart-marker-border: var(--line-strong); --chart-marker-foreground: var(--ink);
+    --chart-marker-badge-background: var(--ink); --chart-marker-badge-foreground: var(--surface);
+    --chart-segment-background: var(--sunken); --chart-segment-line: var(--line-strong); --chart-brush-border: var(--line-strong); --shimmering-color: var(--muted);
   }
   /* Scrolled-to and focused controls stop above the fixed bottom nav. */
   html { scroll-padding-bottom: 6rem; }
   a, button, input, select { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-  /* Size-specific tracking: tighten large headings, leave body at 0. */
-  h1 { letter-spacing: -0.02em; }
+  /* Display face for page titles only; size-specific tracking. */
+  h1 { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.015em; line-height: 1.1; }
   h2 { letter-spacing: -0.01em; }
   a, button { overflow-wrap: anywhere; }
-  input:not([type="hidden"]):not([type="checkbox"]), select {
-    @apply block min-h-11 w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-base text-gray-900;
+  main a:not([class]) { color: var(--accent-text); }
+  /* :is() lifts select/textarea to the input's specificity so Flowbite's white form defaults lose in dark mode. */
+  :is(input:not([type="hidden"]):not([type="checkbox"]), select, textarea) {
+    @apply block min-h-11 w-full rounded-xl border border-line-strong bg-sunken p-3 text-base text-ink;
   }
-  input[type="checkbox"] {
-    @apply mt-1 size-5 shrink-0 rounded border-gray-300 accent-gray-900;
-  }
+  input[type="checkbox"] { @apply mt-1 size-5 shrink-0 rounded; accent-color: var(--accent); }
   #id_accounts label { @apply flex min-h-11 cursor-pointer items-center gap-3 py-2; }
-  :focus-visible { outline: 3px solid #1d4ed8; outline-offset: 3px; }
-  /* Higher contrast: darken secondary text and hairline borders app-wide. */
-  @media (prefers-contrast: more) {
-    :root { --color-gray-600: var(--color-gray-800); --color-gray-200: var(--color-gray-500); --color-gray-300: var(--color-gray-600); }
-  }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 }
 
 @layer components {
-  .primary { @apply inline-flex min-h-11 items-center justify-center rounded-lg bg-gray-900 px-5 py-3 text-center text-base font-medium text-white hover:bg-gray-800; }
-  .secondary { @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium hover:bg-gray-100; }
-  .workspace-link { @apply inline-flex min-h-11 items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium; }
-  .workspace-summary { @apply inline-flex min-h-11 max-w-full cursor-pointer list-none items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm; }
+  .primary { @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 text-center text-base font-semibold text-on-accent hover:brightness-95; }
+  .secondary { @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-line-strong bg-surface px-4 py-2 text-center text-base font-medium text-ink hover:bg-accent-soft; }
+  .workspace-link { @apply inline-flex min-h-11 items-center rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-medium; }
+  .workspace-summary { @apply inline-flex min-h-11 max-w-full cursor-pointer list-none items-center gap-2 rounded-full border border-line-strong bg-surface px-4 py-2 text-sm; }
   .workspace-summary::-webkit-details-marker { display: none; }
   details[open] > .workspace-summary > [aria-hidden] { transform: rotate(180deg); }
-  .workspace-link[aria-current="page"] { @apply border-gray-900 bg-gray-900 text-white; }
-  .nav-link { @apply flex min-h-14 items-center justify-center rounded-lg px-2 py-3 text-center text-sm font-medium hover:bg-gray-100; }
-  .nav-link[aria-current="page"] { @apply bg-gray-100 font-semibold; }
+  .workspace-link[aria-current="page"] { @apply border-accent bg-accent text-on-accent; }
+  .nav-link { @apply flex min-h-12 items-center justify-center rounded-full px-2 py-2 text-center text-sm font-medium hover:bg-accent-soft; }
+  .nav-link[aria-current="page"] { @apply bg-accent font-semibold text-on-accent; }
   /* Instant press feedback on pointer-down; scale is dropped for reduced motion, the colour change stays. */
   .primary, .secondary, .workspace-link, .workspace-summary, .nav-link, .row-link { transition: transform 100ms ease-out, background-color 100ms ease-out; }
   .primary:active, .secondary:active, .workspace-link:active, .workspace-summary:active, .nav-link:active { transform: scale(0.97); }
-  .secondary:active, .nav-link:active, .row-link:active { @apply bg-gray-100; }
-  .primary:active { @apply bg-gray-700; }
+  .secondary:active, .nav-link:active, .row-link:active { background-color: var(--pressed); }
+  .primary:active { filter: brightness(0.9); }
   @media (prefers-reduced-motion: reduce) {
     .primary:active, .secondary:active, .workspace-link:active, .workspace-summary:active, .nav-link:active { transform: none; }
   }
-  .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  /* Translucent nav so content reads as scrolling under it; solid when transparency is reduced. */
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0px); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(16px) saturate(160%); }
+  @media (prefers-reduced-transparency: reduce) { .bottom-nav { background: var(--surface); backdrop-filter: none; } }
+  .card { @apply rounded-2xl border border-line bg-surface p-5; }
+  /* Money is set like a receipt printer: condensed mono, tabular figures. */
+  .amount { font-family: var(--font-mono); font-stretch: 87.5%; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  /* Signature: spending summaries are printed receipts with a perforated bottom edge. */
+  .receipt { --tooth: 7px; padding-bottom: 2.25rem; border-bottom: 0;
+    -webkit-mask: radial-gradient(circle var(--tooth) at 50% 100%, #0000 98%, #000) 50% 100% / calc(var(--tooth) * 3) 100% repeat-x;
+            mask: radial-gradient(circle var(--tooth) at 50% 100%, #0000 98%, #000) 50% 100% / calc(var(--tooth) * 3) 100% repeat-x; }
+  .receipt-rule { border-top: 2px dashed var(--line-strong); }
   .skip-link { @apply sr-only; }
-  .skip-link:focus { @apply not-sr-only fixed top-2 left-2 z-50 rounded bg-white p-3; }
+  .skip-link:focus { @apply not-sr-only fixed top-2 left-2 z-50 rounded bg-surface p-3; }
 }

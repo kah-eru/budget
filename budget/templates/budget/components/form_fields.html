@@ -1,4 +1,4 @@
-{% if form.non_field_errors %}<div role="alert" class="mb-4 rounded-lg border border-red-300 bg-red-50 p-4 text-red-900">{{ form.non_field_errors }}</div>{% endif %}
+{% if form.non_field_errors %}<div role="alert" class="mb-4 rounded-lg border border-danger bg-danger-soft p-4 text-danger">{{ form.non_field_errors }}</div>{% endif %}
 {% for field in form %}
 <div class="mb-5">
   {% if field.field.widget.input_type == 'checkbox' and field.name == 'accounts' %}
@@ -8,7 +8,7 @@
   {% else %}
   <label for="{{ field.id_for_label }}" class="mb-2 block font-medium">{{ field.label }}</label>{{ field }}
   {% endif %}
-  {% if field.help_text %}<p class="mt-2 text-sm text-gray-600">{{ field.help_text }}</p>{% endif %}
-  {% if field.errors %}<div role="alert" class="mt-2 text-sm text-red-800">{{ field.errors }}</div>{% endif %}
+  {% if field.help_text %}<p class="mt-2 text-sm text-muted">{{ field.help_text }}</p>{% endif %}
+  {% if field.errors %}<div role="alert" class="mt-2 text-sm text-danger">{{ field.errors }}</div>{% endif %}
 </div>
 {% endfor %}

@@ -2,6 +2,10 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-25, night): "Do the frontend first with these colors" (white + pink light; coffee bean + black cherry dark; more colours coming). Used `frontend-design` + `apple-design`. Built a token theme in `assets/app.css` (palette block -> roles -> Tailwind utilities), self-hosted Young Serif / Hanken Grotesk / Martian Mono, receipt-style spending summaries, OS-driven dark mode; templates moved off gray utilities. 78 Django tests OK, 5/5 Chrome checks, light/dark phone screenshots reviewed. Committed locally; **not pushed**. Details: [development guide](docs/development.md#visual-theme--september-25-night). Next: CSV import/export, then Plaid sandbox (milestone 3).
+
+Latest question (2026-09-25, night): user asked about Plaid and called the frontend generic ("ai slop"), asking why the frontend skills were not used. Answer: Plaid is milestone 3 (after CSV, milestone 2); the UI has only had the low-fidelity pass plus light apple-design touches, and the installed `frontend-design` skill was never used. Offered a visual design pass or starting Plaid sandbox; awaiting their choice. No product changes.
+
 Latest (2026-09-25, night): "continue with the checklist". Built the **Bklit running-total chart** on the Timeline (first mounted React component, lazy chunk 162.56 kB gzip, initial JS 4.63 kB gzip); switched Vite from library mode to a minified app build. 78 Django tests OK, 5/5 Chrome checks, production collectstatic OK. Pushed on the user's "push and commit": `feat/project-foundation` `90f8ad2`, `main` `68d176e`; Render redeploys after CI passes (not checked by the agent). Details: [development guide](docs/development.md#timeline-chart--september-25-night).
 
 Latest (2026-09-25): **preview is live and the owner is signed in** at https://budget-4aek.onrender.com. First deploy failed on a mistyped Render `PGPASSWORD`; fixed by the owner. The owner's site login password appeared in chat; they were told they can change it under More -> Change password. Next: Bklit chart, then CSV import/export (see Ordered next steps; step 1 is done).
