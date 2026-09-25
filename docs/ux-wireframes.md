@@ -16,6 +16,8 @@ Read alongside the [product spec](superpowers/specs/2026-09-22-budget-app-design
 
 Implemented 2026-09-25: workspace summary with ← / → and Month/Year (year adds a per-month table linking to each month) -> View <period> transactions -> search/filters (Apply filters, Clear filters, Older transactions) -> Edit -> Save returns to the same filtered list. Filters are a plain form above the list, not yet a dialog.
 
+Update 2026-09-25 (speed pass): charts show a same-size skeleton until they load; tab pages are prefetched and pages crossfade (the bottom nav stays put); Add to Home Screen opens the app full screen.
+
 Update 2026-09-25 (latest): More is now **Settings** (Your login: change username/email/password; Appearance: System/Light/Dark; Your data: CSV export; Add; Sign out), and the Timeline has an Export CSV chip.
 
 Implemented later on 2026-09-25: bottom navigation is Overview | Timeline | More (Budgets/Insights join when built). More holds Your login (Change password, Email verification, Sign out) and Add (Add account, New group, Invite someone to Budget). The workspace switcher is a one-line disclosure (Workspace: name). Timeline = filters -> range totals -> Daily totals table (disclosure) -> day-grouped feed -> Older transactions / Start from newest; a changed list restarts with a status note. Standalone invite: More -> Invite someone to Budget -> email + confirmation -> recipient opens link -> Create your login -> setup email -> choose username/password -> sign in -> Finish -> own Personal workspace only.

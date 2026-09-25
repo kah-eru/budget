@@ -170,4 +170,25 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 - Measured: 93 Django tests OK (4 PG-only skipped), 6/6 Chrome checks (new `settings.spec.ts`: theme survives reload, CSV downloads), `check` and `makemigrations --check` clean, JS 4.79 kB gzip initial. Light/dark Settings screenshots reviewed.
 - Not built: CSV import, per-account theme sync, sign out other devices, account deletion.
 
+## Speed and app-feel pass — September 25 (night, latest)
+
+Why: the user asked which agency-style speed wins apply (WebP/AVIF, lazy loading, CDN, trimming scripts, Next.js + headless CMS, SSR), and for skeleton loaders and preloading so the phone experience feels like an app.
+
+What applied and what didn't:
+- Already true: server-side rendering (every page is Django HTML and works without JavaScript) and lazy loading (the chart code loads only on chart pages, after render).
+- Not applicable: there are no images (icons are inline SVG), and a headless CMS is for marketing content. Replacing Django with Next.js would add weeks of work for no measured gain.
+- CDN: hashed static files already get `max-age=315360000, immutable` and gzip from WhiteNoise. Private pages stay `no-store`, and no CDN may cache them.
+
+Measured (lab only, not field data):
+- Setup: production-mode local server (DEBUG off, WhiteNoise manifest pipeline, synthetic SQLite, 300 synthetic transactions), Chrome with Slow 4G (150 ms RTT, 1.6 Mbps) and 4x CPU throttling, 390 px viewport. The measuring spec and server script were temporary.
+- **Found and fixed a production-only bug.** The chart chunk imported shared Motion code from `./app.js`, while Django served the page `app.<hash>.js`. The browser therefore loaded and ran the entry twice: two chart mounts, two theme listeners, and an extra 5 kB download. Dev used one URL, so it never showed. The message flash now uses native `element.animate` (what `motion/mini` wraps), so the entry shares nothing with the chart. Initial JS went from 4.79 to **1.17 kB gzip**.
+- **Chart skeleton.** A server-rendered slot with the chart's 2.4:1 aspect ratio holds a faint pulsing line (static under reduced motion) until the chart mounts. Page shift (CLS): Overview **0.117 → 0**, Timeline **0.096 → 0**. The slot is 149 px tall both before and after mount, in light and dark. Without JavaScript the slot is not shown (a `js` class on `<html>`), and a failed chart load removes it.
+- **Preloading.** Speculation rules (Chrome/Edge/Android; other browsers ignore them) prefetch the bottom-nav pages as soon as a page loads, and any other same-origin link on hover or touch. CSV export and `[download]` links are excluded, and GET pages have no side effects. Every tab switch was confirmed as served from the prefetch (`deliveryType: navigational-prefetch`), and `no-store` did not block it. Prefetched pages can be up to 5 minutes old (Chrome's limit); a new page load re-prefetches.
+- **Page crossfade.** Cross-document view transitions (Chrome, Safari 18.2+) crossfade between pages, the bottom nav holds still, and they are off under reduced motion. The head script opts in only when JavaScript runs: with JavaScript disabled, this Chrome left the page stuck behind the transition overlay, which broke the no-JavaScript browser checks.
+- **Installable.** A web app manifest (standalone display) plus an icon set (SVG, 180/192/512 PNG: the running-total line in Coffee Bean on Bubblegum Pink) and light/dark `theme-color`. On a phone, Add to Home Screen opens full screen without browser chrome. There is deliberately no service worker, so no financial page is ever stored offline.
+- **Font preload tried and dropped.** An A/B test with and without it showed no LCP difference (login 0.91–1.04 s vs 0.92–1.03 s); the font already uses `font-display: swap`.
+- Timings on this machine were noisy between runs (login LCP 0.9–2.1 s). Every run met the LCP ≤ 2.5 s target, and view transitions on vs off were within noise. Deterministic results: CLS 0, a single entry load, 1.17 kB initial JS, and prefetched tab pages.
+- **Biggest remaining delay (not code):** Render's free plan sleeps after about 15 idle minutes, so the first visit waits roughly 30–60 s, and Neon's free compute also suspends. The fix is a paid instance (about $7/month) or an external keep-warm ping. That is the user's decision and has not been done.
+- Verification: 93 Django tests OK (4 PG-only skipped); 6/6 Chrome checks (the chart check now requires the real chart and no skeleton, and Settings checks the manifest), including the no-JavaScript journeys.
+
 Continue milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
