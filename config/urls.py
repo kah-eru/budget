@@ -26,6 +26,7 @@ urlpatterns = [
     path("accounts/new/", views.account_create, name="account_create"),
     path("groups/new/", views.group_create, name="group_create"),
     path("workspaces/<int:workspace_id>/", views.workspace_detail, name="workspace"),
+    path("workspaces/<int:workspace_id>/transactions/", views.transaction_list, name="transactions"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/", views.account_detail, name="account_detail"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/new/", views.transaction_edit, name="transaction_create"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/transactions/<int:transaction_id>/", views.transaction_edit, name="transaction_edit"),

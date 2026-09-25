@@ -2,7 +2,18 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
-Latest request (2026-09-25): "now commit and push." Pushed to GitHub (`kah-eru/budget`): `feat/project-foundation` (26d5722..f786cb2, 17 commits) and `main` (fb3f2e8, synced docs). Commits scanned for credentials first; none found. No PR, merge or deployment.
+Latest request (2026-09-25): "now read the md files and continue." Built handoff next-step 1 in the worktree: transaction list with search/filters/cursor paging, workspace month/year periods with a per-month year table, filtered-list Back after edit, and a bottom-nav overlap fix. Committed locally on `feat/project-foundation`; **not pushed** (push only on request). Details: [development guide](docs/development.md#transaction-list-and-yearly-view--september-25).
+
+Earlier the same day: "now commit and push." Pushed `feat/project-foundation` (through `fcee2b6`) and `main` (`9a466d3`) to GitHub `kah-eru/budget` after a credential scan. No PR, merge or deployment.
+
+## Latest slice (2026-09-25)
+
+- `budget/reporting.py`: `visible_transactions()` (visible accounts + workspace overlay), `monthly(user, ws, year)` one grouped query; `spending()` unchanged in behaviour, shares the sum expressions.
+- `budget/forms.py::TransactionFilterForm` (q, account, person, start/end; From ≤ To) with `.apply(rows)`. Search matches the original description or this workspace's display name only.
+- `budget/views.py`: `transaction_list` at `workspaces/<id>/transactions/` (name `transactions`), 50 rows, keyset cursor `before=YYYY-MM-DD_id`; `period()` parses `?period=YYYY|YYYY-MM`; `annotation_edit` honours a relative `next` (validated with `url_has_allowed_host_and_scheme`).
+- Templates: new `transactions.html`, shared `components/transaction_row.html` (also used by `account.html`), period nav + year table in `workspace.html`.
+- `assets/app.css`: `html { scroll-padding-bottom: 6rem }` — the fixed bottom nav was covering a submit button once the workspace list got long (caught by the no-JS browser test).
+- Verification: 70 tests OK (4 PG-only skipped) on SQLite; `test_reporting` 24/24 on Neon; check + migration drift clean; build CSS 11.72 kB gzip; 4/4 Chrome checks incl. new `tests/browser/transactions.spec.ts`; 360px list and year screenshots reviewed (`.local/transactions-phone.png`, `.local/year-phone.png`). New tests observed failing first. Test server stopped.
 
 ## Recent history (2026-09-24)
 
@@ -12,9 +23,9 @@ Latest request (2026-09-25): "now commit and push." Pushed to GitHub (`kah-eru/b
 
 ## Active workspace and objective
 
-Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code commit `cf529f6` (docs commits follow). Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
+Build the private budgeting app defined in README/spec/plan. Code is in `C:/Users/bmauricio/Documents/budget/.worktrees/project-foundation`, branch `feat/project-foundation`, latest code is the 2026-09-25 list/yearly commit. Original checkout stays on `main` with synchronized (uncommitted) docs. Continue implementation only in the worktree.
 
-Milestone 1 is functionally complete except full responsive navigation and mounted React components; PostgreSQL row-locking checks pass on Neon. Milestone 2 has manual transactions, monthly summary and workspace annotations. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
+Milestone 1 is functionally complete except full responsive navigation and mounted React components; PostgreSQL row-locking checks pass on Neon. Milestone 2 has manual transactions, month/year summaries, a filtered transaction list and workspace annotations. Milestones 3-8 unimplemented. No real financial data, bank/AI/SEO connections or paid services.
 
 ## Commits this turn (local only)
 
@@ -40,20 +51,19 @@ Milestone 1 is functionally complete except full responsive navigation and mount
 Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut interactions; Manus for public SEO only; phone UX, selective sharing, integer cents, load gates. React installed but not mounted.
 
 - Annotations are per workspace: personal overrides/notes never reach group totals or pages (tested). Only the account owner annotates. No category yet (milestone 4 adds Category; annotation gains a category FK then).
-- Account page shows newest 100 transactions only (`ponytail:` note in `views.account_detail`); cursor paging arrives with the timeline.
+- Account page still shows newest 100 only; the workspace transaction list has cursor paging. List cursor is not yet invalidated on data-revision change, and there are no filtered totals or category filter yet.
 - Manual transactions are user-originated, so owners may edit amounts; imported (CSV/Plaid) amounts must stay read-only per spec.
 - Pre-existing UX issue: workspace switcher list grows long on phones with many groups.
 - Neon holds synthetic data only. SQLite remains a DEBUG-only fast path. Local PostgreSQL 17 service unused. Neon free plan: 0.5 GB, 100 CU-hours/month, scales to zero (first request after idle is slower).
 
 ## Ordered next steps
 
-1. Transaction list with search, account/person/date filters, pagination, and a yearly view reusing `spending()`.
-2. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
-3. UX: collapse the workspace switcher on phones (long list with many groups); apply apple-design springs once Motion drives real transitions (sheets/drawers).
-4. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
+1. Timeline with (date, id) cursor paging, daily/cumulative series, then CSV import/export, then Bklit charts.
+2. UX: collapse the workspace switcher on phones (long list with many groups); apply apple-design springs once Motion drives real transitions (sheets/drawers).
+3. Before real data: a separate Neon `production` database/role for real use, email delivery, hosting decision, real-device UX, load test (milestone 8) and release gates.
 
 ## Git and documentation state
 
-Both branches are pushed to `origin` (GitHub `kah-eru/budget`) as of 2026-09-25; this handoff update is committed and pushed after that. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
+`origin` (GitHub `kah-eru/budget`) has `main` at `9a466d3` and `feat/project-foundation` at `fcee2b6`. The 2026-09-25 list/yearly slice and its doc updates are local commits on top (worktree) plus a local docs-sync commit on root `main`; neither is pushed. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.

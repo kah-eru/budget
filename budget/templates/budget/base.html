@@ -39,7 +39,7 @@
   <nav aria-label="Main navigation" class="bottom-nav fixed inset-x-0 bottom-0 border-t border-gray-200 bg-white">
     <div class="mx-auto grid max-w-5xl grid-cols-3 gap-1 px-2">
       {% with here=request.resolver_match.url_name %}
-      <a href="{% url 'home' %}" class="nav-link" {% if here == 'workspace' or here == 'account_detail' %}aria-current="page"{% endif %}>Accounts</a>
+      <a href="{% url 'home' %}" class="nav-link" {% if here == 'workspace' or here == 'account_detail' or here == 'transactions' %}aria-current="page"{% endif %}>Accounts</a>
       <a href="{% url 'account_create' %}" class="nav-link" {% if here == 'account_create' %}aria-current="page"{% endif %}>Add account</a>
       <a href="{% url 'group_create' %}" class="nav-link" {% if here == 'group_create' %}aria-current="page"{% endif %}>New group</a>
       {% endwith %}

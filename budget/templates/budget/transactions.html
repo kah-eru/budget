@@ -1,0 +1,25 @@
+{% extends 'budget/base.html' %}
+{% block content %}
+<a class="secondary mb-5" href="{% url 'workspace' workspace.pk %}">Back to {{ workspace.name }}</a>
+<h1 class="mb-5 break-words text-2xl font-semibold">Transactions</h1>
+<form method="get" class="mb-6 rounded-lg border border-gray-200 bg-white p-5" role="search" aria-label="Filter transactions">
+  {% if form.non_field_errors %}<div role="alert" class="mb-4 rounded-lg border border-red-300 bg-red-50 p-4 text-red-900">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+    {% for field in form %}
+    <div class="mb-4{% if field.name == 'q' %} sm:col-span-2{% endif %}"><label for="{{ field.id_for_label }}" class="mb-2 block font-medium">{{ field.label }}</label>{{ field }}
+      {% if field.errors %}<div role="alert" class="mt-2 text-sm text-red-800">{{ field.errors }}</div>{% endif %}</div>
+    {% endfor %}
+  </div>
+  <div class="flex flex-wrap gap-3"><button class="primary" type="submit">Apply filters</button>{% if filtered %}<a class="secondary" href="{% url 'transactions' workspace.pk %}">Clear filters</a>{% endif %}</div>
+</form>
+<section aria-labelledby="results-title" class="rounded-lg border border-gray-200 bg-white p-5">
+  <h2 id="results-title" class="mb-1 text-xl font-semibold">{% if filtered %}Matching transactions{% else %}All transactions{% endif %}</h2>
+  <p class="mb-3 text-sm text-gray-600">Newest first. {% if workspace.is_personal %}All your accounts.{% else %}Only accounts shared with this group.{% endif %}</p>
+  <ul class="divide-y divide-gray-200">
+    {% for row in rows %}{% include 'budget/components/transaction_row.html' with show_account=True %}
+    {% empty %}<li class="py-5 text-gray-600">{% if filtered %}No transactions match these filters.{% elif form.errors %}Fix the filters above to see transactions.{% else %}No transactions yet.{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% if next_query %}<a class="secondary mt-4" href="{{ next_query }}">Older transactions</a>{% endif %}
+</section>
+{% endblock %}

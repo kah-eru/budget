@@ -29,7 +29,9 @@
 
 - [x] 2026-09-24: `TransactionAnnotation` per (transaction, workspace): display name, classification override (blank = original), note. `reporting.annotated()` attaches only the active workspace's overlay; `spending()` uses the effective classification. Personal overrides/notes proven absent from group totals and pages; source entry unchanged; only the account owner annotates. Category field waits for milestone 4 categories.
 
-This is not milestone 1 completion. Milestone 2 remaining: filters/search/pagination, yearly view, timeline, CSV import/export, charts.
+- [x] 2026-09-25: transaction list with search, account/person/date filters and 50-row `(date, id)` cursor pages; workspace month/year periods; `reporting.monthly()` per-month year table equal to `spending()`; filtered-list Back after edit. Category filter waits for milestone 4.
+
+This is not milestone 1 completion. Milestone 2 remaining: timeline, CSV import/export, charts.
 
 ## Global constraints
 

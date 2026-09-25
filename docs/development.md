@@ -1,10 +1,10 @@
 # Local development and verification
 
-Updated 2026-09-24. Development-only foundation, not ready for real financial data.
+Updated 2026-09-25. Development-only foundation, not ready for real financial data.
 
 ## Where to work
 
-Use `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on branch `feat/project-foundation`, tracking `origin/feat/project-foundation`. Foundation commit `7f2a4e6` and docs commit `26d5722` are in the local remote-tracking history from September 23. September 24 work is committed locally, not pushed: `ed793ee` invitations/recovery, `79450be` revision fix, `11976e8` private storage, `5c54c56` manual transactions, `b6947b9` workspace annotations, `cf529f6` apple-design pass. The original checkout is on `main` and retains its existing uncommitted documentation edits. No merge, pull request, or deployment has occurred.
+Use `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on branch `feat/project-foundation`, tracking `origin/feat/project-foundation`. Work through `fcee2b6` was pushed to GitHub on 2026-09-25; later commits are local until a push is requested (see `AI_HANDOFF.md`). The original checkout is on `main` with synchronized docs. No merge, pull request, or deployment has occurred.
 
 ## Setup (PowerShell)
 
@@ -103,6 +103,14 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 - `budget/tests/test_concurrency.py` (threads = separate DB sessions, the same isolation two web processes get; not separate OS processes): share-vs-removal, parallel invites, parallel accepts, session read across sessions. With the workspace locks removed, three of the four failed (leaked share, two invitations, two accepts); restored code passes.
 - Not measured: load, latency (the database is in Oregon), multiple app instances, connection pooling.
 
+## Transaction list and yearly view — September 25
+
+- 70 Django tests (66 run, 4 PostgreSQL-only skipped on SQLite); `test_reporting` 24/24 also on Neon PostgreSQL. New tests failed first (missing `monthly`, missing route, 404s), then passed.
+- `workspaces/<id>/transactions/`: search (original description or this workspace's display name — never another workspace's), account, person and From/To filters; newest first, 50 per page with a `(date, id)` keyset cursor (`before=YYYY-MM-DD_id`); malformed cursor → 404, invalid filters → 400 with inline errors. Query count is the same for 1 and 62 rows. Only owners see Edit; Edit returns to the filtered list via a validated relative `next` (external URLs fall back to the account page).
+- Workspace summary takes `?period=YYYY-MM` or `?period=YYYY` (anything else → this month) with previous/next and Month/Year links. Year view adds a per-month table from `reporting.monthly()` (one grouped query); the test asserts every month and the year sum equal `spending()`.
+- Found by the browser run: the fixed bottom nav covered a submit button once the workspace list got long; fixed with `scroll-padding-bottom` on `html`. 4/4 Chrome checks pass, including a new `tests/browser/transactions.spec.ts` (search → edit → back to filtered list; reflow 320–1440px). 360px list/year screenshots reviewed. CSS 11.72 kB gzip, JS 4.96 kB.
+- Limits: no category filter (milestone 4); no filtered totals on the list (timeline slice); cursor is not yet invalidated on data-revision change (timeline slice).
+
 ## Next
 
-Continue milestone 2: filters/search/pagination and yearly view, then timeline, CSV import/export and Bklit charts. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+Continue milestone 2: timeline, CSV import/export and Bklit charts. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

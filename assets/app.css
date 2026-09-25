@@ -6,6 +6,8 @@
 
 @layer base {
   body { font-family: ui-sans-serif, system-ui, sans-serif; }
+  /* Scrolled-to and focused controls stop above the fixed bottom nav. */
+  html { scroll-padding-bottom: 6rem; }
   a, button, input, select { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   /* Size-specific tracking: tighten large headings, leave body at 0. */
   h1 { letter-spacing: -0.02em; }

@@ -140,3 +140,106 @@ class AnnotationTests(TestCase):
         self.annotate(self.alice, self.group, classification="")
         self.assertEqual(spending(self.bob, self.group, *JAN)["posted_cents"], 5000)
         self.assertEqual(self.annotate(self.bob, self.group, note="x").status_code, 404)
+
+
+class YearlyTests(ReportingTests):
+    def test_monthly_matches_spending_for_every_month_and_the_year(self):
+        from budget.reporting import monthly
+        months = monthly(self.bob, self.group, 2026)
+        self.assertEqual(len(months), 12)
+        self.assertEqual([m["posted_cents"] for m in months[:3]], [10900, 700, 0])
+        year = spending(self.bob, self.group, date(2026, 1, 1), date(2026, 12, 31))
+        for key in year:
+            self.assertEqual(sum(m[key] for m in months), year[key])
+
+    def test_workspace_period_views(self):
+        self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
+        year = self.client.get(f"/workspaces/{self.group.pk}/?period=2026")
+        self.assertContains(year, "$116.00")  # 10900 + 700 posted over the year
+        self.assertContains(year, "?period=2026-01\">January<")
+        month = self.client.get(f"/workspaces/{self.group.pk}/?period=2026-02")
+        self.assertContains(month, "February 2026")
+        self.assertContains(month, "$7.00")
+        self.assertEqual(self.client.get(f"/workspaces/{self.group.pk}/?period=nonsense").status_code, 200)
+
+
+class TransactionListTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.alice, cls.bob, cls.eve = [get_user_model().objects.create_user(n, password="synthetic-password") for n in ("alice", "bob", "eve")]
+        cls.group = Workspace.objects.create(owner=cls.alice, name="Partner group")
+        Membership.objects.create(workspace=cls.group, user=cls.bob)
+        cls.card = Account.objects.create(owner=cls.alice, name="Alice card")
+        cls.bobs = Account.objects.create(owner=cls.bob, name="Bob checking")
+        cls.private = Account.objects.create(owner=cls.alice, name="Private card")
+        for account in (cls.card, cls.bobs):
+            AccountShare.objects.create(account=account, workspace=cls.group)
+        cls.coffee = Transaction.objects.create(account=cls.card, amount_cents=450, posted_on=date(2026, 3, 2), description="BLUE BOTTLE 88")
+        Transaction.objects.create(account=cls.bobs, amount_cents=9000, posted_on=date(2026, 3, 5), description="Hardware store")
+        Transaction.objects.create(account=cls.private, amount_cents=100, posted_on=date(2026, 3, 3), description="Secret gift")
+        from budget.models import TransactionAnnotation
+        TransactionAnnotation.objects.create(transaction=cls.coffee, workspace=cls.group, display_name="Morning coffee")
+        TransactionAnnotation.objects.create(transaction=cls.coffee, workspace=Workspace.objects.get(owner=cls.alice, is_personal=True), display_name="PERSONAL-NAME")
+
+    def get(self, user, **params):
+        self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
+        return self.client.get(f"/workspaces/{self.group.pk}/transactions/", params)
+
+    def test_lists_shared_rows_only(self):
+        page = self.get(self.bob)
+        self.assertContains(page, "Morning coffee")
+        self.assertContains(page, "Hardware store")
+        self.assertNotContains(page, "Secret gift")
+        self.assertNotContains(page, "PERSONAL-NAME")
+
+    def test_search_matches_original_and_group_name_but_not_personal_name(self):
+        self.assertContains(self.get(self.bob, q="blue bottle"), "Morning coffee")
+        self.assertContains(self.get(self.bob, q="morning"), "Morning coffee")
+        self.assertNotContains(self.get(self.bob, q="PERSONAL-NAME"), "Morning coffee")
+        self.assertNotContains(self.get(self.bob, q="secret"), "Secret gift")
+
+    def test_account_person_and_date_filters(self):
+        self.assertNotContains(self.get(self.bob, account=self.bobs.pk), "Morning coffee")
+        self.assertNotContains(self.get(self.bob, person=self.bob.pk), "Morning coffee")
+        self.assertContains(self.get(self.bob, person=self.alice.pk), "Morning coffee")
+        dated = self.get(self.bob, start="2026-03-04", end="2026-03-31")
+        self.assertContains(dated, "Hardware store")
+        self.assertNotContains(dated, "Morning coffee")
+        self.assertEqual(self.get(self.bob, start="2026-03-31", end="2026-03-01").status_code, 400)
+        self.assertEqual(self.get(self.bob, account=self.private.pk).status_code, 400)
+
+    def test_only_owner_rows_have_edit_links_and_outsider_gets_404(self):
+        page = self.get(self.bob).content.decode()
+        self.assertIn(f"/accounts/{self.bobs.pk}/transactions/", page)
+        self.assertNotIn(f"/accounts/{self.card.pk}/transactions/", page)
+        self.assertEqual(self.get(self.eve).status_code, 404)
+
+    def test_cursor_pages_are_stable_and_query_count_is_constant(self):
+        Transaction.objects.bulk_create(Transaction(account=self.card, amount_cents=100 + i, posted_on=date(2026, 1, 1), description=f"Same day {i}") for i in range(60))
+        self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
+        url = f"/workspaces/{self.group.pk}/transactions/"
+        with self.assertNumQueries(self.count_queries(url, {"q": "hardware"})):
+            first = self.client.get(url)
+        self.assertEqual(len(first.context["rows"]), 50)
+        second = self.client.get(url + first.context["next_query"])
+        seen = [r.pk for r in first.context["rows"]] + [r.pk for r in second.context["rows"]]
+        self.assertEqual(len(seen), 62)
+        self.assertEqual(len(set(seen)), 62)
+        self.assertIsNone(second.context["next_query"])
+        self.assertEqual(self.client.get(url, {"before": "garbage"}).status_code, 404)
+
+    def count_queries(self, url, params):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as ctx:
+            self.client.get(url, params)
+        return len(ctx)
+
+    def test_edit_returns_to_filtered_list_and_rejects_external_next(self):
+        self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
+        row = Transaction.objects.get(description="Hardware store")
+        edit = f"/workspaces/{self.group.pk}/accounts/{self.bobs.pk}/transactions/{row.pk}/annotate/"
+        back = f"/workspaces/{self.group.pk}/transactions/?q=hard"
+        payload = {"display_name": "Tools", "classification": "", "note": ""}
+        self.assertRedirects(self.client.post(edit + "?next=" + back.replace("?", "%3F").replace("=", "%3D"), payload), back, fetch_redirect_response=False)
+        self.assertRedirects(self.client.post(edit + "?next=https://evil.example/", payload), f"/workspaces/{self.group.pk}/accounts/{self.bobs.pk}/", fetch_redirect_response=False)

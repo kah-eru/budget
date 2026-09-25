@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
+from django.db.models import Q
 
 from .invitations import claim_email_send
 from .models import Account, Transaction, TransactionAnnotation, User, Workspace
@@ -44,6 +45,40 @@ class AnnotationForm(forms.ModelForm):
         self.fields["display_name"].help_text = f"Leave blank to show the original: {source.description or '(no description)'}"
         self.fields["classification"].choices = [("", f"Original ({source.get_classification_display()})"), *Transaction.CLASSIFICATIONS]
         self.fields["note"].label = "Personal note (only you)" if personal else "Group note (everyone in this group)"
+
+
+class TransactionFilterForm(forms.Form):
+    q = forms.CharField(label="Search", max_length=100, required=False, widget=forms.TextInput(attrs={"type": "search", "placeholder": "Name or description"}))
+    account = forms.ModelChoiceField(queryset=Account.objects.none(), required=False, empty_label="All accounts")
+    person = forms.ModelChoiceField(queryset=User.objects.none(), required=False, empty_label="Everyone")
+    start = forms.DateField(label="From", required=False, widget=forms.DateInput(attrs={"type": "date"}))
+    end = forms.DateField(label="To", required=False, widget=forms.DateInput(attrs={"type": "date"}))
+
+    def __init__(self, *args, accounts, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["account"].queryset = accounts.order_by("name", "pk")
+        self.fields["person"].queryset = User.objects.filter(pk__in=accounts.values("owner_id")).order_by("username")
+        self.fields["person"].label_from_instance = lambda u: u.username
+
+    def clean(self):
+        data = super().clean()
+        if data.get("start") and data.get("end") and data["start"] > data["end"]:
+            raise forms.ValidationError("The From date must be on or before the To date.")
+        return data
+
+    def apply(self, rows):
+        data = self.cleaned_data
+        if data["q"]:
+            rows = rows.filter(Q(description__icontains=data["q"]) | Q(ann_name__icontains=data["q"]))
+        if data["account"]:
+            rows = rows.filter(account=data["account"])
+        if data["person"]:
+            rows = rows.filter(account__owner=data["person"])
+        if data["start"]:
+            rows = rows.filter(posted_on__gte=data["start"])
+        if data["end"]:
+            rows = rows.filter(posted_on__lte=data["end"])
+        return rows
 
 
 class GroupForm(forms.ModelForm):
