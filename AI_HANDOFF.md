@@ -2,12 +2,24 @@
 
 Updated: 2026-09-25. Read current docs and inspect Git before resuming.
 
+## Resuming on another computer (the user continues at home)
+
+- Everything in Git is pushed to GitHub `kah-eru/budget`: the app code on branch `feat/project-foundation`, and the synced docs on `main`.
+- To pick up on a new machine:
+  1. Clone the repo. Create the worktree with `git worktree add .worktrees/project-foundation feat/project-foundation`, or just check out that branch.
+  2. Follow the setup in [development guide](docs/development.md): venv, `pip install -r requirements.txt` (now includes `pywebpush`), `npm ci`, `npm run build`.
+- **Not in Git, and it stays on the work computer:** the ignored `.local/` folder. That means `neon.env`/`neon-env.sh` (Neon dev credentials), `neon-site.env`, the synthetic browser/perf SQLite databases, and screenshots.
+  - Tests and the browser checks run without them (SQLite plus `tests/browser/server.py`).
+  - Only the Neon PostgreSQL runs need the credentials. Get them again from the Neon dashboard (project `dry-sea-53765016`) into a new ignored `.local/neon.env`. Never commit them or paste them into chat.
+- The live site keeps running on Render; nothing there depends on this computer.
+- Open owner actions: add VAPID keys in Render to switch on push ([operations guide](docs/operations.md#phone-push-optional-no-cost)); choose an email provider for email alerts; decide on the Render cold start (paid plan or keep-warm).
+
 Latest request (2026-09-25, "ok continue on the list"): two local commits:
 - `7a838a9` rule split templates: two-way, largest-remainder rounding; hand-made splits and manual categories win.
 - `3d41b65` phone push: Settings toggle, push-only `/sw.js`, generic text, SSRF-checked endpoints, gone devices removed; new dependency `pywebpush`.
 - Verification: 144 Django tests OK; 20/20 on Neon; 8/8 Chrome checks.
 - Push delivery can't be tested in automated Chrome. **Owner action to enable push:** run `manage.py vapid_keys` and put both values in Render → Environment ([operations guide](docs/operations.md#phone-push-optional-no-cost)). No cost.
-- **Not pushed**; waiting for "push".
+- Pushed 2026-09-25 on "update all docs and then commit and push"; Render auto-deploys after CI and runs migrations 0012-0013 (live site not checked by the agent). Push stays off on the live site until the owner adds the two VAPID keys.
 - Next: email alerts (the user must choose a provider), CSV import, milestone 9 (wireframes first).
 
 Latest request (2026-09-25, "push and go"): pushed budgets, alerts and categorize by example (feat `b583916`, main `6a22d22`), then continued in local commits:
