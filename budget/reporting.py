@@ -8,10 +8,10 @@ from .permissions import visible_accounts
 
 
 def annotated(transactions, workspace):
-    """Attach this workspace's overlay only: ann_name, ann_note and effective classification."""
+    """Attach this workspace's overlay only: ann_name, ann_note, ann_category and effective classification."""
     return transactions.annotate(
         ann=FilteredRelation("annotations", condition=Q(annotations__workspace=workspace)),
-        ann_name=F("ann__display_name"), ann_note=F("ann__note"),
+        ann_name=F("ann__display_name"), ann_note=F("ann__note"), ann_category=F("ann__category__name"),
         effective=Coalesce("ann__classification", "classification"),
     )
 
@@ -62,3 +62,12 @@ def monthly(user, workspace, year):
             .annotate(m=ExtractMonth("posted_on")).values("m").annotate(**_sums()).order_by("m"))
     found = {r["m"]: _shape(r) for r in rows}
     return [{"month": date(year, m, 1), **found.get(m, ZERO)} for m in range(1, 13)]
+
+
+def by_category(rows, start, end):
+    """spending() per category of this workspace for already-filtered visible rows, largest posted first;
+    rows without a category are "Uncategorized" (id None). One grouped query; empty categories are skipped."""
+    grouped = (rows.filter(posted_on__range=(start, end)).values("ann__category", "ann__category__name")
+               .annotate(**_sums()).order_by())
+    totals = [{"id": r["ann__category"], "name": r["ann__category__name"] or "Uncategorized", **_shape(r)} for r in grouped]
+    return sorted((t for t in totals if t["posted_cents"] or t["pending_cents"]), key=lambda t: (-t["posted_cents"], t["name"]))

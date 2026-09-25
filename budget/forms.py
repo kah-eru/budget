@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from .invitations import claim_email_send
-from .models import Account, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, Category, Transaction, TransactionAnnotation, User, Workspace
 
 
 class AccountForm(forms.ModelForm):
@@ -39,11 +39,15 @@ class TransactionForm(forms.ModelForm):
 class AnnotationForm(forms.ModelForm):
     class Meta:
         model = TransactionAnnotation
-        fields = ["display_name", "classification", "note"]
+        fields = ["display_name", "category", "classification", "note"]
         labels = {"classification": "Type"}
 
     def __init__(self, *args, source, personal, **kwargs):
         super().__init__(*args, **kwargs)
+        # This workspace's active categories, plus the current one if it has since been archived.
+        workspace = self.instance.workspace
+        self.fields["category"].queryset = workspace.categories.filter(Q(archived=False) | Q(pk=self.instance.category_id)).order_by("name")
+        self.fields["category"].empty_label = "Uncategorized"
         self.fields["display_name"].help_text = f"Leave blank to show the original: {source.description or '(no description)'}"
         self.fields["classification"].choices = [("", f"Original ({source.get_classification_display()})"), *Transaction.CLASSIFICATIONS]
         self.fields["note"].label = "Personal note (only you)" if personal else "Group note (everyone in this group)"
@@ -53,11 +57,14 @@ class TransactionFilterForm(forms.Form):
     q = forms.CharField(label="Search", max_length=100, required=False, widget=forms.TextInput(attrs={"type": "search", "placeholder": "Name or description"}))
     account = forms.ModelChoiceField(queryset=Account.objects.none(), required=False, empty_label="All accounts")
     person = forms.ModelChoiceField(queryset=User.objects.none(), required=False, empty_label="Everyone")
+    category = forms.ChoiceField(required=False)
     start = forms.DateField(label="From", required=False, widget=forms.DateInput(attrs={"type": "date"}))
     end = forms.DateField(label="To", required=False, widget=forms.DateInput(attrs={"type": "date"}))
 
-    def __init__(self, *args, accounts, **kwargs):
+    def __init__(self, *args, accounts, workspace, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["category"].choices = [("", "All categories"), ("none", "Uncategorized"),
+                                           *((str(c.pk), f"{c.name} (archived)" if c.archived else c.name) for c in workspace.categories.order_by("archived", "name"))]
         self.fields["account"].queryset = accounts.order_by("name", "pk")
         self.fields["person"].queryset = User.objects.filter(pk__in=accounts.values("owner_id")).order_by("username")
         self.fields["person"].label_from_instance = lambda u: u.username
@@ -88,7 +95,24 @@ class TransactionFilterForm(forms.Form):
             rows = rows.filter(account=data["account"])
         if data["person"]:
             rows = rows.filter(account__owner=data["person"])
+        if data["category"]:
+            rows = rows.filter(ann__category=None) if data["category"] == "none" else rows.filter(ann__category=int(data["category"]))
         return rows
+
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ["name", "archived"]
+        labels = {"archived": "Archived"}
+        help_texts = {"archived": "Hidden from new choices. Past transactions keep this category."}
+
+    def clean_name(self):
+        name = " ".join(self.cleaned_data["name"].split())
+        taken = Category.objects.filter(workspace=self.instance.workspace, name__iexact=name).exclude(pk=self.instance.pk)
+        if taken.exists():
+            raise forms.ValidationError("This workspace already has a category with that name.")
+        return name
 
 
 class GroupForm(forms.ModelForm):

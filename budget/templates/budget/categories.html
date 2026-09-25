@@ -1,0 +1,14 @@
+{% extends 'budget/base.html' %}
+{% block content %}
+<section aria-labelledby="categories-title" class="card">
+  <h1 id="categories-title" class="mb-1 text-3xl">Categories</h1>
+  <p class="mb-4 text-muted">{% if workspace.is_personal %}Your personal categories.{% else %}Shared by everyone in {{ workspace.name }}.{% endif %} Set a transaction's category from its Edit page.</p>
+  <form method="post" class="mb-2">{% csrf_token %}{% include 'budget/components/form_fields.html' %}<button class="primary" type="submit">Add category</button></form>
+  <ul class="divide-y divide-line">
+    {% for category in categories %}
+    <li><a class="stat-row chevron" href="{% url 'category_edit' workspace.pk category.pk %}"><span class="min-w-0 flex-1 break-words{% if category.archived %} text-muted{% else %} font-medium{% endif %}">{{ category.name }}{% if category.archived %} · Archived{% endif %}</span></a></li>
+    {% endfor %}
+  </ul>
+</section>
+<a class="secondary" href="{% url 'workspace' workspace.pk %}">Back to overview</a>
+{% endblock %}

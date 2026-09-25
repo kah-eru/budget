@@ -24,12 +24,12 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .account_mail import notify
 from .forms import (
-    AccountForm, AnnotationForm, EmailChangeForm, GroupForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+    AccountForm, AnnotationForm, CategoryForm, EmailChangeForm, GroupForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Membership, MembershipNotice, Transaction, TransactionAnnotation, User, Workspace
+from .models import Category, Membership, MembershipNotice, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, daily, monthly, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, by_category, daily, monthly, spending, visible_transactions
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
 
@@ -216,6 +216,10 @@ def workspace_detail(request, workspace_id):
     context["accounts"] = list(visible_accounts(request.user, workspace).select_related("owner").order_by("name", "pk"))
     for account in context["accounts"]:
         account.period_cents = per_account.get(account.pk, 0)
+    context["categories"] = by_category(visible_transactions(request.user, workspace), start, end)
+    top = max((c["posted_cents"] for c in context["categories"]), default=0)
+    for c in context["categories"]:
+        c["share"] = max(0, round(100 * c["posted_cents"] / top)) if top > 0 else 0
     context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
     return render(request, "budget/workspace.html", context)
 
@@ -235,7 +239,7 @@ PAGE_SIZE = 50
 @login_required
 def transaction_list(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
-    form = TransactionFilterForm(request.GET, accounts=visible_accounts(request.user, workspace))
+    form = TransactionFilterForm(request.GET, accounts=visible_accounts(request.user, workspace), workspace=workspace)
     context = {**page_context(request.user, workspace), "form": form, "rows": [], "next_query": None}
     if not form.is_valid():
         return render(request, "budget/transactions.html", context, status=400)
@@ -284,7 +288,7 @@ def csv_cell(value):
 def transaction_export(request, workspace_id):
     """The Timeline's rows as CSV: same filters and range cap, no paging."""
     workspace = get_workspace(request.user, workspace_id)
-    form = TransactionFilterForm(request.GET, accounts=visible_accounts(request.user, workspace))
+    form = TransactionFilterForm(request.GET, accounts=visible_accounts(request.user, workspace), workspace=workspace)
     if not form.is_valid():
         return HttpResponse(" ".join(e for errors in form.errors.values() for e in errors), status=400, content_type="text/plain")
     start, end = form.cleaned_data["start"], form.cleaned_data["end"]
@@ -293,9 +297,9 @@ def transaction_export(request, workspace_id):
     response = HttpResponse(content_type="text/csv; charset=utf-8", headers={
         "Content-Disposition": f'attachment; filename="budget-{start:%Y-%m-%d}-{end:%Y-%m-%d}.csv"', "Cache-Control": "no-store"})
     writer = csv.writer(response)
-    writer.writerow(["Date", "Account", "Owner", "Name", "Original description", "Classification", "Status", "Amount (USD)", "Note"])
+    writer.writerow(["Date", "Account", "Owner", "Name", "Original description", "Category", "Classification", "Status", "Amount (USD)", "Note"])
     for row in rows:
-        names = [row.account.name, row.account.owner.username, row.ann_name or row.description, row.description, row.effective_label]
+        names = [row.account.name, row.account.owner.username, row.ann_name or row.description, row.description, row.ann_category or "", row.effective_label]
         writer.writerow([f"{row.posted_on:%Y-%m-%d}", *map(csv_cell, names), "Pending" if row.pending else "Posted",
                          f"{row.amount_cents // 100}.{row.amount_cents % 100:02d}", csv_cell(row.ann_note or "")])
     return response
@@ -340,6 +344,38 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": row.description or "Transaction", "action": "Save changes", "cancel_url": back,
                   "help": f"{date_format(row.posted_on)} · {dollars(row.amount_cents)} original. Changes here apply to {where} only; the original entry stays as recorded.",
                   "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit original entry"}, status=400 if request.method == "POST" else 200)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def category_list(request, workspace_id):
+    """Any member may add, rename or archive this workspace's categories; they are shared labels, not accounts."""
+    workspace = get_workspace(request.user, workspace_id)
+    form = CategoryForm(request.POST if request.method == "POST" else None, instance=Category(workspace=workspace))
+    del form.fields["archived"]
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"Added {form.instance.name}.")
+        return redirect("categories", workspace_id=workspace.pk)
+    return render(request, "budget/categories.html", {**page_context(request.user, workspace), "form": form,
+                  "categories": workspace.categories.order_by("archived", "name")}, status=400 if request.method == "POST" else 200)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def category_edit(request, workspace_id, category_id):
+    workspace = get_workspace(request.user, workspace_id)
+    category = get_object_or_404(workspace.categories, pk=category_id)
+    form = CategoryForm(request.POST if request.method == "POST" else None, instance=category)
+    back = reverse("categories", args=[workspace.pk])
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            form.save()
+            Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
+        messages.success(request, "Category saved.")
+        return redirect(back)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": f"Edit {category.name}", "action": "Save category",
+                  "cancel_url": back, "help": f"Renaming changes the label on every {workspace.name} transaction in this category."}, status=400 if request.method == "POST" else 200)
 
 
 @login_required

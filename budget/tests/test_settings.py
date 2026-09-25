@@ -158,10 +158,10 @@ class ExportTests(TestCase):
         self.assertIn('attachment; filename="budget-2026-05-01-2026-05-31.csv"', response["Content-Disposition"])
         self.assertIn("no-store", response["Cache-Control"])
         header, *rows = self.rows(response)
-        self.assertEqual(header, ["Date", "Account", "Owner", "Name", "Original description", "Classification", "Status", "Amount (USD)", "Note"])
+        self.assertEqual(header, ["Date", "Account", "Owner", "Name", "Original description", "Category", "Classification", "Status", "Amount (USD)", "Note"])
         self.assertEqual(rows, [
-            ["2026-05-03", "Shared card", "alice", "Refund", "Refund", "Refund", "Pending", "15.00", ""],
-            ["2026-05-01", "Shared card", "alice", "Coffee", "'=HYPERLINK(evil)", "Expense", "Posted", "4.50", "Group note"],
+            ["2026-05-03", "Shared card", "alice", "Refund", "Refund", "", "Refund", "Pending", "15.00", ""],
+            ["2026-05-01", "Shared card", "alice", "Coffee", "'=HYPERLINK(evil)", "", "Expense", "Posted", "4.50", "Group note"],
         ])
 
     def test_filters_apply(self):

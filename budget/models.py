@@ -87,6 +87,22 @@ class Transaction(models.Model):
         ]
 
 
+STANDARD_CATEGORIES = ["Groceries", "Dining", "Housing", "Utilities", "Transport", "Shopping", "Health", "Entertainment", "Subscriptions", "Travel"]
+
+
+class Category(models.Model):
+    # Archived categories stay on past transactions but leave every picker; never deleted while referenced.
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="categories")
+    name = models.CharField(max_length=60)
+    archived = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(Lower("name"), "workspace", name="category_name_unique_per_workspace")]
+
+    def __str__(self):
+        return self.name
+
+
 class TransactionAnnotation(models.Model):
     # Per-workspace overlay; the source Transaction is never modified. Null classification = use source.
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="annotations")
@@ -94,6 +110,7 @@ class TransactionAnnotation(models.Model):
     display_name = models.CharField(max_length=200, blank=True)
     classification = models.CharField(max_length=10, choices=Transaction.CLASSIFICATIONS, null=True, blank=True)
     note = models.CharField(max_length=500, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.RESTRICT, null=True, blank=True)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["transaction", "workspace"], name="annotation_one_per_workspace")]

@@ -163,6 +163,8 @@
   /* Segmented System / Light / Dark control; the radio stays focusable, the label shows focus. */
   .segment { @apply relative flex-1 cursor-pointer rounded-full px-3 py-2 text-center text-sm font-bold text-accent-text has-[:checked]:bg-accent has-[:checked]:text-on-accent has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)]; transition: background-color 100ms ease-out; }
   .stat-row { @apply flex min-h-12 items-center justify-between gap-3 border-b border-line py-3; }
+  .category-bar { @apply mt-2 block h-1.5 overflow-hidden rounded-full bg-sunken; }
+  .category-bar > span { @apply block h-full rounded-full bg-accent; }
   .chevron::after { content: "›"; @apply ml-2 text-lg text-muted; }
   /* The chart's space is held before its code loads, so nothing below it moves. No JavaScript: no slot (the table has the numbers). */
   .chart-slot { display: none; aspect-ratio: 2.4 / 1; }
