@@ -6,7 +6,7 @@ Latest request (2026-09-25, "push and go"): pushed budgets, alerts and categoriz
 - `c19b967` budget types: fixed (monthly, due day, Paid), yearly/irregular (÷12 set-aside), flexible; Monthly plan (estimate) with disposable income; income entered, or the 3-month posted average.
 - `4904ae1` splits: per-workspace lines that add up exactly; reports, category budgets, Timeline filter and CSV count each line; remove restores the single category.
 - Verification: 134 Django tests OK; new modules plus concurrency 45/45 on Neon PostgreSQL; 8/8 Chrome checks; screenshots reviewed.
-- **Not pushed**; waiting for "push".
+- Pushed 2026-09-25 on "push !"; Render auto-deploys after CI and runs migrations 0010-0011 (live site not checked by the agent).
 - Details: [development guide](docs/development.md#budget-types-disposable-income-and-splits--september-25-night-latest).
 - Next: rule split templates, phone push (VAPID, no cost), email alerts (the user must choose a provider), CSV import, milestone 9.
 
