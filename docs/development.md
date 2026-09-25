@@ -138,4 +138,16 @@ There is no CDN compiler, chart runtime, bank SDK, AI provider or Manus connecti
 - Verified: 78 Django tests OK (4 PG-only skipped), `check` clean, build OK, production-mode `collectstatic` OK, 5/5 Chrome checks (Timeline spec asserts the chart SVG renders); 360px screenshot reviewed (`.local/transactions-phone.png`, `.local/chart-dbg.png`).
 - Not done: keyboard access to chart points (the table covers it), a y-axis, category charts (milestone 4).
 
+## Visual theme — September 25 (night)
+
+- User-supplied palette (more colours to come): Bubblegum Pink `#f45b69`, Lavender Blush `#f6e8ea`, Coffee Bean `#22181c`, Black Cherry `#5a0001`. Light mode is white cards on Lavender Blush; dark mode (follows the OS) is Coffee Bean with cherry-tinted cards and Black Cherry borders.
+- All colours are defined once at the top of `assets/app.css` (palette block), mapped to roles (`--canvas`, `--surface`, `--ink`, `--muted`, `--line`, `--accent`, `--accent-text`, `--danger`, ...), and exposed as Tailwind utilities (`bg-surface`, `text-muted`, `border-line`, ...). Templates no longer use gray/white/red utilities. To add a colour: add it to the palette block, then point a role at it.
+- Contrast: white text on the pink fails (3.2:1), so buttons and the active nav pill use Coffee Bean text on pink (5.4:1). Links are Black Cherry in light mode and pink in dark. `prefers-contrast: more` darkens muted text and borders.
+- Type (self-hosted via Fontsource, OFL): Young Serif for page titles and the wordmark only; Hanken Grotesk for body; Martian Mono (condensed width) for money amounts (`.amount`).
+- Signature: spending summaries on Overview and Timeline are receipts (`.receipt`): perforated bottom edge (CSS mask), dashed rule, and label-left/amount-right lines on phones.
+- Also: translucent bottom nav (solid under `prefers-reduced-transparency`), rounded cards (`.card`), pill workspace links, flash message fades from the accent to the themed background (was hard-coded white). Flowbite form defaults are overridden with an `:is()` selector so selects follow dark mode; Flowbite's `--color-brand`/`--color-body` map to the accent/muted roles.
+- Measured: CSS 15.97 kB gzip (fonts load separately, latin subsets only in practice); initial JS 4.64 kB gzip. 78 Django tests OK (4 PG-only skipped); 5/5 Chrome checks; light and dark 390px screenshots reviewed (`.local/d-{light,dark}-{login,overview,timeline,receipt}.png`).
+- Gotcha: `tests/browser/server.py` runs without the reloader, so Django's cached template loader keeps old templates; restart it after template edits.
+- Not done: a manual light/dark toggle (OS setting only), restyling the chart tooltip beyond tokens, a real-device check.
+
 Continue milestone 2: CSV import/export. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
