@@ -191,6 +191,8 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Test the boundary: a $100 budget with $100 posted spending is not exceeded; $100.01 is exceeded; pending spending does not trigger; refunds reduce current-period spending.
 - [ ] Test baseline establishment after create/edit/join, recalculation after share changes, and no retroactive alerts for closed periods. Keep the baseline update and any event creation atomic under concurrent evaluations.
 - [ ] Run `python manage.py test budget.tests.test_rules budget.tests.test_budgets`. Verify a Starbucks rule backfills only authorized history and leaves manual categories unchanged.
+- [ ] (Requested 2026-09-25) Seed standard categories per workspace. Add split transactions: lines sum exactly to the amount in integer cents, split templates on rules, largest-remainder rounding. Test that splits count per category in budgets and reports and never leak into other workspaces.
+- [ ] (Requested 2026-09-25) Budget kinds: fixed (expected amount, due day), irregular (yearly amount → monthly set-aside) and flexible (period limit). Add a disposable-income summary labeled as an estimate. Test the set-aside arithmetic and the income-average fallback.
 
 ## Milestone 5: notification inbox and phone push
 
@@ -206,6 +208,8 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Cache public assets only. Test that logout/another user's login cannot recover financial pages from a service-worker cache.
 - [ ] Run `python manage.py test budget.tests.test_notifications`; then verify actual push on both users' phones, installation guidance where required, denied permission, logout, and tapping an alert after session expiry.
 - [ ] Verify browser and installed home-screen navigation, safe areas, offline/retry copy, and keyboard-open forms on iOS Safari and Android Chrome. Record actual versions; simulate bank-link return/cancellation and permission denial without losing page context.
+
+- [ ] (Requested 2026-09-25) Alert kinds beyond the crossing: per-budget thresholds (default 80%/100%, once per threshold per period), bill-due reminders, and deterministic unusual-activity alerts. Opt-in email channel with generic text, which needs the user to choose an email provider. Test once-per-threshold, reminder timing, and permission rechecks before email dispatch.
 
 ## Milestone 6: consented AI insights with a user API key
 
@@ -241,6 +245,16 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] When the public domain/pages and SEO sources are available, configure Manus SEO tracking for those pages only. Record connected sources, baseline audit, reporting window, keyword/indexing metrics and available organic traffic data in operations docs. Start with manual reports and distinguish missing data from zero and SEO scores from actual rankings. Verify payloads contain no financial/session/invitation data. If no public surface exists, record live tracking as pending; do not claim it is connected. Built-in Manus-hosted SEO is not assumed to be an embeddable Django integration.
 - [ ] Run `python manage.py test`, `python manage.py check --deploy`, and `python manage.py makemigrations --check --dry-run`; resolve failures and relevant deployment warnings. Restore a backup into an isolated environment and verify access and totals before production use.
 - [ ] Verify current Trial eligibility and institution coverage, especially Marcus and statement support. Real linking happens through each user's own Plaid flow; do not request passwords in chat. Track consumed Item capacity before inviting additional users.
+
+## Milestone 9: planning tools — reports, goals, recurring projection, net worth (requested 2026-09-25)
+
+**Deliverable:** Category reports, goals, confirmed recurring bills with a cash-flow forecast, and a read-only net-worth view. May be sequenced before milestones 6–7 at the user's direction; milestone 8's release gates still apply.
+
+- [ ] Draft low-fidelity wireframes and user flows for Reports, Goals, Bills & recurring, and Net worth before building (see UX wireframes).
+- [ ] Reports: category donut/pie and monthly trend with Bklit, colors from theme tokens plus labels, and table equivalents. Test that totals equal `reporting.spending()` for the same filters and that private accounts stay out of group reports.
+- [ ] Recurring: detect candidate series (same merchant, ±10% amount, regular interval, ≥3 occurrences). User confirms or dismisses; manual entries allowed. Forecast labeled as an estimate, never counted as spending until posted. Test detection edge cases (skipped month, amount drift, weekly vs monthly).
+- [ ] Goals: savings or debt-payoff targets with an optional date. Progress from a linked balance or manual contributions; required monthly amount computed deterministically. Workspace-scoped; group goals use only shared accounts.
+- [ ] Net worth: assets − liabilities from account balances, holdings and manual assets. Read-only, with no advice. Check Plaid Balance/Investments/Liabilities availability and cost first; any cost needs the user's approval. Manual values are the fallback.
 
 ## Milestone 8: scalability and concurrency release gate
 
