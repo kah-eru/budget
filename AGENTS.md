@@ -10,7 +10,12 @@ Before the final response, update affected canonical docs and refresh `AI_HANDOF
 
 ## Project decisions to preserve
 
-- Use Flowbite/Tailwind components first; reuse existing controls and behaviors.
+Implementation is currently isolated in `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on `feat/project-foundation`. Check `AI_HANDOFF.md` before coding; the original checkout on `main` carries synchronized docs, not the application source.
+
+- Use Flowbite/Tailwind for standard controls, Motion for animation, Bklit UI for charts, and Kokonut UI for selected interactions; reuse existing controls and behaviors. The newer frontend choices supersede the earlier Flowbite-only restriction.
+- For frontend/UI work, load the `apple-design` skill (Emil Kowalski, MIT; installed user-level at `~/.claude/skills/apple-design`, source pinned in its `SOURCE.txt`) and apply its principles (instant feedback, critically damped Motion springs, spatial consistency, reduced-motion/transparency/contrast, size-specific typography) through the existing Flowbite/Tailwind/Motion stack — guidance, not a new component library.
+- Process skills come from the `superpowers` plugin (v6.4.1, same plugin in Claude Code and Codex): brainstorming, writing-plans, test-driven-development, systematic-debugging, verification-before-completion, etc.
+- Keep Django as the backend. Use Manus.im for SEO tracking only; private financial content must not enter SEO indexing or tracking.
 - Start with low-fidelity wireframes and user flows before visual polish.
 - Keep phone UX, selective finance sharing, and load scalability in first-release scope.
 - Separate requested features, proposed architecture, implemented behavior, and measured results.

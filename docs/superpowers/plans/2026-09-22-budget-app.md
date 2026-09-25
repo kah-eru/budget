@@ -4,15 +4,32 @@
 
 **Goal:** Deliver a private budgeting app with finance-sharing friends, bank sync, editable categorization, a spending timeline, AI insights, in-app/push alerts, and tested load scalability from the first release.
 
-**Architecture:** One modular server-rendered Django application, PostgreSQL, shared private object storage, and independently scalable web/operational/AI worker processes. Accounts belong to people; explicit account grants determine group visibility. Durable database jobs, sessions, leases, and quotas support multiple instances from the start.
+**Architecture:** One modular Django application with server-rendered pages and selected mounted React components, PostgreSQL, shared private object storage, and independently scalable web/operational/AI worker processes. Accounts belong to people; explicit account grants determine group visibility. Durable database jobs, sessions, leases, and quotas support multiple instances from the start. Manus is the separate operator SEO workflow for public pages.
 
-**Tech Stack:** Proposed Python 3.12+, Django 5.2 LTS, PostgreSQL, official Plaid Python SDK, Flowbite HTML/JavaScript components with Tailwind CSS and a small Node asset build, native browser APIs, and maintained libraries for Web Push, cryptography, and one selected AI provider. Flowbite is user-selected; the user has no AI-provider preference. Use k6 for the development-only load gate.
+**Tech Stack:** User-confirmed Django backend; Flowbite/Tailwind standard controls, Motion animation, Bklit UI charts, Kokonut UI selected interactions, and Manus.im for SEO tracking only. Proposed baseline: Python 3.12+, Django 5.2 LTS, PostgreSQL, official Plaid Python SDK, React/TypeScript components built into Django assets, and compatible Tailwind v4 packages. Use native browser APIs and maintained Web Push/cryptography libraries. The spending-insights AI provider is still unselected. Use k6 for the development-only load gate. Exact versions and component dependencies require verification at installation.
 
 **Spec:** [Product and technical design](../specs/2026-09-22-budget-app-design.md).
 
 **UX reference:** [Low-fidelity wireframes and user flows](../../ux-wireframes.md).
 
-**Status:** Draft delivery plan for review, not executed. The workspace was empty when documentation began. File paths below are proposed. Expand each milestone into small executable changes against the actual code when implementation begins; this document deliberately does not pretend unbuilt functions or test fixtures already exist.
+**Status:** Implementation started 2026-09-23 at the user's request, inline in the requested isolated worktree. Milestone 1 is partial; milestones 2-8 remain unstarted. Proposed files below are created only as needed. Current setup/evidence: [development guide](../../development.md).
+
+### Current execution checkpoint
+
+- [x] Django custom user, migrations, environment configuration, explicit DEBUG-only local SQLite mode and PostgreSQL deployment settings.
+- [x] Personal/group workspaces, manual accounts, membership/grant records and central visible/editable-account queries.
+- [x] Group creation, explicit sharing/revocation, member removal/leave and workspace switching; access tests exercised with synthetic users.
+- [x] Framework sign-in/logout, database-backed Axes throttling/sessions, no-store/noindex responses, health/readiness.
+- [x] Pinned local Flowbite/Tailwind/Motion build, React/TypeScript dependencies and Bklit/Kokonut registry configuration.
+- [x] Fix browser referrer/CSRF and sharing account labels with observed failing regressions, then pass 27 Django checks and 2 Chrome browser tests; inspect phone/desktop screenshots.
+- [x] Invitations with verified email, expiration/single-use/wrong-email tests, recovery and membership notices. On 2026-09-24, added separate mailbox proof before signup, verified-current-email recovery, and local console delivery; production delivery remains a deployment gate.
+- [x] 2026-09-24: account creation bumps personal data_revision (`sharing.bump_account_data`, also used by transaction writes). Private default file storage configured outside served paths (`BUDGET_PRIVATE_STORAGE_ROOT`; local disk until a host is chosen).
+- [x] PostgreSQL concurrency checks (2026-09-24, hosted Neon dev database chosen by the user): `budget/tests/test_concurrency.py` uses separate database sessions for share-vs-removal (share waits for the lock, then is denied), parallel invitations to one address (one created), parallel accepts (one membership) and cross-session session reads. All three locking tests fail with the locks removed. Full suite 58/58 on PostgreSQL 17.11. Still pending: full responsive navigation and actual mounted components.
+- [x] Milestone 2 first slice (2026-09-24): `Transaction` (integer cents, USD-only constraint, expense/refund/income/transfer, pending flag), owner-only manual add/edit, `reporting.spending()` over visible accounts, this-month workspace summary. Plan fixture (10500/3000 cents), Jan 31/Feb 1 boundary and private-account exclusion tested.
+
+- [x] 2026-09-24: `TransactionAnnotation` per (transaction, workspace): display name, classification override (blank = original), note. `reporting.annotated()` attaches only the active workspace's overlay; `spending()` uses the effective classification. Personal overrides/notes proven absent from group totals and pages; source entry unchanged; only the account owner annotates. Category field waits for milestone 4 categories.
+
+This is not milestone 1 completion. Milestone 2 remaining: filters/search/pagination, yearly view, timeline, CSV import/export, charts.
 
 ## Global constraints
 
@@ -28,8 +45,9 @@
 - AI uses the requesting user's key and separate account-owner consent for the selected workspace/provider; ordinary sharing never grants AI consent.
 - Multiple web/worker processes must share sessions, leases, quotas, and file storage from the start.
 - Phone-first layouts must reflow from 320 CSS pixels, use at least 44 by 44 CSS-pixel hit areas, preserve zoom, and keep controls usable with the keyboard open.
-- Mobile performance targets: LCP <= 2.5 seconds, INP <= 200 ms, CLS <= 0.1; distinguish prelaunch lab measurements from field percentiles. Initial app-delivered JavaScript budget including Flowbite/bundled dependencies: 150 KiB compressed.
-- Start with low-fidelity UX/user-flow review, then compose existing Flowbite components; no custom replacements for available components or a competing UI kit.
+- Mobile performance targets: LCP <= 2.5 seconds, INP <= 200 ms, CLS <= 0.1; distinguish prelaunch lab measurements from field percentiles. Initial app-delivered JavaScript budget remains 150 KiB compressed, including loaded React, Flowbite, Motion, Bklit, Kokonut, and their dependencies. Measure deferred bytes separately; compatibility and budget compliance are unverified.
+- Start with low-fidelity UX/user-flow review, then use Flowbite standard controls, Bklit charts, selected Kokonut interactions, and Motion transitions. Share a Tailwind theme; do not duplicate component behavior or let Flowbite mutate React-owned elements.
+- Keep Django as the finance backend. Use Manus for public-page SEO only; private finance routes/data are excluded from indexing and SEO payloads. Live tracking awaits a public domain, selected pages, and connected SEO sources.
 - Proposed load gate: 1,000 users, 1 million transactions, 100 concurrent sessions, 25 requests/second for 15 minutes; interactive p95 below 750 ms and p99 below 2 seconds.
 
 ## Review focus
@@ -46,7 +64,7 @@ Additional gates from the revised scope: timeline/report equality in milestone 2
 
 ```text
 manage.py
-pyproject.toml
+requirements.txt
 package.json
 package-lock.json
 .env.example
@@ -79,8 +97,13 @@ budget/
   static/budget/
 assets/
   app.css
-  app.js
+  app.tsx
+  components/
+    bklit/
+    kokonutui/
   tests/
+components.json
+tsconfig.json
 tests/load/budget.js
 tests/browser/mobile.spec.js
 ```
@@ -93,7 +116,7 @@ Create files only when their milestone needs them. Framework-required package fi
 
 - [ ] Walk through first connection, private-to-shared account choice, inspect/edit purchase, create/backfill a category rule, budget alert, and consented AI analysis using the low-fidelity screens.
 - [ ] Check that every screen has visible workspace context, a primary action, a clear Back/Cancel path, and loading/empty/error outcomes. Test understanding of past-history sharing and AI consent separately.
-- [ ] Correct confusing navigation or missing steps in the wireframes before visual polish. Reuse the Flowbite mappings in that document; adjust composition rather than replacing the library.
+- [ ] Correct confusing navigation or missing steps in the wireframes before visual polish. Follow the Flowbite/Bklit/Kokonut/Motion mapping, choose the Kokonut Insights action component, and verify the same journey with reduced motion and failed enhancement loading.
 
 ## Milestone 1: private users, groups, and account sharing
 
@@ -104,10 +127,11 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Initialize the Django project with PostgreSQL, environment-based configuration, migration support, built-in authentication, secure session defaults, and a custom user model established before the first migration.
 - [ ] Configure database-backed sessions/shared throttling, shared private object storage, health/readiness checks, and bounded connection settings. Verify session continuity while alternating requests between two web processes; no in-memory ownership or lock state.
 - [ ] Implement workspace/membership, invitation, account, and account-share records from the spec. Use one-time email verification for invitation acceptance; local development uses the console mail backend, and deployment uses a configured mail provider.
-- [ ] Write a failing access test covering personal/private, shared, unrelated-group, revoked-share, and removed-member cases. Assert both list exclusion and rejection of direct object access.
+- [x] Write a failing access test covering personal/private, shared, unrelated-group, revoked-share, and removed-member cases. Assert both list exclusion and rejection of direct object access.
 - [ ] Centralize visible-account and editable-account queries; require the authenticated user and active workspace on every operation. Account owner may edit their transactions; group members may edit shared budgets/rules only within their group.
 - [ ] Build group creation, invite acceptance, explicit share/unshare, membership removal, and personal/group switching. Recheck access at mutation time; reject expired/reused/wrong-email invitations.
-- [ ] Configure pinned compatible Tailwind/Flowbite packages and local asset build scripts using the official Django integration as reference. Scan Django templates for CSS utilities, build optimized static assets, and initialize interactive components once. Use Flowbite HTML/JS, not a React rewrite or runtime CDN compiler.
+- [ ] Configure pinned compatible React/TypeScript, Tailwind v4, Flowbite, and Motion packages with a local asset build. Set up the documented Bklit/Kokonut registries and add only selected components and dependencies as their screens land. Scan Django templates and TSX for CSS utilities. Record installed versions and component licenses; use production assets, not a runtime CDN compiler.
+- [ ] Mount selected React components inside dedicated Django-page containers; exclude them from Flowbite DOM initialization. Pass bounded authorized JSON safely, retain same-origin sessions and CSRF on mutations, and use one shared theme/runtime. Verify server-rendered financial values and fallback tables survive enhancement failure. Configure reduced motion before adding transitions.
 - [ ] Compose the shell from Flowbite bottom navigation/sidebar, dropdown, badge, form, and alert components according to the wireframes. Use template includes for repeated markup, system typography, and restrained default styling. Preserve visible workspace context, safe areas, zoom, browser navigation, and private-cache rules; do not create custom equivalents of provided widgets.
 - [ ] Test one user sharing different accounts in a partner group and a friend group, a friend contributing an account, and collaboration on shared budgets. Reject cross-group access; explicitly preview existing group history on invitation and preserve owner-only individual purchase edits.
 - [ ] Add workspace data/permission revision updates for mutations, shares, and membership changes; use these for derived-output invalidation in later milestones.
@@ -130,7 +154,7 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Implement CSV mapping/preview/commit. Reject malformed dates and sub-cent values, detect an identical file, and preview possible overlap without silently merging equal-looking purchases.
 - [ ] Add tests for exact-file repeat, two valid identical-looking purchases, invalid-row all-or-nothing import, and export formula escaping. Verify personal notes never appear in a group export.
 - [ ] Implement phone transaction rows, full-screen purchase editing, responsive filters, and tap/keyboard chart drilldown with equivalent tabular data. Preserve list position/filter URLs on Back, typed values on save failure, and visible actions when the virtual keyboard opens. Cancel stale filter requests.
-- [ ] Reuse Flowbite timeline/list/table, forms, drawer/dialog, progress, and loading components. Choose its documented chart integration or a suitable maintained chart library and verify dependency compatibility/terms before installation. Keep custom code limited to finance-specific behavior, data binding, and accessible adaptation.
+- [ ] Reuse Flowbite timeline/list/table, forms, drawer/dialog, progress, and loading components. Add Bklit daily/cumulative/category charts backed by the same server-calculated data and equivalent HTML tables; use Motion for brief transitions. Check negative refunds, zero days, keyboard/touch selection, reduced motion, chart-load failure, and dependency/bundle cost. Do not add a second chart engine for these views.
 - [ ] Run `python manage.py test budget.tests.test_reporting budget.tests.test_timeline budget.tests.test_imports`. Review phone/desktop screenshots and check 320/360/390/430/768/1024/1440 widths, keyboard use, chart-to-feed drilldown, and 200% text enlargement. Reuse this matrix for budgets, sharing, and Insights as they land.
 
 ## Milestone 3: Plaid sync and durable jobs
@@ -193,6 +217,7 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Enqueue AI jobs in the separate pool; enforce timeout/response limits and authorize again before dispatch. No automatic call on sync/page load. Keep reservations for ambiguous timeouts and warn before a potentially duplicate charged retry.
 - [ ] Validate structured output and fact IDs/numbers, sanitize text, and render monetary facts from app calculations. Test unsupported figures, malformed output, provider refusal, timeout, rate limiting, and no ledger writes/tool execution.
 - [ ] Scope saved results by requester/workspace/provider/model/filters and data/consent/prompt revisions. Recheck access on completion/read; invalidate on revocation or source changes, purge on key removal, and expire text after 30 days. Test revocation while inference is in flight.
+- [ ] Integrate the selected Kokonut UI component for the request/status action with Motion feedback. Preserve the existing Generate insights workflow, confirmed status, keyboard focus, loading/error text, and reduced-motion behavior; no chat or automatic paid generation is implied by component reuse.
 - [ ] Run `python manage.py test budget.tests.test_insights budget.tests.test_ai_usage`. Verify the app remains fully usable with no key, denied consent, or a failed provider. Real-data/billable calls are a separate user action through configured settings.
 
 ## Milestone 7: statements and private deployment setup
@@ -208,6 +233,8 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Implement disconnect, retained-history choice, and confirmed deletion. Test provider revocation failure is surfaced/retried and that deleted accounts cannot be revived by delayed jobs/webhooks.
 - [ ] Choose the host and domain with an explicit cost review. Configure HTTPS, secrets, independently scalable web/operational/AI workers, shared private object storage, transactional email, redacted logs, and daily encrypted backups. Verify a second replica uses the same sessions/permissions/files without application changes.
 - [ ] Document deployment/update/rollback, key rotation, worker recovery, reconnect support, provider costs, data deletion, and a restore rehearsal including reapplication of deletion/revocation records.
+- [ ] Prepare the public/private indexing boundary: authenticate private finance routes, add noindex directives, and omit them from sitemaps and SEO payloads. Check representative purchase, statement, invitation, and settings routes. Robots rules must never substitute for authorization.
+- [ ] When the public domain/pages and SEO sources are available, configure Manus SEO tracking for those pages only. Record connected sources, baseline audit, reporting window, keyword/indexing metrics and available organic traffic data in operations docs. Start with manual reports and distinguish missing data from zero and SEO scores from actual rankings. Verify payloads contain no financial/session/invitation data. If no public surface exists, record live tracking as pending; do not claim it is connected. Built-in Manus-hosted SEO is not assumed to be an embeddable Django integration.
 - [ ] Run `python manage.py test`, `python manage.py check --deploy`, and `python manage.py makemigrations --check --dry-run`; resolve failures and relevant deployment warnings. Restore a backup into an isolated environment and verify access and totals before production use.
 - [ ] Verify current Trial eligibility and institution coverage, especially Marcus and statement support. Real linking happens through each user's own Plaid flow; do not request passwords in chat. Track consumed Item capacity before inviting additional users.
 
@@ -225,7 +252,7 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Verify graceful shutdown, readiness, bounded database pools, and backward-compatible migrations. Confirm each worker pool's configured concurrency stays within provider/database budgets when replicas are added.
 - [ ] Add Playwright browser checks for mobile navigation, viewport overflow, long transaction names/large amounts, purchase edit success/failure, filter Back navigation, sharing dialogs, and AI loading/error states. Use synthetic data; verify Chromium, Firefox, and WebKit, then run the actual-device Safari/Chrome checks in the spec. Review screenshots rather than treating screenshot generation as review.
 - [ ] Run `npx playwright test tests/browser/mobile.spec.js` after configuring the development-only browser runner. Record viewport/browser/device versions and manual VoiceOver/TalkBack, keyboard-open, safe-area, and text-zoom results. Automated WebKit coverage does not establish iOS device compatibility by itself.
-- [ ] Measure useful first render, key interaction latency, layout shift, and compressed app-delivered JavaScript including Flowbite/dependencies under a documented mid-range Android/4G profile. Check spec section 7 targets and defer nonessential assets/Plaid loading. Record lab evidence separately from field metrics and server load-test results.
+- [ ] Measure useful first render, key interaction latency, layout shift, and compressed app-delivered JavaScript including loaded React, Flowbite, Motion, Bklit, Kokonut, and transitive dependencies under a documented mid-range Android/4G profile. Check spec section 7 targets; report initial/deferred bytes and avoid duplicate runtimes. Exercise reduced motion, fallback content, and React/Flowbite ownership boundaries. Record lab evidence separately from field metrics and server load-test results.
 - [ ] Run `python manage.py test budget.tests.test_concurrency`, followed by `k6 run tests/load/budget.js` against the isolated test deployment configured in the harness. Save the command, environment/hardware, dataset, results, and bottleneck fixes in operations docs. These commands are planned, not run in this documentation task.
 - [ ] Resolve failures before marking scalability verified; any revised target must be recorded explicitly. Rerun focused correctness tests for any performance change, then the release checks from milestone 7.
 
@@ -235,4 +262,4 @@ Milestones 1-2 yield collaborative finance sharing, CSV data, and the spending t
 
 Before connecting real accounts for partners or friends, pass the multi-group isolation and multi-instance checks and review remaining Plaid capacity. Friends can share finances in the first release. Multiple-worker correctness is a release requirement, not a future redesign. Paid Plaid, additional hosting capacity, public signup, and native apps remain separate operational/product decisions.
 
-Documentation self-review: every confirmed feature maps to a milestone; private sharing and monetary correctness have explicit checks; no implementation or test execution is claimed. The next work item is the low-fidelity flow review, followed by milestone 1 after design review, executed inline by default unless the user requests a different workflow.
+Every confirmed feature still maps to a milestone. The execution checkpoint records actual implementation; unchecked full-release tasks remain pending. Continue milestone 1 inline from the handoff. No production readiness, financial calculations or measured scalability is claimed.
