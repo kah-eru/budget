@@ -17,7 +17,7 @@ Latest request (2026-09-28): "ok i think i created a free plaid sandbox account"
 - **Done by the owner:**
   - Plaid sandbox client_id and secret are in the ignored worktree `.local/plaid.env`. That file exists; a local `PLAID_TOKEN_KEY` is already generated there. Then the real sandbox run happens.
   - For the live site, add `PLAID_CLIENT_ID`, `PLAID_SECRET` and `PLAID_TOKEN_KEY` in Render ([operations guide](docs/operations.md#bank-sync-with-plaid-optional-sandbox-is-free)).
-- Committed locally with the earlier email-alerts commit; **not pushed**, waiting for "push" (fast-forward `main`, push both). Pushing runs migrations 0015-0016 and installs `plaid-python` on Render.
+- Pushed on "psuh" (2026-09-28) together with email alerts: `main` fast-forwarded to `feat/project-foundation`, both pushed. Render runs migrations 0015-0016 and installs `plaid-python` after CI; the live site was not checked by the agent. Plaid stays off there until the owner adds the three Plaid keys in Render.
 - Next: the real sandbox run; slice 2 (webhooks with signature checks, reconnect, duplicate warning); milestone 9.
 
 Latest request (2026-09-28): "ok do email alerts, optional to turn on or off, defaulting to off, and with unsubscribe option".
@@ -30,7 +30,7 @@ Latest request (2026-09-28): "ok do email alerts, optional to turn on or off, de
 - Details: [development guide](docs/development.md#email-alerts--september-28).
 - Verification: 163 Django tests OK; 16/16 on Neon PostgreSQL; 9/9 Chrome checks; Settings screenshot reviewed.
 - **Owner action:** production still uses the console mail backend, so emails go to the Render log. Pick a provider and set SMTP env vars ([operations guide](docs/operations.md#email-delivery-optional-the-provider-is-your-choice)).
-- Committed locally; **not pushed**, waiting for "push" (then fast-forward `main` and push both).
+- Pushed 2026-09-28 with the Plaid slice (see above).
 - Next: milestone 9 (wireframes first) or the Plaid sandbox (needs the owner's free Plaid sandbox keys).
 
 Latest request (2026-09-28): "i think this is a different branch right? can you make this one main? and then i thought you synced with plaid".
@@ -238,6 +238,6 @@ Preserve Django; Flowbite/Tailwind controls, Motion, Bklit charts, Kokonut inter
 
 ## Git and documentation state
 
-Both branches are pushed to `origin` (GitHub `kah-eru/budget`) through the chart flash fix and this docs update (2026-09-25). Each push to `feat/project-foundation` auto-deploys the Render preview after CI. Older handoff entries marked "not pushed" have since been pushed. No PR or merge. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
+Both branches are pushed to `origin` (GitHub `kah-eru/budget`) through the chart flash fix and this docs update (2026-09-25). Since 2026-09-28 Render deploys `main`, which is fast-forwarded to `feat/project-foundation` on each push. Earlier, each push to `feat/project-foundation` auto-deployed the Render preview after CI. Older handoff entries marked "not pushed" have since been pushed. No PR or merge. `main` carries the synchronized docs only; application code lives on `feat/project-foundation`. No pull request or merge exists. See [development guide](docs/development.md).
 
 Execution ledger: `.superpowers/sdd/2026-09-22-budget-app/progress.md` (ignored). Python: worktree `.venv/Scripts/python.exe` (3.14.6); Node 22.23.1/npm 10.9.8.
