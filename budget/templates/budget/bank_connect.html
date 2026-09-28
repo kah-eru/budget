@@ -1,13 +1,18 @@
 {% extends 'budget/base.html' %}
 {% block content %}
 <section class="max-w-xl card">
+  {% if reconnect %}
+  <h1 class="mb-2 text-3xl">Reconnect {{ reconnect.institution_name|default:"your bank" }}</h1>
+  <p class="mb-4 text-muted">Your bank needs you to sign in again before it shares new transactions. Plaid opens its sign-in; your accounts and history here stay as they are.</p>
+  {% else %}
   <h1 class="mb-2 text-3xl">Connect a bank</h1>
   <p class="mb-4 text-muted">Plaid opens your bank's own sign-in. Budget never sees your bank password. Next you choose which accounts to import, and each one starts private.</p>
+  {% endif %}
   {% if sandbox %}<p class="mb-4 rounded-lg border border-line p-3 text-sm">Test mode (Plaid sandbox): pick any bank and sign in with <span class="font-semibold">user_good</span> / <span class="font-semibold">pass_good</span>. Only made-up data comes back.</p>{% endif %}
   {% if failed %}
   <p role="alert" class="rounded-lg border border-danger bg-danger-soft p-4 text-danger">Plaid isn't available right now ({{ failed }}). Try again in a minute.</p>
   {% else %}
-  <div data-plaid-link data-token="{{ link_token }}" data-exchange="{% url 'bank_exchange' %}" data-csrf="{{ csrf_token }}" hidden>
+  <div data-plaid-link data-token="{{ link_token }}" data-exchange="{{ exchange_url }}" data-csrf="{{ csrf_token }}" hidden>
     <button class="primary" type="button" data-plaid-open disabled>Continue with Plaid</button>
     <p class="mt-3 text-sm text-muted" data-plaid-status role="status"></p>
   </div>

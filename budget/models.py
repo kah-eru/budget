@@ -236,16 +236,26 @@ class PushSubscription(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+# Plaid errors that only the owner signing in again (update-mode Link) can fix.
+RECONNECT_CODES = ("ITEM_LOGIN_REQUIRED", "ACCESS_NOT_GRANTED", "TOKEN_KEY_CHANGED")
+
+
 class BankConnection(models.Model):
     # One Plaid Item. The access token is encrypted with a key kept outside the database (plaid.py) and never shown or logged.
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bank_connections")
     item_id = models.CharField(max_length=100, unique=True)
     access_token = models.TextField()
     institution_name = models.CharField(max_length=100, blank=True)
+    institution_id = models.CharField(max_length=50, blank=True)  # from Plaid, to warn about connecting the same bank twice
     cursor = models.TextField(blank=True)  # committed together with the changes it covers
     status = models.CharField(max_length=5, choices=[("ok", "OK"), ("error", "Error")], default="ok")
     error_code = models.CharField(max_length=60, blank=True)
     history_ready = models.BooleanField(default=False)
-    sync_started_at = models.DateTimeField(null=True)  # one sync a minute per connection
+    sync_started_at = models.DateTimeField(null=True)  # set while a sync runs: one at a time per connection
+    needs_sync = models.BooleanField(default=False)  # a webhook arrived during a running sync; it goes round again
     last_synced_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def needs_reconnect(self):
+        return self.error_code in RECONNECT_CODES

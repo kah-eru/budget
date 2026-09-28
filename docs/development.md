@@ -434,4 +434,32 @@ Verification:
   - 245 expenses, 24 refunds, 121 transfers; connection ok, history ready
   - Link asks for 730 days, which is why this is more than the 48 from the API-created sandbox Item.
 
-Continue: the real sandbox run once the keys are in, then slice 2 (webhooks with signature checks, reconnect, duplicate-connection warning), then milestone 9. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Plaid slice 2: automatic sync, reconnect, duplicate warning — September 28
+
+Why: the user said "do it" to the next Plaid piece.
+
+What it does (migration 0017: `BankConnection.institution_id` and `needs_sync`; `plaid.verify_webhook`, `handle_webhook`, `_claim`, `_sync_once`; views `plaid_webhook`, `bank_reconnect`, `bank_reconnected`; new dependency `PyJWT` 2.15.0):
+- **Automatic sync by webhook** at `POST /plaid/webhook/`.
+  - New connections register it automatically when `SITE_URL` (or Render's URL) is HTTPS. Local connections can't be reached, so they don't.
+  - Verification: an ES256 JWT in `Plaid-Verification`, signed by Plaid's key (fetched by key ID and cached in-process, `ponytail:`), issued in the last 5 minutes, whose `request_body_sha256` matches the exact body (constant-time compare). Forged, tampered, stale, HS256 and unsigned requests get 400. An unknown Item gets 200 and is ignored.
+  - The endpoint is CSRF-exempt, because Plaid has no token; the signature is the proof.
+  - `SYNC_UPDATES_AVAILABLE` syncs inside the request, marked `ponytail:` (move to a worker queue). `ITEM` `ERROR` records the error code; `LOGIN_REPAIRED` clears it.
+- **One sync at a time per connection, and no update is lost:**
+  - A sync claims the connection and releases it when done. A crashed claim frees after 5 minutes.
+  - A webhook that arrives mid-sync sets `needs_sync`, and the running sync goes round once more.
+  - The manual Sync now cooldown (60 s) now counts from the last finished sync. Webhooks have no cooldown.
+- **Reconnect:** when Plaid says the bank needs a new sign-in (`ITEM_LOGIN_REQUIRED`, `ACCESS_NOT_GRANTED`, or a changed token key), Settings and the account page show **Reconnect** instead of Sync now. Reconnect opens Plaid Link in update mode on the same connection, then clears the error and catches up. Accounts and history stay.
+- **Duplicate warning:** the chooser stores Plaid's institution ID. When you already connected that bank, it says so, and accounts whose last four digits match one you already import are unticked with a note. They are never merged automatically; matching digits are only a hint.
+
+Verification:
+- 184 Django tests OK on SQLite (4 PG-only skipped), including new `test_plaid_webhooks.py` (9): signed sync, six refused forgeries, unknown Item, login required then repaired (Reconnect shown), an update during a running sync, crashed-claim recovery, webhook URL and update-mode link tokens, reconnect flow and owner-only, duplicate warning.
+- Plaid and concurrency 25/25 on Neon PostgreSQL. `check` and migration drift clean.
+- 9/9 Chrome checks.
+- **Real sandbox:**
+  - A sync after Plaid's `reset_login` returned `ITEM_LOGIN_REQUIRED`, so needs-reconnect is set.
+  - An update-mode link token was issued.
+  - The earlier sync and resync still hold: 48 rows, then 0.
+- **Not verified:** real webhook delivery. Plaid can only reach the public HTTPS site, so the first real check is after the owner adds the Plaid keys in Render and connects a bank there.
+- Deferred: 6-hour catch-up sync (needs a scheduler, a cost decision), retry/backoff, and handling of `PENDING_EXPIRATION`.
+
+Continue: milestone 9 (reports, goals, recurring, net worth; wireframes first), or the owner's live Plaid setup. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

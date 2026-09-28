@@ -1,14 +1,19 @@
 """Plaid bank sync: the only module that talks to Plaid. Tokens are encrypted at rest; payloads and tokens are never logged."""
+import hashlib
+import hmac
 import json
+import time
 from collections import defaultdict
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
+import jwt
 import plaid as sdk
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.urls import reverse
 from django.utils import timezone
 from plaid.api import plaid_api
 from plaid.model.accounts_get_request import AccountsGetRequest
@@ -20,6 +25,7 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.link_token_transactions import LinkTokenTransactions
 from plaid.model.products import Products
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
+from plaid.model.webhook_verification_key_get_request import WebhookVerificationKeyGetRequest
 from urllib3.exceptions import HTTPError
 
 from .models import BankConnection, Transaction
@@ -27,8 +33,9 @@ from .notifications import evaluate_account
 from .rules import categorize_everywhere
 from .sharing import bump_account_data
 
-# ponytail: one sync a minute per connection doubles as the in-request lock; a crashed sync frees after it. Real leases come with worker jobs.
-COOLDOWN = timedelta(seconds=60)
+COOLDOWN = timedelta(seconds=60)  # between Sync now presses
+# ponytail: syncs run inside the web request, claimed per connection; a crashed one frees after LEASE. Real leases come with worker jobs.
+LEASE = timedelta(minutes=5)
 MUTATION = "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION"
 TRANSFERS = ("TRANSFER_IN", "TRANSFER_OUT", "LOAN_PAYMENTS")  # card payments and moves between accounts are never spending
 UPDATED = ["account", "provider_id", "posted_on", "amount_cents", "classification", "pending", "description", "provider_category"]
@@ -70,10 +77,16 @@ def _call(method, request):
         raise PlaidError("CONNECTION_FAILED") from None
 
 
-def link_token(user):
-    return _call("link_token_create", LinkTokenCreateRequest(
-        user=LinkTokenCreateRequestUser(client_user_id=str(user.pk)), client_name="Budget", products=[Products("transactions")],
-        transactions=LinkTokenTransactions(days_requested=730), country_codes=[CountryCode("US")], language="en")).link_token
+def link_token(user, connection=None):
+    """A new connection, or update mode (the owner signs in to their bank again) for an existing one."""
+    options = {"user": LinkTokenCreateRequestUser(client_user_id=str(user.pk)), "client_name": "Budget", "country_codes": [CountryCode("US")], "language": "en"}
+    if settings.SITE_URL.startswith("https://"):  # Plaid can only reach a public HTTPS address
+        options["webhook"] = settings.SITE_URL + reverse("plaid_webhook")
+    if connection:
+        options["access_token"] = decrypt(connection.access_token)
+    else:
+        options.update(products=[Products("transactions")], transactions=LinkTokenTransactions(days_requested=730))
+    return _call("link_token_create", LinkTokenCreateRequest(**options)).link_token
 
 
 def exchange(public_token):
@@ -83,8 +96,9 @@ def exchange(public_token):
 
 def accounts(connection):
     response = _call("accounts_get", AccountsGetRequest(access_token=decrypt(connection.access_token)))
-    return [{"id": a.account_id, "name": a.name, "mask": a.mask or "", "type": str(a.type.value), "subtype": str(a.subtype.value) if a.subtype else ""}
-            for a in response.accounts]
+    return {"institution_id": response.item.institution_id or "", "accounts": [
+        {"id": a.account_id, "name": a.name, "mask": a.mask or "", "type": str(a.type.value), "subtype": str(a.subtype.value) if a.subtype else ""}
+        for a in response.accounts]}
 
 
 def remove(connection):
@@ -172,12 +186,13 @@ def _apply(connection, added, modified, removed):
     return {account: list(rows.values()) for account, rows in touched.items()}
 
 
-def sync(connection):
-    """Returns ("ok" | "busy" | "error", rows written). The cursor and the changes it covers commit together."""
-    now = timezone.now()
-    claimed = BankConnection.objects.filter(pk=connection.pk).filter(Q(sync_started_at=None) | Q(sync_started_at__lt=now - COOLDOWN))
-    if not claimed.update(sync_started_at=now):
-        return "busy", 0
+def _claim(connection):
+    # Claiming also clears needs_sync: this sync's fetch starts now, so it covers every update announced so far.
+    free = Q(sync_started_at=None) | Q(sync_started_at__lt=timezone.now() - LEASE)
+    return bool(BankConnection.objects.filter(free, pk=connection.pk).update(sync_started_at=timezone.now(), needs_sync=False))
+
+
+def _sync_once(connection):
     connection.refresh_from_db()
     started_from = connection.cursor
     try:
@@ -188,14 +203,80 @@ def sync(connection):
     with transaction.atomic():
         locked = BankConnection.objects.select_for_update().get(pk=connection.pk)
         if locked.cursor != started_from:
-            return "busy", 0  # another sync committed these pages first
+            return "busy", 0  # a sync whose claim had lapsed committed these pages first
         touched = _apply(locked, added, modified, removed)
         locked.cursor, locked.last_synced_at, locked.status, locked.error_code = cursor, timezone.now(), "ok", ""
         # Plaid sends about 30 days first (INITIAL_UPDATE_COMPLETE) and the older history later.
         locked.history_ready = locked.history_ready or status == "HISTORICAL_UPDATE_COMPLETE"
-        locked.save()
+        locked.save(update_fields=["cursor", "last_synced_at", "status", "error_code", "history_ready"])  # leaves needs_sync to webhooks
         for account, rows in touched.items():
             categorize_everywhere(rows)
             bump_account_data(account)
             evaluate_account(account)
     return "ok", sum(len(rows) for rows in touched.values())
+
+
+def sync(connection, manual=False):
+    """Returns ("ok" | "busy" | "error", rows written). One sync runs per connection at a time. A webhook that arrives
+    meanwhile leaves needs_sync, and whichever sync finishes next goes round again, so no update is lost."""
+    connection.refresh_from_db()
+    if manual and connection.last_synced_at and timezone.now() - connection.last_synced_at < COOLDOWN:
+        return "busy", 0
+    total = 0
+    while _claim(connection):
+        try:
+            status, count = _sync_once(connection)
+        finally:
+            BankConnection.objects.filter(pk=connection.pk).update(sync_started_at=None)
+        total += count
+        if status != "ok" or not BankConnection.objects.filter(pk=connection.pk, needs_sync=True).exists():
+            return status, total
+    return ("ok", total) if total else ("busy", 0)
+
+
+_keys = {}  # ponytail: in-process cache of Plaid's webhook signing keys by key ID; they rotate rarely
+
+
+def _webhook_key(kid):
+    if kid not in _keys:
+        jwk = _call("webhook_verification_key_get", WebhookVerificationKeyGetRequest(key_id=kid)).key
+        if jwk.expired_at:
+            return None
+        _keys[kid] = jwt.PyJWK({"kty": jwk.kty, "crv": jwk.crv, "x": jwk.x, "y": jwk.y, "alg": "ES256"}).key
+    return _keys[kid]
+
+
+def verify_webhook(body, header):
+    """The payload if Plaid signed it: an ES256 JWT, issued in the last five minutes, over this exact body. Otherwise None."""
+    try:
+        head = jwt.get_unverified_header(header or "")
+        kid = head.get("kid")
+        if head.get("alg") != "ES256" or not isinstance(kid, str) or not 0 < len(kid) <= 100:
+            return None
+        key = _webhook_key(kid)
+        claims = jwt.decode(header, key, algorithms=["ES256"]) if key else None
+    except jwt.PyJWTError:
+        return None
+    if not claims or abs(time.time() - claims.get("iat", 0)) > 300:
+        return None
+    if not hmac.compare_digest(str(claims.get("request_body_sha256", "")), hashlib.sha256(body).hexdigest()):
+        return None
+    try:
+        return json.loads(body)
+    except ValueError:
+        return None
+
+
+def handle_webhook(payload):
+    connection = BankConnection.objects.filter(item_id=str(payload.get("item_id", ""))).first()
+    if connection is None:
+        return  # not ours (or disconnected): acknowledge so Plaid stops sending it
+    kind, code = payload.get("webhook_type"), payload.get("webhook_code")
+    if kind == "TRANSACTIONS" and code == "SYNC_UPDATES_AVAILABLE":
+        BankConnection.objects.filter(pk=connection.pk).update(needs_sync=True)
+        sync(connection)
+    elif kind == "ITEM" and code == "ERROR":
+        error = payload.get("error") if isinstance(payload.get("error"), dict) else {}
+        BankConnection.objects.filter(pk=connection.pk).update(status="error", error_code=str(error.get("error_code") or "ITEM_ERROR")[:60])
+    elif kind == "ITEM" and code == "LOGIN_REPAIRED":
+        BankConnection.objects.filter(pk=connection.pk).update(status="ok", error_code="")

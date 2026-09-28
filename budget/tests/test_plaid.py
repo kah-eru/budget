@@ -69,9 +69,9 @@ class PlaidTests(TestCase):
             self.assertEqual(self.client.post(base + action).status_code, 404)
         self.assertTrue(BankConnection.objects.filter(pk=self.connection.pk).exists())
 
-    @mock.patch("budget.plaid.accounts", return_value=[
+    @mock.patch("budget.plaid.accounts", return_value={"institution_id": "ins_109508", "accounts": [
         {"id": "acc-1", "name": "Plaid Checking", "mask": "0000", "type": "depository", "subtype": "checking"},
-        {"id": "acc-2", "name": "Plaid Credit Card", "mask": "3333", "type": "credit", "subtype": "credit card"}])
+        {"id": "acc-2", "name": "Plaid Credit Card", "mask": "3333", "type": "credit", "subtype": "credit card"}]})
     def test_chooser_imports_only_ticked_accounts_privately_and_resyncs(self, _):
         self.sync(page(added=[txn("t1", "4.50")]))
         response = self.client.get(f"/banks/{self.connection.pk}/accounts/")

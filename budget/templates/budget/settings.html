@@ -42,8 +42,8 @@
   <h2 id="banks-title" class="text-sm font-semibold text-accent-text">Bank connections</h2>
   {% for c in connections %}
   <div class="stat-row flex-wrap gap-2">
-    <span class="min-w-0 flex-1"><span class="block font-medium">{{ c.institution_name|default:"Bank" }}</span><span class="block text-sm text-muted">{{ c.account_count }} account{{ c.account_count|pluralize }} · {% if c.status == 'error' %}Last sync failed ({{ c.error_code }}){% elif c.last_synced_at %}Updated {{ c.last_synced_at|timesince }} ago{% else %}Not synced yet{% endif %}</span></span>
-    <form method="post" action="{% url 'bank_sync' c.pk %}">{% csrf_token %}<button class="chip bg-accent-soft" type="submit">Sync now</button></form>
+    <span class="min-w-0 flex-1"><span class="block font-medium">{{ c.institution_name|default:"Bank" }}</span><span class="block text-sm text-muted">{{ c.account_count }} account{{ c.account_count|pluralize }} · {% if c.needs_reconnect %}Needs you to sign in again{% elif c.status == 'error' %}Last sync failed ({{ c.error_code }}){% elif c.last_synced_at %}Updated {{ c.last_synced_at|timesince }} ago{% else %}Not synced yet{% endif %}</span></span>
+    {% if c.needs_reconnect %}<a class="chip bg-accent-soft" href="{% url 'bank_reconnect' c.pk %}">Reconnect</a>{% else %}<form method="post" action="{% url 'bank_sync' c.pk %}">{% csrf_token %}<button class="chip bg-accent-soft" type="submit">Sync now</button></form>{% endif %}
     <a class="chip" href="{% url 'bank_accounts' c.pk %}">Accounts</a>
     <form method="post" action="{% url 'bank_disconnect' c.pk %}">{% csrf_token %}<button class="chip text-danger" type="submit" aria-label="Disconnect {{ c.institution_name|default:'this bank' }}: stops syncing, keeps history">Disconnect</button></form>
   </div>

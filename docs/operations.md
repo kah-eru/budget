@@ -48,6 +48,8 @@ Plaid stays off until three values are set. Sandbox returns made-up data only.
 
 For local runs, the same client_id and secret go in the ignored `.local/plaid.env`, never in chat.
 
+Automatic sync: connections made on the live site register `https://<your Render URL>/plaid/webhook/` with Plaid by themselves. Nothing to set up; set `SITE_URL` only for a custom domain. Connections made on your computer can't receive webhooks and sync only on Sync now.
+
 ## Email delivery (optional; the provider is your choice)
 
 Until this is set, every email (invitations, password resets, email alerts) is written to the Render log instead of being sent.

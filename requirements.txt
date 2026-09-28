@@ -21,6 +21,7 @@ psycopg==3.3.6
 psycopg-binary==3.3.6
 pycparser==3.0
 py-vapid==1.9.4
+PyJWT==2.15.0
 python-dateutil==2.9.0.post0
 pywebpush==2.5.0
 requests==2.34.2

@@ -125,7 +125,7 @@ def bank_connect(request):
     else:
         failed = ""
     return render(request, "budget/bank_connect.html", {**page_context(request.user), "link_token": token, "failed": failed,
-                                                        "sandbox": settings.PLAID_ENV != "production"})
+                                                        "exchange_url": reverse("bank_exchange"), "sandbox": settings.PLAID_ENV != "production"})
 
 
 @login_required
@@ -152,10 +152,13 @@ def bank_accounts(request, connection_id):
     """Choose which of the bank's accounts to import. Each one starts private; sharing stays a separate step."""
     connection = plaid_connection(request, connection_id)
     try:
-        offered = bank.accounts(connection)
+        result = bank.accounts(connection)
     except bank.PlaidError:
         messages.error(request, "Plaid didn't return the accounts. Try again in a minute.")
         return redirect("settings")
+    offered, institution = result["accounts"], result["institution_id"]
+    if institution and connection.institution_id != institution:
+        BankConnection.objects.filter(pk=connection.pk).update(institution_id=institution)
     imported = set(connection.accounts.values_list("provider_account_id", flat=True))
     if request.method == "POST":
         chosen = [a for a in offered if a["id"] in request.POST.getlist("accounts") and a["id"] not in imported]
@@ -165,22 +168,65 @@ def bank_accounts(request, connection_id):
                                        connection=connection, provider_account_id=a["id"], mask=a["mask"])
             if chosen and connection.cursor:
                 # The cursor already passed these accounts' history, so fetch it all again; known rows are updated, not duplicated.
-                BankConnection.objects.filter(pk=connection.pk).update(cursor="", sync_started_at=None)
+                BankConnection.objects.filter(pk=connection.pk).update(cursor="", needs_sync=True)
         if chosen:
             sync_message(request, bank.sync(connection), first=True)
         return redirect("home")
+    # The same bank connected twice (say, two logins that see one joint account): warn, and untick accounts that look the
+    # same. Never merged automatically; matching last four digits is only a hint.
+    twins = Account.objects.filter(owner=request.user, connection__institution_id=institution).exclude(connection=connection) if institution else Account.objects.none()
+    twin_masks = set(twins.values_list("mask", flat=True)) - {""}
     for a in offered:
-        a["imported"] = a["id"] in imported
-    return render(request, "budget/bank_accounts.html", {**page_context(request.user), "connection": connection, "offered": offered})
+        a["imported"], a["duplicate"] = a["id"] in imported, a["mask"] in twin_masks
+    return render(request, "budget/bank_accounts.html", {**page_context(request.user), "connection": connection, "offered": offered,
+                                                         "connected_twice": twins.exists()})
 
 
 @login_required
 @require_POST
 def bank_sync(request, connection_id):
     connection = plaid_connection(request, connection_id)
-    sync_message(request, bank.sync(connection))
+    sync_message(request, bank.sync(connection, manual=True))
     back = request.POST.get("next", "")
     return redirect(back if url_has_allowed_host_and_scheme(back, allowed_hosts=None) else "settings")
+
+
+@login_required
+def bank_reconnect(request, connection_id):
+    """Update mode: the owner signs in to the bank again through Plaid; accounts and history stay as they are."""
+    connection = plaid_connection(request, connection_id)
+    try:
+        token, failed = bank.link_token(request.user, connection), ""
+    except bank.PlaidError as error:
+        token, failed = "", error.code
+    return render(request, "budget/bank_connect.html", {**page_context(request.user), "link_token": token, "failed": failed, "reconnect": connection,
+                                                        "exchange_url": reverse("bank_reconnected", args=[connection.pk]),
+                                                        "sandbox": settings.PLAID_ENV != "production"})
+
+
+@login_required
+@require_POST
+def bank_reconnected(request, connection_id):
+    # Update mode keeps the same access token, so there is nothing to exchange: clear the error and catch up.
+    connection = plaid_connection(request, connection_id)
+    BankConnection.objects.filter(pk=connection.pk).update(status="ok", error_code="")
+    sync_message(request, bank.sync(connection))
+    return JsonResponse({"next": reverse("settings")})
+
+
+@csrf_exempt  # Plaid posts without a CSRF token or session; the signed JWT is the proof
+@require_POST
+def plaid_webhook(request):
+    if not bank.enabled():
+        raise Http404
+    try:
+        payload = bank.verify_webhook(request.body, request.headers.get("Plaid-Verification"))
+    except bank.PlaidError:
+        return HttpResponse(status=503)  # Plaid's signing key couldn't be fetched; Plaid retries
+    if payload is None:
+        return HttpResponse(status=400)
+    bank.handle_webhook(payload)  # ponytail: syncs inside the request; move to a worker queue when there is one
+    return HttpResponse(status=200)
 
 
 @login_required
