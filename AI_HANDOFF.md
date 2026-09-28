@@ -1,6 +1,13 @@
 # AI handoff
 
-Updated: 2026-09-25. Read current docs and inspect Git before resuming.
+Updated: 2026-09-28. Read current docs and inspect Git before resuming.
+
+Latest request (2026-09-28): "update all the docs if you haven't already".
+- Fetched GitHub: nothing new since 2026-09-25 (no home-computer commits), and both checkouts are clean.
+- Rewrote the README status by milestone; it still said "milestone 1 is in progress".
+- Fixed one stale "not pushed" note (the visual theme was pushed later on 2026-09-25).
+- Docs only; no code changed.
+- Next: CSV import, or email alerts once the user picks a provider.
 
 ## Resuming on another computer (the user continues at home)
 
@@ -91,7 +98,7 @@ Latest request (2026-09-25, night, latest): "add some of the settings features, 
 
 Latest request (2026-09-25, night, later): "make the ui something more like this" (Robinhood reference screenshots). Rebuilt to a flat layout: hero spending number + change vs previous period + bare chart + period chips on Overview and Timeline, stat rows, per-account pink value pills, icon bottom nav, filters in a disclosure; serif/mono fonts and the receipt style removed. 78 Django tests OK, 5/5 Chrome checks, light/dark screenshots reviewed. Pushed on "push" (`feat` cefc49b, `main` 3e16730); Render redeploys after CI (not checked by the agent). Details: [development guide](docs/development.md#robinhood-style-layout--september-25-night-later).
 
-Latest request (2026-09-25, night): "Do the frontend first with these colors" (white + pink light; coffee bean + black cherry dark; more colours coming). Used `frontend-design` + `apple-design`. Built a token theme in `assets/app.css` (palette block -> roles -> Tailwind utilities), self-hosted Young Serif / Hanken Grotesk / Martian Mono, receipt-style spending summaries, OS-driven dark mode; templates moved off gray utilities. 78 Django tests OK, 5/5 Chrome checks, light/dark phone screenshots reviewed. Committed locally; **not pushed**. Details: [development guide](docs/development.md#visual-theme--september-25-night). Next: CSV import/export, then Plaid sandbox (milestone 3).
+Latest request (2026-09-25, night): "Do the frontend first with these colors" (white + pink light; coffee bean + black cherry dark; more colours coming). Used `frontend-design` + `apple-design`. Built a token theme in `assets/app.css` (palette block -> roles -> Tailwind utilities), self-hosted Young Serif / Hanken Grotesk / Martian Mono, receipt-style spending summaries, OS-driven dark mode; templates moved off gray utilities. 78 Django tests OK, 5/5 Chrome checks, light/dark phone screenshots reviewed. Pushed later on 2026-09-25 with the next slice. Details: [development guide](docs/development.md#visual-theme--september-25-night). Next: CSV import/export, then Plaid sandbox (milestone 3).
 
 Latest question (2026-09-25, night): user asked about Plaid and called the frontend generic ("ai slop"), asking why the frontend skills were not used. Answer: Plaid is milestone 3 (after CSV, milestone 2); the UI has only had the low-fidelity pass plus light apple-design touches, and the installed `frontend-design` skill was never used. Offered a visual design pass or starting Plaid sandbox; awaiting their choice. No product changes.
 

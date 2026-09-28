@@ -2,7 +2,21 @@
 
 A private budgeting app for partners and friends who choose to share finances. Start with a small deployment, with collaboration and scalable code/data access designed into the first release.
 
-Status: milestone 1 is in progress. A local Django foundation implements sign-in, private/manual accounts, groups, explicit sharing, invitations with mailbox verification, password recovery, membership notices and member removal. Milestone 2 has started with manual USD transactions, per-workspace transaction annotations, month/year spending summaries, a searchable timeline with daily and cumulative totals, standalone invitations, a Settings page (username/email/password changes with email notices or confirmation, light/dark/system theme) and Timeline CSV export, plus workspace categories (standard set, Overview breakdown, Timeline filter) and categorization rules with preview and opt-in backfill, monthly/yearly budgets with Overview progress, in-app over-budget alerts, categorize by example (search, tick, keep the keyword as a rule), fixed/yearly/flexible budget types with a disposable income estimate, split transactions (by hand or by rule), and phone push for budget alerts (off until the owner sets push keys). It is installable to a phone home screen, and tab pages are prefetched. A hosted Neon PostgreSQL development database (synthetic data only) now passes the full suite and row-locking concurrency checks; release checks remain pending; this is not a finished budgeting app or a real-data-ready deployment.
+Status (2026-09-28): a working preview with synthetic data only, deployed to Render; not a real-data-ready release. Built by milestone:
+- **Milestone 1, foundation:** sign-in, private manual accounts, groups, explicit sharing, invitations with mailbox verification (group and standalone), password recovery, membership notices and member removal, a Settings page (username/email/password changes with email notices or confirmation; System/Light/Dark theme).
+- **Milestone 2, transactions** (CSV import still open): manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, and Timeline CSV export.
+- **Milestone 4, categories and budgets:**
+  - workspace categories (a standard set, an Overview breakdown, a Timeline filter)
+  - rules with preview and opt-in backfill
+  - categorize by example (search, tick, keep the keyword as a rule)
+  - split transactions, by hand or by a 70/30-style rule
+  - monthly/yearly budgets by category or name, in three types (fixed bill, yearly/irregular cost, flexible) with a disposable income estimate
+- **Milestone 5, notifications** (email alerts wait on a provider choice):
+  - in-app over-budget alerts, once per person, budget and period
+  - phone push, off until the owner sets the two push keys
+- **Also:** installable to a phone home screen, tab pages prefetched, chart without flashes.
+
+Not started: Plaid bank sync (milestone 3), AI insights (6), statements (7), the release/load gate (8), and the planning tools (9: reports, goals, recurring, net worth). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
 
 Active implementation: `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation`, branch `feat/project-foundation`. The original checkout remains on `main`; run application commands inside the worktree.
 
