@@ -38,9 +38,9 @@ def evaluate(workspace, *, silent=False, budgets=None, users=None):
         transaction.on_commit(partial(deliver, sorted(fresh)))
 
 
-def deliver(user_ids):
-    send_budget_alert(user_ids)
-    email_budget_alert(user_ids)
+def deliver(user_ids, what="budget"):
+    send_budget_alert(user_ids, what)
+    email_budget_alert(user_ids, what)
 
 
 def baseline_member(workspace, user):
@@ -49,5 +49,7 @@ def baseline_member(workspace, user):
 
 def evaluate_account(account):
     """After an account's data changes: every workspace that can see it."""
+    from .recurring import remind  # recurring imports this module
     for workspace in Workspace.objects.filter(Q(owner_id=account.owner_id, is_personal=True) | Q(account_shares__account=account)).distinct():
         evaluate(workspace)
+        remind(workspace)

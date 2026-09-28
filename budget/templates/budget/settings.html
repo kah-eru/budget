@@ -24,7 +24,7 @@
   <h2 id="notify-title" class="mb-2 text-sm font-semibold text-accent-text">Notifications</h2>
   <form method="post" action="{% url 'email_alerts' %}">{% csrf_token %}
     <p class="font-medium">Email alerts · {% if user.email_alerts %}On{% else %}Off{% endif %}</p>
-    <p class="text-sm text-muted">{% if user.email_alerts %}Sent to {{ user.verified_email }} when a budget goes over.{% elif verified %}Get an email at {{ user.email }} when a budget goes over.{% else %}Verify your email to turn these on.{% endif %} They never include amounts or names, and each one has an unsubscribe link.</p>
+    <p class="text-sm text-muted">{% if user.email_alerts %}Sent to {{ user.verified_email }} when a budget goes over or a bill is due.{% elif verified %}Get an email at {{ user.email }} when a budget goes over or a bill is due.{% else %}Verify your email to turn these on.{% endif %} They never include amounts or names, and each one has an unsubscribe link.</p>
     {% if user.email_alerts %}<button class="secondary mt-3" type="submit" name="on" value="0">Turn off email alerts</button>{% elif verified %}<button class="primary mt-3" type="submit" name="on" value="1">Turn on email alerts</button>{% endif %}
     {% if not mail_ready %}<p class="mt-2 text-sm text-muted">This server doesn't send email yet: alerts go to its log until an email provider is set up.</p>{% endif %}
   </form>

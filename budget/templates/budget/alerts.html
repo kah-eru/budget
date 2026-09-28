@@ -4,6 +4,17 @@
 <section aria-labelledby="alerts-title" class="card">
   <h1 id="alerts-title" class="mb-1 text-3xl">Alerts</h1>
   <p class="mb-4 text-muted">When posted spending goes over a budget, you get one alert for that period. Amounts are current.</p>
+  {% if reminders %}
+  <h2 class="mb-1 mt-2 text-xl font-semibold">Bills due</h2>
+  <ul class="mb-6 divide-y divide-line">
+    {% for r in reminders %}
+    <li><a class="row-link -mx-2 block rounded-lg px-2 py-3" href="{% url 'bills' r.recurring.workspace_id %}">
+      <span class="flex flex-wrap items-baseline justify-between gap-x-3"><span class="min-w-0 break-words font-semibold">{% if r.read_at is None %}<span class="unread-dot" aria-hidden="true"></span><span class="sr-only">New: </span>{% endif %}Bill due {{ r.due_on|date:"M j" }}: {{ r.recurring.name }}</span><span class="amount font-medium">{{ r.recurring.amount_cents|dollars }}</span></span>
+      <span class="mt-1 block text-sm text-muted">{{ r.recurring.workspace.name }} · estimate</span>
+    </a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   <ul class="divide-y divide-line">
     {% for alert in alerts %}{% with p=alert.progress %}
     <li><a class="row-link -mx-2 block rounded-lg px-2 py-3" href="{% url 'budget_edit' alert.budget.workspace_id alert.budget_id %}">

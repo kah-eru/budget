@@ -28,16 +28,21 @@ def unsubscribe_url(user):
     return settings.SITE_URL + reverse("email_unsubscribe", args=[signing.Signer(salt=UNSUBSCRIBE_SALT).sign(str(user.pk))])
 
 
-def email_budget_alert(user_ids):
+EMAILS = {"budget": ("Budget alert", "A budget went over its limit. Sign in to see which one"),
+          "bill": ("Bill reminder", "A bill is due soon. Sign in to see which one")}
+
+
+def email_budget_alert(user_ids, what="budget"):
     """One email per person who turned email alerts on. Generic like push: no budget names, amounts or people
     reach a mailbox. ponytail: sent inline after commit; move to a worker queue when there is one."""
     alerts = settings.SITE_URL + reverse("alerts")
     messages = []
     for user in User.objects.filter(pk__in=user_ids, email_alerts=True).exclude(verified_email=""):
         link = unsubscribe_url(user)
-        body = (f"A budget went over its limit. Sign in to see which one: {alerts}\n\n"
+        subject, text = EMAILS[what]
+        body = (f"{text}: {alerts}\n\n"
                 f"You get this because email alerts are on. Turn them off: {link}\n")
-        messages.append(EmailMessage("Budget alert", body, None, [user.verified_email],
+        messages.append(EmailMessage(subject, body, None, [user.verified_email],
                                      headers={"List-Unsubscribe": f"<{link}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}))
     if messages:
         try:

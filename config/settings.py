@@ -106,6 +106,9 @@ PLAID_CLIENT_ID = os.environ.get("PLAID_CLIENT_ID", "")
 PLAID_SECRET = os.environ.get("PLAID_SECRET", "")
 PLAID_TOKEN_KEY = os.environ.get("PLAID_TOKEN_KEY", "")
 PLAID_ENV = os.environ.get("PLAID_ENV", "sandbox")
+
+# The daily task (bill reminders, catch-up bank sync) runs only for a request carrying this token. Unset = off.
+TASKS_TOKEN = os.environ.get("TASKS_TOKEN", "")
 PASSWORD_RESET_TIMEOUT = 3600
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "America/Denver"

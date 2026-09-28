@@ -29,13 +29,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
 from . import imports
+from . import recurring
 from . import plaid as bank
 from .account_mail import UNSUBSCRIBE_SALT, notify
 from .forms import (
-    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, ImportMappingForm, ImportUploadForm, IncomeForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, ImportMappingForm, ImportUploadForm, IncomeForm, RecurringForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Account, BankConnection, Budget, BudgetAlert, Category, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, net_worth, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
@@ -65,7 +66,11 @@ def robots(request):
 def page_context(user, workspace=None):
     workspaces = list(visible_workspaces(user).order_by("-is_personal", "name", "pk"))
     return {"workspace": workspace, "workspaces": workspaces, "personal": workspaces[0] if workspaces else None,
-            "unread_alerts": visible_alerts(user, workspaces).filter(read_at=None).count()}
+            "unread_alerts": visible_alerts(user, workspaces).filter(read_at=None).count() + visible_reminders(user, workspaces).filter(read_at=None).count()}
+
+
+def visible_reminders(user, workspaces):
+    return BillReminder.objects.filter(recipient=user, recurring__workspace__in=[w.pk for w in workspaces], recurring__status="confirmed")
 
 
 def visible_alerts(user, workspaces):
@@ -75,13 +80,17 @@ def visible_alerts(user, workspaces):
 
 @login_required
 def alerts(request):
+    for workspace in visible_workspaces(request.user):
+        recurring.remind(workspace)  # bills due in the next three days, even before the daily task runs
     context = page_context(request.user)
+    reminders = list(visible_reminders(request.user, context["workspaces"]).select_related("recurring__workspace").order_by("-due_on", "-pk")[:30])
+    BillReminder.objects.filter(pk__in=[r.pk for r in reminders if r.read_at is None]).update(read_at=timezone.now())
     rows = list(visible_alerts(request.user, context["workspaces"]).select_related("budget__category", "budget__workspace").order_by("-created_at", "-pk")[:50])
     for alert in rows:
         # Amounts are recomputed from what this user can see now, never stored in the alert.
         alert.progress = budget_progress(request.user, alert.budget.workspace, [alert.budget], alert.period_start)[0]
     BudgetAlert.objects.filter(pk__in=[a.pk for a in rows if a.read_at is None]).update(read_at=timezone.now())
-    return render(request, "budget/alerts.html", {**context, "alerts": rows, "unread_alerts": 0})
+    return render(request, "budget/alerts.html", {**context, "alerts": rows, "reminders": reminders, "unread_alerts": 0})
 
 
 def email_verified(user):
@@ -272,7 +281,7 @@ def email_unsubscribe(request, token):
 SERVICE_WORKER = """// Push only: no fetch handler, so no page or financial data is ever cached or intercepted.
 self.addEventListener("push", (event) => {
   const d = event.data ? event.data.json() : {};
-  event.waitUntil(self.registration.showNotification(d.title || "Budget", { body: d.body || "", tag: "budget-alert", icon: "%s", data: { url: d.url || "/alerts/" } }));
+  event.waitUntil(self.registration.showNotification(d.title || "Budget", { body: d.body || "", tag: d.tag || "budget-alert", icon: "%s", data: { url: d.url || "/alerts/" } }));
 });
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
@@ -449,6 +458,7 @@ def labelled(rows, workspace):
 @login_required
 def workspace_detail(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
+    recurring.remind(workspace)
     context = page_context(request.user, workspace)
     context["memberships"] = Membership.objects.filter(workspace=workspace).select_related("user").exclude(user=workspace.owner)
     kind, start, end = period(request.GET.get("period", ""), timezone.localdate())
@@ -805,7 +815,74 @@ def budget_list(request, workspace_id):
     budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
     today = timezone.localdate()
     return render(request, "budget/budgets.html", {**page_context(request.user, workspace),
-                  "budgets": budget_progress(request.user, workspace, budgets, today), "plan": disposable(request.user, workspace, today)})
+                  "budgets": budget_progress(request.user, workspace, budgets, today), "plan": disposable(request.user, workspace, today),
+                  "upcoming": recurring.forecast(workspace, today)["items"][:3]})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def bills(request, workspace_id):
+    """Any member manages the workspace's recurring bills and income, like budgets."""
+    workspace = get_workspace(request.user, workspace_id)
+    today = timezone.localdate()
+    found = recurring.candidates(request.user, workspace, today)
+    if request.method == "POST":
+        # Only a series the server finds itself can be confirmed; posted amounts or dates are never trusted.
+        chosen = next((c for c in found if c["pattern"] == request.POST.get("pattern")), None)
+        if chosen and request.POST.get("action") in ("confirm", "dismiss"):
+            confirm = request.POST["action"] == "confirm"
+            Recurring.objects.create(workspace=workspace, name=chosen["name"][:100], pattern=chosen["pattern"], kind=chosen["kind"],
+                                     amount_cents=chosen["amount_cents"], interval=chosen["interval"], anchor_on=chosen["anchor_on"],
+                                     status="confirmed" if confirm else "dismissed")
+            messages.success(request, f"{chosen['name']} added. Check its amount and due date." if confirm else f"{chosen['name']} won't be suggested again.")
+        return redirect("bills", workspace.pk)
+    return render(request, "budget/bills.html", {**page_context(request.user, workspace), "forecast": recurring.forecast(workspace, today),
+                  "items": workspace.recurring.filter(status="confirmed").order_by("kind", "name"), "found": found})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def bill_edit(request, workspace_id, recurring_id=None):
+    workspace = get_workspace(request.user, workspace_id)
+    item = get_object_or_404(workspace.recurring, pk=recurring_id, status="confirmed") if recurring_id else Recurring(anchor_on=timezone.localdate())
+    form = RecurringForm(request.POST if request.method == "POST" else None, instance=item, workspace=workspace)
+    back = reverse("bills", args=[workspace.pk])
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Saved.")
+        return redirect(back)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form,
+                  "title": f"Edit {item.name}" if recurring_id else "Add a bill or income", "action": "Save", "cancel_url": back,
+                  "help": "An estimate for planning. It never counts as spending; the real payment does when it posts.",
+                  "delete_url": reverse("bill_delete", args=[workspace.pk, item.pk]) if recurring_id else None},
+                  status=400 if request.method == "POST" else 200)
+
+
+@login_required
+@require_POST
+def bill_delete(request, workspace_id, recurring_id):
+    workspace = get_workspace(request.user, workspace_id)
+    get_object_or_404(workspace.recurring, pk=recurring_id).delete()
+    messages.success(request, "Removed.")
+    return redirect("bills", workspace.pk)
+
+
+@csrf_exempt  # called by the scheduled GitHub Action with a bearer token, not a browser session
+@require_POST
+def daily_tasks(request):
+    """Bill reminders for every workspace, and a catch-up bank sync for connections quiet for six hours."""
+    if not settings.TASKS_TOKEN or not constant_time_compare(request.headers.get("Authorization", ""), f"Bearer {settings.TASKS_TOKEN}"):
+        raise Http404
+    today = timezone.localdate()
+    for workspace in Workspace.objects.filter(recurring__status="confirmed", recurring__kind="bill", recurring__remind=True).distinct():
+        recurring.remind(workspace, today)
+    synced = 0
+    if bank.enabled():
+        quiet = Q(last_synced_at=None) | Q(last_synced_at__lt=timezone.now() - timedelta(hours=6))
+        for connection in BankConnection.objects.filter(quiet, status="ok").order_by("pk"):
+            bank.sync(connection)
+            synced += 1
+    return JsonResponse({"ok": True, "synced": synced})
 
 
 @login_required

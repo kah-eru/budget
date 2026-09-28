@@ -11,7 +11,7 @@ from django.utils.formats import date_format
 
 from . import imports
 from .invitations import claim_email_send
-from .models import Account, Budget, Category, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, Budget, Category, Recurring, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .rules import normalize, suggest_keyword
 
 
@@ -62,6 +62,37 @@ class TransactionForm(forms.ModelForm):
             self.initial["amount"] = Decimal(self.instance.amount_cents) / 100
 
     def save(self, commit=True):
+        self.instance.amount_cents = int(self.cleaned_data["amount"] * 100)
+        return super().save(commit)
+
+
+class RecurringForm(forms.ModelForm):
+    amount = forms.DecimalField(label="Usual amount (USD)", min_value=Decimal("0.01"), max_digits=12, decimal_places=2)
+
+    class Meta:
+        model = Recurring
+        fields = ["name", "kind", "amount", "interval", "anchor_on", "remind"]
+        labels = {"kind": "Type", "interval": "Repeats", "anchor_on": "Next due date", "remind": "Remind everyone here 3 days before it's due"}
+        widgets = {"anchor_on": forms.DateInput(attrs={"type": "date"})}
+
+    def __init__(self, *args, workspace, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.workspace = workspace
+        if self.instance.pk:
+            self.initial["amount"] = Decimal(self.instance.amount_cents) / 100
+
+    def clean_name(self):
+        from .recurring import key
+        name = self.cleaned_data["name"].strip()
+        self.pattern = key(name)[0]
+        taken = self.workspace.recurring.filter(pattern=self.pattern, status="confirmed").exclude(pk=self.instance.pk)
+        if taken.exists():
+            raise forms.ValidationError("That bill or income is already listed.")
+        return name
+
+    def save(self, commit=True):
+        self.workspace.recurring.filter(pattern=self.pattern, status="dismissed").exclude(pk=self.instance.pk).delete()
+        self.instance.workspace, self.instance.pattern, self.instance.status = self.workspace, self.pattern, "confirmed"
         self.instance.amount_cents = int(self.cleaned_data["amount"] * 100)
         return super().save(commit)
 

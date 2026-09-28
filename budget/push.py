@@ -13,7 +13,8 @@ log = logging.getLogger(__name__)
 # Only real browser push services, so a forged endpoint cannot make the server call internal addresses (SSRF).
 PUSH_HOSTS = ("fcm.googleapis.com", "push.services.mozilla.com", "web.push.apple.com", "notify.windows.com")
 # Generic on purpose: lock screens show this, so no budget names, amounts or people.
-ALERT = {"title": "Budget alert", "body": "A budget went over its limit. Open Budget to see which one.", "url": "/alerts/"}
+ALERTS = {"budget": {"title": "Budget alert", "body": "A budget went over its limit. Open Budget to see which one.", "url": "/alerts/"},
+          "bill": {"title": "Bill reminder", "body": "A bill is due soon. Open Budget to see which one.", "url": "/alerts/", "tag": "bill-reminder"}}
 
 
 def enabled():
@@ -26,7 +27,7 @@ def valid_endpoint(url):
     return parts.scheme == "https" and parts.port in (None, 443) and any(host == h or host.endswith("." + h) for h in PUSH_HOSTS)
 
 
-def send_budget_alert(user_ids):
+def send_budget_alert(user_ids, what="budget"):
     """One push per subscribed device of each user. Devices the push service reports gone (404/410) are removed.
     ponytail: sent inline after commit with a 5 s timeout per device; move to a worker queue when there is one."""
     if not enabled():
@@ -34,7 +35,7 @@ def send_budget_alert(user_ids):
     for sub in PushSubscription.objects.filter(user_id__in=user_ids):
         try:
             webpush(subscription_info={"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},
-                    data=json.dumps(ALERT), vapid_private_key=settings.WEBPUSH_VAPID_PRIVATE_KEY,
+                    data=json.dumps(ALERTS[what]), vapid_private_key=settings.WEBPUSH_VAPID_PRIVATE_KEY,
                     vapid_claims={"sub": settings.WEBPUSH_CONTACT}, timeout=5, ttl=86400)
         except WebPushException as error:
             status = getattr(error.response, "status_code", None)

@@ -1,0 +1,19 @@
+name: Daily tasks
+# Bill reminders and a catch-up bank sync, once a day. Skipped until the SITE_URL and TASKS_TOKEN secrets exist.
+on:
+  schedule:
+    - cron: "17 14 * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask the site to run its daily tasks
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          TASKS_TOKEN: ${{ secrets.TASKS_TOKEN }}
+        run: |
+          if [ -z "$SITE_URL" ] || [ -z "$TASKS_TOKEN" ]; then echo "Secrets not set; skipping."; exit 0; fi
+          # The free Render plan may be asleep, so allow a slow first response and one retry.
+          curl -fsS --max-time 180 --retry 1 --retry-delay 30 -X POST -H "Authorization: Bearer $TASKS_TOKEN" "$SITE_URL/tasks/daily/"

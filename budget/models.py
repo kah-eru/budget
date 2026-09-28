@@ -263,3 +263,35 @@ class BankConnection(models.Model):
     @property
     def needs_reconnect(self):
         return self.error_code in RECONNECT_CODES
+
+
+class Recurring(models.Model):
+    # A confirmed repeating bill or income, or a dismissed suggestion kept so it isn't suggested again.
+    KINDS = [("bill", "Bill"), ("income", "Income")]
+    INTERVALS = [("weekly", "Weekly"), ("monthly", "Monthly"), ("yearly", "Yearly")]
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="recurring")
+    name = models.CharField(max_length=100)
+    pattern = models.CharField(max_length=100)  # the normalized name its transactions carry
+    kind = models.CharField(max_length=6, choices=KINDS, default="bill")
+    amount_cents = models.BigIntegerField()
+    interval = models.CharField(max_length=7, choices=INTERVALS, default="monthly")
+    anchor_on = models.DateField()  # one due date; the others step from it
+    status = models.CharField(max_length=9, choices=[("confirmed", "Confirmed"), ("dismissed", "Dismissed")], default="confirmed")
+    remind = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["workspace", "pattern"], name="recurring_once"),
+                       models.CheckConstraint(condition=Q(amount_cents__gt=0), name="recurring_amount_positive")]
+
+
+class BillReminder(models.Model):
+    # One per person, bill and due date; created from three days before the bill is due.
+    recurring = models.ForeignKey(Recurring, on_delete=models.CASCADE, related_name="reminders")
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bill_reminders")
+    due_on = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["recurring", "recipient", "due_on"], name="bill_reminder_once")]
