@@ -4,7 +4,7 @@ Updated 2026-09-25. Development-only foundation, not ready for real financial da
 
 ## Where to work
 
-Use `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on branch `feat/project-foundation`, tracking `origin/feat/project-foundation`. Work through `fcee2b6` was pushed to GitHub on 2026-09-25; later commits are local until a push is requested (see `AI_HANDOFF.md`). The original checkout is on `main` with synchronized docs. No merge, pull request, or deployment has occurred.
+Use `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on branch `feat/project-foundation`. On 2026-09-28 it was merged into `main`, which now holds the whole app and is what Render deploys. On each requested push, `main` is fast-forwarded to `feat/project-foundation` and both are pushed (see `AI_HANDOFF.md`).
 
 ## Setup (PowerShell)
 

@@ -10,7 +10,7 @@ Before the final response, update affected canonical docs and refresh `AI_HANDOF
 
 ## Project decisions to preserve
 
-Implementation is currently isolated in `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on `feat/project-foundation`. Check `AI_HANDOFF.md` before coding; the original checkout on `main` carries synchronized docs, not the application source.
+Since 2026-09-28 `main` holds the whole app and is what Render deploys. Work happens in `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on `feat/project-foundation` (its `.venv`, `node_modules` and ignored `.local/` live there). When the user asks to push, fast-forward `main` to that branch (`git -C <root> merge --ff-only feat/project-foundation`) and push both. Check `AI_HANDOFF.md` before coding.
 
 - Use Flowbite/Tailwind for standard controls, Motion for animation, Bklit UI for charts, and Kokonut UI for selected interactions; reuse existing controls and behaviors. The newer frontend choices supersede the earlier Flowbite-only restriction.
 - For frontend/UI work, load the `apple-design` skill (Emil Kowalski, MIT; installed user-level at `~/.claude/skills/apple-design`, source pinned in its `SOURCE.txt`) and apply its principles (instant feedback, critically damped Motion springs, spatial consistency, reduced-motion/transparency/contrast, size-specific typography) through the existing Flowbite/Tailwind/Motion stack — guidance, not a new component library.
