@@ -11,8 +11,8 @@ Latest request (2026-09-28): "do it" (Plaid slice 2). Built:
 - Details: [development guide](docs/development.md#plaid-slice-2-automatic-sync-reconnect-duplicate-warning--september-28).
 - Verification: 184 Django tests OK; 25/25 on Neon PostgreSQL; 9/9 Chrome checks. Real sandbox: `reset_login` → `ITEM_LOGIN_REQUIRED` detected → update-mode link token issued.
 - Real webhook delivery needs the live HTTPS site with the Plaid keys in Render (owner action).
-- Committed locally; **not pushed**, waiting for "push" (fast-forward `main`, push both).
-- Next: milestone 9 (wireframes first), or live Plaid setup by the owner.
+- Pushed on "push" (2026-09-28): `main` fast-forwarded and both pushed; Render runs migration 0017 and installs PyJWT after CI (live site not checked by the agent).
+- Next (user, 2026-09-28): no reports; optional goals, recurring bills, net worth. Wireframes first.
 
 Latest request (2026-09-28): "ok i think i created a free plaid sandbox account". Plan approved; built Plaid slice 1 (in-request sync, because Render's free plan has no worker or cron):
 - connect a bank (Link loads only on that page)
