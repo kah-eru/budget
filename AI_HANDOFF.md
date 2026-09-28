@@ -6,7 +6,7 @@ Latest request (2026-09-28): "update all the docs if you haven't already".
 - Fetched GitHub: nothing new since 2026-09-25 (no home-computer commits), and both checkouts are clean.
 - Rewrote the README status by milestone; it still said "milestone 1 is in progress".
 - Fixed one stale "not pushed" note (the visual theme was pushed later on 2026-09-25).
-- Docs only; no code changed.
+- Docs only; no code changed. Pushed on "ok push" (2026-09-28).
 - Next: CSV import, or email alerts once the user picks a provider.
 
 ## Resuming on another computer (the user continues at home)
