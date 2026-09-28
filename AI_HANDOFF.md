@@ -12,8 +12,10 @@ Latest request (2026-09-28): "ok i think i created a free plaid sandbox account"
 - Also fixed: the email unsubscribe link is now deterministic (no timestamp).
 - Details: [development guide](docs/development.md#plaid-sandbox-slice-1--september-28).
 - Verification: 175 Django tests OK; 28/28 on Neon PostgreSQL; 9/9 Chrome checks.
-- **Blocked on the owner:**
-  - Put the Plaid sandbox client_id and secret in the ignored worktree `.local/plaid.env`. That file exists; a local `PLAID_TOKEN_KEY` is already generated there. Then the real sandbox run happens.
+- Real sandbox run done: 48 transactions synced, types and categories right, resync with no duplicates. Fixed history-ready timing.
+- **Owner check:** click through Connect a bank by hand. Automated Chrome stalls inside Plaid's own consent screen.
+- **Done by the owner:**
+  - Plaid sandbox client_id and secret are in the ignored worktree `.local/plaid.env`. That file exists; a local `PLAID_TOKEN_KEY` is already generated there. Then the real sandbox run happens.
   - For the live site, add `PLAID_CLIENT_ID`, `PLAID_SECRET` and `PLAID_TOKEN_KEY` in Render ([operations guide](docs/operations.md#bank-sync-with-plaid-optional-sandbox-is-free)).
 - Committed locally with the earlier email-alerts commit; **not pushed**, waiting for "push" (fast-forward `main`, push both). Pushing runs migrations 0015-0016 and installs `plaid-python` on Render.
 - Next: the real sandbox run; slice 2 (webhooks with signature checks, reconnect, duplicate warning); milestone 9.

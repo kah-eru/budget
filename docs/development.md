@@ -422,6 +422,12 @@ Verification:
 - Plaid, email alerts, rules and concurrency 28/28 on Neon PostgreSQL.
 - `check` and migration drift clean.
 - 9/9 Chrome checks. Initial JS 1.25 kB gzip.
-- **Not yet run:** the real sandbox check, because the owner's keys aren't in `.local/plaid.env` yet.
+- **Real Plaid sandbox run** (owner's keys, throwaway local database, counts only printed):
+  - A link token was created, then public token → exchange; the stored token is encrypted. Plaid returned 16 accounts (checking, savings, credit, loans, investments).
+  - First sync: 0 rows (not ready). Second: **48 transactions**, history complete: 30 expenses, 3 refunds (flights), 15 transfers (credit-card payments, account transfers, loan payments). 30 were categorized (Transport, Travel, Dining, Shopping, Utilities).
+  - A resync added 0 with no duplicates. The sandbox Item was then removed.
+  - Found and fixed: "history ready" now waits for `HISTORICAL_UPDATE_COMPLETE`. Plaid sends about 30 days first, so the page no longer claims the full history early.
+  - Sandbox labels the Gusto payroll deposit a transfer (Plaid's category); change its type if it should count as income.
+- **Plaid Link in a browser:** the link token and Plaid's window load, and sandbox sign-in (user_good) works. Automated Chrome stalls on Plaid's final account-consent Continue: no request leaves the window. So the last step (Continue → the app's exchange → Choose accounts) is left for the owner to click through by hand.
 
 Continue: the real sandbox run once the keys are in, then slice 2 (webhooks with signature checks, reconnect, duplicate-connection warning), then milestone 9. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

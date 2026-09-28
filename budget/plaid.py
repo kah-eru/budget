@@ -191,7 +191,8 @@ def sync(connection):
             return "busy", 0  # another sync committed these pages first
         touched = _apply(locked, added, modified, removed)
         locked.cursor, locked.last_synced_at, locked.status, locked.error_code = cursor, timezone.now(), "ok", ""
-        locked.history_ready = locked.history_ready or status in ("INITIAL_UPDATE_COMPLETE", "HISTORICAL_UPDATE_COMPLETE")
+        # Plaid sends about 30 days first (INITIAL_UPDATE_COMPLETE) and the older history later.
+        locked.history_ready = locked.history_ready or status == "HISTORICAL_UPDATE_COMPLETE"
         locked.save()
         for account, rows in touched.items():
             categorize_everywhere(rows)
