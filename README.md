@@ -11,9 +11,10 @@ Status (2026-09-28): a working preview with synthetic data only, deployed to Ren
   - categorize by example (search, tick, keep the keyword as a rule)
   - split transactions, by hand or by a 70/30-style rule
   - monthly/yearly budgets by category or name, in three types (fixed bill, yearly/irregular cost, flexible) with a disposable income estimate
-- **Milestone 5, notifications** (email alerts wait on a provider choice):
+- **Milestone 5, notifications:**
   - in-app over-budget alerts, once per person, budget and period
   - phone push, off until the owner sets the two push keys
+  - opt-in email alerts with one-click unsubscribe, off by default; written to the server log until the owner sets up an email provider
 - **Also:** installable to a phone home screen, tab pages prefetched, chart without flashes.
 
 Not started: Plaid bank sync (milestone 3), AI insights (6), statements (7), the release/load gate (8), and the planning tools (9: reports, goals, recurring, net worth). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).

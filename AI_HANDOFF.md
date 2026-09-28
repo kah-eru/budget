@@ -2,6 +2,19 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): "ok do email alerts, optional to turn on or off, defaulting to off, and with unsubscribe option".
+- Built opt-in email alerts:
+  - Settings → Notifications → Email alerts, off by default; needs a verified email
+  - generic text, one email per person per evaluation
+  - every email has a signed, no-sign-in unsubscribe link plus one-click `List-Unsubscribe` headers
+- Push now also sends once per evaluation.
+- Files: migration 0015 (`User.email_alerts`), `account_mail.py`, `notifications.py`, views/urls, `settings.html`, `email_unsubscribe.html`, `SITE_URL` setting.
+- Details: [development guide](docs/development.md#email-alerts--september-28).
+- Verification: 163 Django tests OK; 16/16 on Neon PostgreSQL; 9/9 Chrome checks; Settings screenshot reviewed.
+- **Owner action:** production still uses the console mail backend, so emails go to the Render log. Pick a provider and set SMTP env vars ([operations guide](docs/operations.md#email-delivery-optional-the-provider-is-your-choice)).
+- Committed locally; **not pushed**, waiting for "push" (then fast-forward `main` and push both).
+- Next: milestone 9 (wireframes first) or the Plaid sandbox (needs the owner's free Plaid sandbox keys).
+
 Latest request (2026-09-28): "i think this is a different branch right? can you make this one main? and then i thought you synced with plaid".
 - Merged `feat/project-foundation` into `main`, so `main` now holds the whole app. The docs were already identical on both branches, and the merge was clean.
 - `feat/project-foundation` was fast-forwarded to match. Work continues there in the worktree (its venv, node_modules and `.local/` stay there). Each push fast-forwards `main` and pushes both.

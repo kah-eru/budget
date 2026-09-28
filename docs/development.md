@@ -356,4 +356,35 @@ Verification:
 - `check` and migration drift clean.
 - 9/9 Chrome checks. New `imports.spec.ts`: upload, sign flip, preview, import, read-only amount, Timeline, undo. Light and dark 360 px screenshots reviewed.
 
-Continue: email alerts (provider needed), then milestone 9 (reports, goals, recurring, net worth; wireframes first), then Plaid (milestone 3). Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Email alerts — September 28
+
+Why: the user asked for "email alerts, optional to turn on or off, defaulting to off, and with unsubscribe option".
+
+What it does (`User.email_alerts`, migration 0015; `account_mail.email_budget_alert` and `unsubscribe_url`; views `email_alerts` and `email_unsubscribe`; `notifications.deliver`; `SITE_URL` setting):
+- **Settings → Notifications → Email alerts** is off by default.
+  - Turning it on needs a verified email; without one the card says to verify first.
+  - The same card holds the phone push controls ("This device") when push keys exist.
+  - The card says when the server has no email provider yet (console backend), so alerts only reach the log.
+- **Sending:**
+  - Only real, new budget crossings are sent, the same ones that push; silent baselines and repeats in the same period send nothing.
+  - One email per person per evaluation, however many budgets crossed at once (push is now sent the same way).
+  - Mail goes to the verified address after the database commit.
+  - The text is generic ("A budget went over its limit. Sign in to see which one" + the Alerts link). No budget names, amounts, people or workspaces reach the mailbox or the mail provider.
+- **Unsubscribe:**
+  - Every email has an unsubscribe link and the `List-Unsubscribe` / `List-Unsubscribe-Post: List-Unsubscribe=One-Click` headers (RFC 8058, which Gmail and Yahoo expect).
+  - The link is signed and never expires; all it can do is turn email alerts off. It needs no sign-in.
+  - Opening it (GET) only asks. Link scanners open links, so the change happens on POST.
+  - POST is CSRF-exempt, because mail apps' one-click unsubscribe posts without a token; the signature is the proof. A forged or altered token gets 404.
+  - Turning emails back on is only possible from Settings.
+- Links in these emails use `SITE_URL`, then Render's automatic `RENDER_EXTERNAL_URL`, then `http://localhost:8000`.
+- Sending is inline after commit, marked `ponytail:` (move to a worker queue later). Mail failures are logged and never undo the alert.
+
+Verification:
+- 163 Django tests OK on SQLite (4 PG-only skipped), including new `test_email_alerts.py` (6). The tests failed first.
+- Email alerts, push and notifications 16/16 on Neon PostgreSQL.
+- `check` and migration drift clean.
+- 9/9 Chrome checks; Settings checks "Email alerts · Off". The 320–390 px screenshot was reviewed.
+
+**Owner action to actually deliver email:** pick a provider and set its SMTP values in Render (see the operations guide). Until then alerts are written to the Render log, like invitation emails.
+
+Continue: milestone 9 (reports, goals, recurring, net worth; wireframes first) or Plaid sandbox (milestone 3), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

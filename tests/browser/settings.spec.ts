@@ -24,6 +24,7 @@ test("theme choice applies, survives reload and returns to system; Timeline expo
   // Push controls appear when the server has keys; the service worker only handles push.
   const notifications = page.getByRole("region", { name: "Notifications" });
   await expect(notifications.getByRole("button", { name: "Turn on for this device" })).toBeVisible();
+  await expect(notifications).toContainText("Email alerts · Off");  // opt-in, off by default
   const sw = await page.request.get("/sw.js");
   expect(sw.headers()["content-type"]).toBe("application/javascript");
   expect(await sw.text()).not.toContain('addEventListener("fetch"');

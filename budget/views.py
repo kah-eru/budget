@@ -25,10 +25,11 @@ from django.utils.crypto import constant_time_compare, salted_hmac
 from django.utils.formats import date_format
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
 from . import imports
-from .account_mail import notify
+from .account_mail import UNSUBSCRIBE_SALT, notify
 from .forms import (
     AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, ImportMappingForm, ImportUploadForm, IncomeForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
@@ -89,7 +90,34 @@ def email_verified(user):
 @login_required
 def settings_page(request):
     return render(request, "budget/settings.html", {**page_context(request.user), "verified": email_verified(request.user),
-                  "push_public_key": settings.WEBPUSH_VAPID_PUBLIC_KEY if push.enabled() else ""})
+                  "push_public_key": settings.WEBPUSH_VAPID_PUBLIC_KEY if push.enabled() else "",
+                  "mail_ready": "console" not in settings.EMAIL_BACKEND})
+
+
+@login_required
+@require_POST
+def email_alerts(request):
+    on = request.POST.get("on") == "1"
+    if on and not email_verified(request.user):
+        messages.error(request, "Verify your email first, then turn on email alerts.")
+    else:
+        User.objects.filter(pk=request.user.pk).update(email_alerts=on)
+        messages.success(request, "Email alerts are on." if on else "Email alerts are off.")
+    return redirect("settings")
+
+
+@csrf_exempt  # mail apps' one-click unsubscribe (RFC 8058) posts without a CSRF token; the signed link is the proof
+@require_http_methods(["GET", "POST"])
+def email_unsubscribe(request, token):
+    """No sign-in needed. GET only asks, because link scanners open links; POST turns email alerts off."""
+    try:
+        user_id = signing.loads(token, salt=UNSUBSCRIBE_SALT)
+    except signing.BadSignature:
+        raise Http404
+    user = get_object_or_404(User, pk=user_id)
+    if request.method == "POST":
+        User.objects.filter(pk=user.pk).update(email_alerts=False)
+    return render(request, "budget/email_unsubscribe.html", {"done": request.method == "POST"})
 
 
 SERVICE_WORKER = """// Push only: no fetch handler, so no page or financial data is ever cached or intercepted.

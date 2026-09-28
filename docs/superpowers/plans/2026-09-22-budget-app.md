@@ -210,7 +210,7 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Run `python manage.py test budget.tests.test_notifications`; then verify actual push on both users' phones, installation guidance where required, denied permission, logout, and tapping an alert after session expiry.
 - [ ] Verify browser and installed home-screen navigation, safe areas, offline/retry copy, and keyboard-open forms on iOS Safari and Android Chrome. Record actual versions; simulate bank-link return/cancellation and permission denial without losing page context.
 
-- [ ] (Requested 2026-09-25) Alert kinds beyond the crossing: per-budget thresholds (default 80%/100%, once per threshold per period), bill-due reminders, and deterministic unusual-activity alerts. Opt-in email channel with generic text, which needs the user to choose an email provider. Test once-per-threshold, reminder timing, and permission rechecks before email dispatch.
+- [ ] (Requested 2026-09-25) Alert kinds beyond the crossing: per-budget thresholds (default 80%/100%, once per threshold per period), bill-due reminders, and deterministic unusual-activity alerts. Opt-in email channel with generic text (built 2026-09-28 for budget crossings: off by default, one-click unsubscribe; delivery needs the user's email provider). Test once-per-threshold, reminder timing, and permission rechecks before email dispatch.
 
 ## Milestone 6: consented AI insights with a user API key
 

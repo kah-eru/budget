@@ -8,6 +8,7 @@ from django.db.models.functions import Lower
 class User(AbstractUser):
     verified_email = models.EmailField(blank=True, editable=False)
     email_last_sent_at = models.DateTimeField(null=True, editable=False)
+    email_alerts = models.BooleanField(default=False)  # opt-in; only sent to a verified address
 
     class Meta(AbstractUser.Meta):
         constraints = [models.UniqueConstraint(Lower("email"), condition=~Q(email=""), name="unique_nonempty_email")]

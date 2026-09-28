@@ -38,6 +38,19 @@ Push stays off until both keys are set.
 
 Replacing the keys later makes existing devices turn notifications on again.
 
+## Email delivery (optional; the provider is your choice)
+
+Until this is set, every email (invitations, password resets, email alerts) is written to the Render log instead of being sent.
+1. Pick an email provider that offers SMTP. Several have free tiers; check the limits and terms yourself, since nothing here signs up or pays for one.
+2. In Render → budget service → Environment, set:
+   - `DJANGO_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`
+   - `EMAIL_HOST`, `EMAIL_PORT` (usually 587), `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS=1`
+   - `DEFAULT_FROM_EMAIL`: an address on a domain the provider has verified
+   Never paste the password into chat or commit it.
+3. Save. Render redeploys. The Settings note "This server doesn't send email yet" disappears.
+
+Email links use Render's own URL automatically; set `SITE_URL` only for a custom domain.
+
 ## Updating
 
 Fast-forward `main` to `feat/project-foundation` and push both; CI runs; Render deploys `main` when CI passes. If Render → budget → Settings still shows branch `feat/project-foundation`, change it to `main` there (the two stay identical, so either deploys the same code). A failed CI run leaves the previous version online. Roll back from Render → Deploys → an earlier deploy.
