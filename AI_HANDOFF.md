@@ -17,6 +17,7 @@ Latest request (2026-09-28): make the frontend more compact.
 - **Verification:** 215 Django tests OK; 11/11 Chrome checks; screenshots reviewed (phone filters, desktop menu, Overview Budgets light and dark).
 - Committed locally; **not pushed**. No migrations.
 - Note: the owner's editor selection shared a line of the local `.local/plaid.env` (the local token key) in chat. It was not repeated or used. Render should get a newly generated `PLAID_TOKEN_KEY`.
+- Follow-up "how do i look at the ui before u push": started the local synthetic preview (`tests/browser/server.py`, http://127.0.0.1:8000, test login `browser-check`) for the owner to review. No product changes.
 - Next: push when asked; then AI insights (6) with the user's own key.
 
 Latest request (2026-09-28): "i need to import the fake plaid data so can u push that stuff as well to the website? i think u said its in a seperate branch right". Answered: no separate branch; all code is on `main` and deployed. The sandbox data lives only in the ignored local test database, and a synced bank can't be copied to the live site: its access token is tied to the local key, and bank data doesn't belong in Git. To get it on the live site, the owner adds `PLAID_CLIENT_ID`, `PLAID_SECRET` and a new `PLAID_TOKEN_KEY` in Render, then uses Settings → Connect a bank there (sandbox login `user_good` / `pass_good`). See the operations guide. No product changes; docs commits pushed.
