@@ -568,7 +568,7 @@ Why: the user wanted the frontend more compact. They chose to remove the Overvie
   - Placed under the button by `app.tsx` in page coordinates, so it scrolls with the button. Escape and outside taps close it.
   - A 150 ms scale and fade from the corner (`@starting-style`); without JS the browser centres it.
 - **Filters:**
-  - The toggle is a disclosure button (`aria-expanded`) on the same row as Together | Side by side.
+  - The toggle is a disclosure button (`aria-expanded`) on the same row as Graph | List.
   - The `js` class set before the page draws hides the panel, so nothing flashes. Without JS the panel is open and the button hidden.
   - The fields are 2 across on a phone and 4 on a desktop (Search takes 2).
   - The account tick boxes moved inside the form (no `form=` attribute any more), with **Select all / Clear all** and a live "N of M" count.
