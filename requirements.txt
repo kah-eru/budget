@@ -14,13 +14,17 @@ gunicorn==26.2.0
 http_ece==1.2.1
 idna==3.20
 multidict==6.9.1
+nulltype==2.3.1
+plaid-python==44.0.0
 propcache==0.5.4
 psycopg==3.3.6
 psycopg-binary==3.3.6
 pycparser==3.0
 py-vapid==1.9.4
+python-dateutil==2.9.0.post0
 pywebpush==2.5.0
 requests==2.34.2
+six==1.17.0
 sqlparse==0.6.0
 tzdata==2026.4
 urllib3==2.8.0

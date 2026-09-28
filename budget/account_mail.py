@@ -24,8 +24,8 @@ def notify(request, user, subject, what):
 
 
 def unsubscribe_url(user):
-    # Signed and never expiring, so an old email's link still works; all it can do is turn email alerts off.
-    return settings.SITE_URL + reverse("email_unsubscribe", args=[signing.dumps(user.pk, salt=UNSUBSCRIBE_SALT)])
+    # Signed without a timestamp: the same link for each person, and an old email's link still works. All it can do is turn email alerts off.
+    return settings.SITE_URL + reverse("email_unsubscribe", args=[signing.Signer(salt=UNSUBSCRIBE_SALT).sign(str(user.pk))])
 
 
 def email_budget_alert(user_ids):

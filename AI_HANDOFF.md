@@ -2,6 +2,22 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): "ok i think i created a free plaid sandbox account". Plan approved; built Plaid slice 1 (in-request sync, because Render's free plan has no worker or cron):
+- connect a bank (Link loads only on that page)
+- the access token encrypted with `PLAID_TOKEN_KEY`
+- choose accounts, each private
+- sync after choosing and on Sync now (60 s cooldown; the cursor and changes commit together)
+- pending→posted keeps edits; transfers, income and refunds from Plaid categories; Plaid category as a fallback behind rules and hand choices
+- read-only synced rows; disconnect keeps history
+- Also fixed: the email unsubscribe link is now deterministic (no timestamp).
+- Details: [development guide](docs/development.md#plaid-sandbox-slice-1--september-28).
+- Verification: 175 Django tests OK; 28/28 on Neon PostgreSQL; 9/9 Chrome checks.
+- **Blocked on the owner:**
+  - Put the Plaid sandbox client_id and secret in the ignored worktree `.local/plaid.env`. That file exists; a local `PLAID_TOKEN_KEY` is already generated there. Then the real sandbox run happens.
+  - For the live site, add `PLAID_CLIENT_ID`, `PLAID_SECRET` and `PLAID_TOKEN_KEY` in Render ([operations guide](docs/operations.md#bank-sync-with-plaid-optional-sandbox-is-free)).
+- Committed locally with the earlier email-alerts commit; **not pushed**, waiting for "push" (fast-forward `main`, push both). Pushing runs migrations 0015-0016 and installs `plaid-python` on Render.
+- Next: the real sandbox run; slice 2 (webhooks with signature checks, reconnect, duplicate warning); milestone 9.
+
 Latest request (2026-09-28): "ok do email alerts, optional to turn on or off, defaulting to off, and with unsubscribe option".
 - Built opt-in email alerts:
   - Settings → Notifications → Email alerts, off by default; needs a verified email

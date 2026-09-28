@@ -37,12 +37,26 @@
   </div>
   {% endif %}
 </section>
+{% if connections %}
+<section aria-labelledby="banks-title" class="card">
+  <h2 id="banks-title" class="text-sm font-semibold text-accent-text">Bank connections</h2>
+  {% for c in connections %}
+  <div class="stat-row flex-wrap gap-2">
+    <span class="min-w-0 flex-1"><span class="block font-medium">{{ c.institution_name|default:"Bank" }}</span><span class="block text-sm text-muted">{{ c.account_count }} account{{ c.account_count|pluralize }} · {% if c.status == 'error' %}Last sync failed ({{ c.error_code }}){% elif c.last_synced_at %}Updated {{ c.last_synced_at|timesince }} ago{% else %}Not synced yet{% endif %}</span></span>
+    <form method="post" action="{% url 'bank_sync' c.pk %}">{% csrf_token %}<button class="chip bg-accent-soft" type="submit">Sync now</button></form>
+    <a class="chip" href="{% url 'bank_accounts' c.pk %}">Accounts</a>
+    <form method="post" action="{% url 'bank_disconnect' c.pk %}">{% csrf_token %}<button class="chip text-danger" type="submit" aria-label="Disconnect {{ c.institution_name|default:'this bank' }}: stops syncing, keeps history">Disconnect</button></form>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
 <section aria-labelledby="data-title" class="card">
   <h2 id="data-title" class="text-sm font-semibold text-accent-text">Your data</h2>
   {% if personal %}<a class="stat-row chevron" href="{% url 'transaction_export' personal.pk %}" download><span class="min-w-0 flex-1"><span class="block font-medium">Export transactions (CSV)</span><span class="block text-sm text-muted">This month, all your accounts. For another range or a group, use Export on its Timeline.</span></span></a>{% endif %}
 </section>
 <section aria-labelledby="create-title" class="card">
   <h2 id="create-title" class="text-sm font-semibold text-accent-text">Add</h2>
+  {% if plaid %}<a class="stat-row chevron" href="{% url 'bank_connect' %}"><span class="min-w-0 flex-1"><span class="block font-medium">Connect a bank</span><span class="block text-sm text-muted">Sync accounts through Plaid. Each one starts private.</span></span></a>{% endif %}
   <a class="stat-row chevron" href="{% url 'account_create' %}"><span class="min-w-0 flex-1"><span class="block font-medium">Add account</span><span class="block text-sm text-muted">A manual account. It starts private.</span></span></a>
   <a class="stat-row chevron" href="{% url 'group_create' %}"><span class="min-w-0 flex-1"><span class="block font-medium">New group</span><span class="block text-sm text-muted">Share chosen accounts with a partner or friends.</span></span></a>
   {% if personal %}<a class="stat-row chevron" href="{% url 'invitation_create' personal.pk %}"><span class="min-w-0 flex-1"><span class="block font-medium">Invite someone to Budget</span><span class="block text-sm text-muted">They get their own private login. Nothing is shared.</span></span></a>{% endif %}

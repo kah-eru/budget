@@ -39,6 +39,14 @@ class Account(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="accounts")
     name = models.CharField(max_length=80)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Set for an account imported from a bank connection; disconnecting keeps the account and its history.
+    connection = models.ForeignKey("BankConnection", on_delete=models.SET_NULL, null=True, blank=True, editable=False, related_name="accounts")
+    provider_account_id = models.CharField(max_length=100, blank=True, editable=False)
+    mask = models.CharField(max_length=8, blank=True, editable=False)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["connection", "provider_account_id"], condition=Q(connection__isnull=False),
+                                               name="account_imported_once")]
 
     def __str__(self):
         return self.name
@@ -84,6 +92,9 @@ class Transaction(models.Model):
     # Set for CSV rows: their date, amount and description are the bank's and stay read-only.
     import_batch = models.ForeignKey("ImportBatch", on_delete=models.CASCADE, null=True, editable=False, related_name="transactions")
     source_row = models.PositiveIntegerField(null=True, editable=False)
+    # Set for bank-synced rows: the provider's transaction ID and its detailed spending category.
+    provider_id = models.CharField(max_length=100, null=True, editable=False)
+    provider_category = models.CharField(max_length=100, blank=True, editable=False)
 
     class Meta:
         indexes = [models.Index(fields=["account", "posted_on", "id"])]
@@ -91,7 +102,13 @@ class Transaction(models.Model):
             models.CheckConstraint(condition=Q(amount_cents__gt=0), name="transaction_amount_positive"),
             models.CheckConstraint(condition=Q(currency="USD"), name="transaction_usd_only"),
             models.UniqueConstraint(fields=["import_batch", "source_row"], name="transaction_source_row_once"),
+            models.UniqueConstraint(fields=["account", "provider_id"], name="transaction_provider_id_once"),
         ]
+
+    @property
+    def from_bank(self):
+        """CSV or bank-synced: date, amount and description are the bank's and stay read-only."""
+        return bool(self.import_batch_id or self.provider_id)
 
 
 class ImportBatch(models.Model):
@@ -216,4 +233,19 @@ class PushSubscription(models.Model):
     endpoint = models.URLField(max_length=500, unique=True)
     p256dh = models.CharField(max_length=200)
     auth = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class BankConnection(models.Model):
+    # One Plaid Item. The access token is encrypted with a key kept outside the database (plaid.py) and never shown or logged.
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bank_connections")
+    item_id = models.CharField(max_length=100, unique=True)
+    access_token = models.TextField()
+    institution_name = models.CharField(max_length=100, blank=True)
+    cursor = models.TextField(blank=True)  # committed together with the changes it covers
+    status = models.CharField(max_length=5, choices=[("ok", "OK"), ("error", "Error")], default="ok")
+    error_code = models.CharField(max_length=60, blank=True)
+    history_ready = models.BooleanField(default=False)
+    sync_started_at = models.DateTimeField(null=True)  # one sync a minute per connection
+    last_synced_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)

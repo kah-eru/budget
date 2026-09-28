@@ -387,4 +387,41 @@ Verification:
 
 **Owner action to actually deliver email:** pick a provider and set its SMTP values in Render (see the operations guide). Until then alerts are written to the Render log, like invitation emails.
 
-Continue: milestone 9 (reports, goals, recurring, net worth; wireframes first) or Plaid sandbox (milestone 3), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Plaid sandbox, slice 1 — September 28
+
+Why: the user created a free Plaid sandbox account. Plan approved: connect a bank, choose accounts, sync inside the request. Render's free plan has no worker or cron, so automatic sync comes in slice 2, by webhook.
+
+What it does:
+- **Code:**
+  - `budget/plaid.py`, the only module that imports the Plaid SDK
+  - `BankConnection`; `Account.connection`, `provider_account_id` and `mask`; `Transaction.provider_id` and `provider_category` (migration 0016)
+  - views `bank_connect`, `bank_exchange`, `bank_accounts`, `bank_sync`, `bank_disconnect`; templates `bank_connect.html`, `bank_accounts.html`; `assets/plaid-link.ts`
+  - new dependency `plaid-python` 44.0.0 with pinned `nulltype`, `python-dateutil` and `six`
+- **Connect:** Settings → Add → **Connect a bank**, shown only when Plaid keys are set.
+  - Plaid Link opens; Plaid's script loads only on that page, in a 0.56 kB lazy chunk. The sandbox hint is user_good / pass_good.
+  - The public token is exchanged server-side. The access token is stored **encrypted** (Fernet, `PLAID_TOKEN_KEY`, kept outside the database) and never shown or logged.
+  - **Choose accounts:** every account is ticked by default and each one starts private. Choosing more later refetches history, because the cursor had already passed those accounts.
+- **Sync:** right after choosing accounts, and on **Sync now** (account page, Settings → Bank connections). One sync a minute per connection; this is the cooldown and the in-request lock, marked `ponytail:`.
+  - All pages are fetched before anything is saved. The cursor and the changes commit together, so a failure mid-way changes nothing.
+  - Plaid's "mutation during pagination" restarts from the committed cursor.
+  - If another sync committed first, this one steps aside.
+  - Added, modified and removed are applied idempotently.
+  - A posted transaction that replaces a pending one takes over the pending row itself, so names, categories, notes and splits carry over and it counts once.
+  - Skipped: accounts that weren't imported, non-USD rows, zero amounts.
+- **Classification:** Plaid's positive amount is money out.
+  - Plaid categories `TRANSFER_IN`, `TRANSFER_OUT` and `LOAN_PAYMENTS` are **transfers**, so card payments never count as spending. `INCOME` is income. Other money in is a refund.
+  - Plaid's detailed category maps to the standard categories (groceries, dining, shopping, transport, travel, housing, utilities, health, entertainment). It applies only where no rule matches, and hand choices always win.
+- **After a sync:** rules run, data revisions bump, and budgets are evaluated, so alerts, push and email follow.
+- Synced rows are read-only like CSV rows: date, amount and description can't change, only the type.
+- **Disconnect** revokes the connection at Plaid when it can and keeps the accounts and history as plain accounts.
+- **Errors:** only Plaid's error code is shown ("Last sync failed (CODE)"), never the payload. If `PLAID_TOKEN_KEY` changes, the bank must be connected again.
+- The email-alert unsubscribe link now has no timestamp, so each person always gets the same link. The earlier version could differ from second to second, which made a test flaky.
+
+Verification:
+- 175 Django tests OK on SQLite (4 PG-only skipped), including new `test_plaid.py` (12) with synthetic Plaid responses: token at rest, owner-only, chooser, added/modified/removed, pending→posted, failure on page two, mutation restart, cooldown and concurrent commit, types and categories, budget alert, read-only, disconnect.
+- Plaid, email alerts, rules and concurrency 28/28 on Neon PostgreSQL.
+- `check` and migration drift clean.
+- 9/9 Chrome checks. Initial JS 1.25 kB gzip.
+- **Not yet run:** the real sandbox check, because the owner's keys aren't in `.local/plaid.env` yet.
+
+Continue: the real sandbox run once the keys are in, then slice 2 (webhooks with signature checks, reconnect, duplicate-connection warning), then milestone 9. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

@@ -100,6 +100,12 @@ SITE_URL = (os.environ.get("SITE_URL") or os.environ.get("RENDER_EXTERNAL_URL") 
 WEBPUSH_VAPID_PUBLIC_KEY = os.environ.get("WEBPUSH_VAPID_PUBLIC_KEY", "")
 WEBPUSH_VAPID_PRIVATE_KEY = os.environ.get("WEBPUSH_VAPID_PRIVATE_KEY", "")
 WEBPUSH_CONTACT = os.environ.get("WEBPUSH_CONTACT", "mailto:" + DEFAULT_FROM_EMAIL)
+
+# Plaid bank sync. Off unless all three secrets are set. PLAID_TOKEN_KEY is a Fernet key that encrypts access tokens.
+PLAID_CLIENT_ID = os.environ.get("PLAID_CLIENT_ID", "")
+PLAID_SECRET = os.environ.get("PLAID_SECRET", "")
+PLAID_TOKEN_KEY = os.environ.get("PLAID_TOKEN_KEY", "")
+PLAID_ENV = os.environ.get("PLAID_ENV", "sandbox")
 PASSWORD_RESET_TIMEOUT = 3600
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "America/Denver"

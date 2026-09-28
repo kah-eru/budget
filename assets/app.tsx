@@ -25,6 +25,10 @@ if (chart && series) {
 const pushSection = document.querySelector<HTMLElement>("[data-push]");
 if (pushSection) import("./push").then(({ setup }) => setup(pushSection)).catch(() => {});
 
+// Plaid Link (and Plaid's own script) load only on the Connect a bank page.
+const plaidLink = document.querySelector<HTMLElement>("[data-plaid-link]");
+if (plaidLink) import("./plaid-link").then(({ setup }) => setup(plaidLink)).catch(() => {});
+
 // Theme choice for this device. base.html applies the saved value before paint; without JS the picker stays hidden.
 const picker = document.querySelector<HTMLFieldSetElement>("[data-theme-picker]");
 if (picker) {

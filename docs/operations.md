@@ -38,6 +38,16 @@ Push stays off until both keys are set.
 
 Replacing the keys later makes existing devices turn notifications on again.
 
+## Bank sync with Plaid (optional; sandbox is free)
+
+Plaid stays off until three values are set. Sandbox returns made-up data only.
+1. Plaid dashboard → Developers → Keys: copy the **client_id** and the **Sandbox secret**.
+2. Make a token encryption key in your own terminal: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`. It must stay the same; replacing it means connecting banks again.
+3. In Render → budget service → Environment, add `PLAID_CLIENT_ID`, `PLAID_SECRET` and `PLAID_TOKEN_KEY`. `PLAID_ENV` defaults to `sandbox`; production needs Plaid's approval and your cost decision first.
+4. Save. Render redeploys, and Settings shows **Connect a bank**.
+
+For local runs, the same client_id and secret go in the ignored `.local/plaid.env`, never in chat.
+
 ## Email delivery (optional; the provider is your choice)
 
 Until this is set, every email (invitations, password resets, email alerts) is written to the Render log instead of being sent.

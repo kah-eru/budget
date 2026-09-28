@@ -26,6 +26,13 @@ vapid = Vapid01()
 vapid.generate_keys()
 settings.WEBPUSH_VAPID_PUBLIC_KEY = b64urlencode(vapid.public_key.public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint))
 settings.WEBPUSH_VAPID_PRIVATE_KEY = b64urlencode(vapid.private_key.private_numbers().private_value.to_bytes(32, "big"))
+
+# Plaid sandbox keys from the ignored .local/plaid.env when the owner has filled them in; otherwise Connect a bank stays hidden.
+plaid_env = ROOT / ".local" / "plaid.env"
+if plaid_env.exists():
+    values = dict(line.split("=", 1) for line in plaid_env.read_text().splitlines() if "=" in line and not line.startswith("#"))
+    for name in ("PLAID_CLIENT_ID", "PLAID_SECRET", "PLAID_TOKEN_KEY", "PLAID_ENV"):
+        setattr(settings, name, values.get(name, "").strip() or getattr(settings, name))
 call_command("migrate", interactive=False, verbosity=0)
 
 from budget.models import User

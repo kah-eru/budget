@@ -15,7 +15,7 @@ from django.core import signing
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import DatabaseError, IntegrityError, connection, transaction
-from django.db.models import F, Q
+from django.db.models import Count, F, Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
@@ -29,12 +29,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
 from . import imports
+from . import plaid as bank
 from .account_mail import UNSUBSCRIBE_SALT, notify
 from .forms import (
     AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, ImportMappingForm, ImportUploadForm, IncomeForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, BankConnection, Budget, BudgetAlert, Category, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
@@ -91,7 +92,109 @@ def email_verified(user):
 def settings_page(request):
     return render(request, "budget/settings.html", {**page_context(request.user), "verified": email_verified(request.user),
                   "push_public_key": settings.WEBPUSH_VAPID_PUBLIC_KEY if push.enabled() else "",
-                  "mail_ready": "console" not in settings.EMAIL_BACKEND})
+                  "mail_ready": "console" not in settings.EMAIL_BACKEND, "plaid": bank.enabled(),
+                  "connections": request.user.bank_connections.annotate(account_count=Count("accounts")).order_by("institution_name", "pk")})
+
+
+def plaid_connection(request, connection_id):
+    if not bank.enabled():
+        raise Http404
+    return get_object_or_404(BankConnection, pk=connection_id, owner=request.user)
+
+
+def sync_message(request, result, first=False):
+    status, count = result
+    if status == "busy":
+        messages.info(request, "Synced less than a minute ago. Try again in a minute.")
+    elif status == "error":
+        messages.error(request, "The bank sync didn't finish. Nothing changed; try Sync now later.")
+    elif first and not count:
+        messages.info(request, "Plaid is still gathering your history. Try Sync now in a minute.")
+    else:
+        messages.success(request, f"Synced: {count} transaction{'' if count == 1 else 's'} added or updated.")
+
+
+@login_required
+def bank_connect(request):
+    if not bank.enabled():
+        raise Http404
+    try:
+        token = bank.link_token(request.user)
+    except bank.PlaidError as error:
+        token, failed = "", error.code
+    else:
+        failed = ""
+    return render(request, "budget/bank_connect.html", {**page_context(request.user), "link_token": token, "failed": failed,
+                                                        "sandbox": settings.PLAID_ENV != "production"})
+
+
+@login_required
+@require_POST
+def bank_exchange(request):
+    if not bank.enabled():
+        raise Http404
+    body = _push_body(request)
+    public_token, institution = body.get("public_token"), body.get("institution")
+    if not (isinstance(public_token, str) and public_token.startswith("public-") and len(public_token) <= 200):
+        return HttpResponse("Not a Plaid public token.", status=400, content_type="text/plain")
+    try:
+        access_token, item_id = bank.exchange(public_token)
+    except bank.PlaidError:
+        return HttpResponse("Plaid couldn't finish connecting. Try again.", status=502, content_type="text/plain")
+    connection = BankConnection.objects.create(owner=request.user, item_id=item_id, access_token=bank.encrypt(access_token),
+                                               institution_name=institution[:100] if isinstance(institution, str) else "")
+    return JsonResponse({"next": reverse("bank_accounts", args=[connection.pk])})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def bank_accounts(request, connection_id):
+    """Choose which of the bank's accounts to import. Each one starts private; sharing stays a separate step."""
+    connection = plaid_connection(request, connection_id)
+    try:
+        offered = bank.accounts(connection)
+    except bank.PlaidError:
+        messages.error(request, "Plaid didn't return the accounts. Try again in a minute.")
+        return redirect("settings")
+    imported = set(connection.accounts.values_list("provider_account_id", flat=True))
+    if request.method == "POST":
+        chosen = [a for a in offered if a["id"] in request.POST.getlist("accounts") and a["id"] not in imported]
+        with transaction.atomic():
+            for a in chosen:
+                Account.objects.create(owner=request.user, name=(f"{a['name']} ••{a['mask']}" if a["mask"] else a["name"])[:80],
+                                       connection=connection, provider_account_id=a["id"], mask=a["mask"])
+            if chosen and connection.cursor:
+                # The cursor already passed these accounts' history, so fetch it all again; known rows are updated, not duplicated.
+                BankConnection.objects.filter(pk=connection.pk).update(cursor="", sync_started_at=None)
+        if chosen:
+            sync_message(request, bank.sync(connection), first=True)
+        return redirect("home")
+    for a in offered:
+        a["imported"] = a["id"] in imported
+    return render(request, "budget/bank_accounts.html", {**page_context(request.user), "connection": connection, "offered": offered})
+
+
+@login_required
+@require_POST
+def bank_sync(request, connection_id):
+    connection = plaid_connection(request, connection_id)
+    sync_message(request, bank.sync(connection))
+    back = request.POST.get("next", "")
+    return redirect(back if url_has_allowed_host_and_scheme(back, allowed_hosts=None) else "settings")
+
+
+@login_required
+@require_POST
+def bank_disconnect(request, connection_id):
+    connection = plaid_connection(request, connection_id)
+    try:
+        bank.remove(connection)  # stop Plaid access; if Plaid can't be reached, the local disconnect still happens
+    except bank.PlaidError:
+        pass
+    name = connection.institution_name or "the bank"
+    connection.delete()  # accounts and history stay, as plain accounts
+    messages.success(request, f"Disconnected {name}. Its accounts and history stay here; nothing syncs any more.")
+    return redirect("settings")
 
 
 @login_required
@@ -111,8 +214,8 @@ def email_alerts(request):
 def email_unsubscribe(request, token):
     """No sign-in needed. GET only asks, because link scanners open links; POST turns email alerts off."""
     try:
-        user_id = signing.loads(token, salt=UNSUBSCRIBE_SALT)
-    except signing.BadSignature:
+        user_id = int(signing.Signer(salt=UNSUBSCRIBE_SALT).unsign(token))
+    except (signing.BadSignature, ValueError):
         raise Http404
     user = get_object_or_404(User, pk=user_id)
     if request.method == "POST":
@@ -337,7 +440,7 @@ def workspace_detail(request, workspace_id):
 @login_required
 def account_detail(request, workspace_id, account_id):
     workspace = get_workspace(request.user, workspace_id)
-    account = get_object_or_404(visible_accounts(request.user, workspace), pk=account_id)
+    account = get_object_or_404(visible_accounts(request.user, workspace).select_related("connection"), pk=account_id)
     # ponytail: newest 100 only; the workspace timeline has the cursor-paged full history.
     transactions = labelled(list(annotated(account.transactions.order_by("-posted_on", "-pk"), workspace)[:100]), workspace)
     batches = account.imports.filter(status="done").order_by("-created_at")[:10] if account.owner_id == request.user.pk else []
@@ -501,7 +604,7 @@ def transaction_edit(request, workspace_id, account_id, transaction_id=None):
     account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
     row = get_object_or_404(Transaction, account=account, pk=transaction_id) if transaction_id else Transaction(account=account)
     form = TransactionForm(request.POST if request.method == "POST" else None, instance=row)
-    if row.import_batch_id:  # the bank's date, amount and description stay as imported
+    if row.from_bank:  # the bank's date, amount and description stay as imported
         for name in ("posted_on", "amount", "description", "pending"):
             form.fields[name].disabled = True
     back = reverse("account_detail", args=[workspace.pk, account.pk])
@@ -514,7 +617,7 @@ def transaction_edit(request, workspace_id, account_id, transaction_id=None):
         messages.success(request, "Transaction saved.")
         return redirect(back)
     title = "Edit transaction" if transaction_id else f"Add a transaction to {account.name}"
-    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": title, "action": "Save transaction", "cancel_url": back, "help": "Imported from a CSV: the date, amount and description stay as the bank sent them. You can change the type." if row.import_batch_id else "Manual entry. Transfers and card payments never count as spending."}, status=400 if request.method == "POST" else 200)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": title, "action": "Save transaction", "cancel_url": back, "help": "From your bank: the date, amount and description stay as the bank sent them. You can change the type." if row.from_bank else "Manual entry. Transfers and card payments never count as spending."}, status=400 if request.method == "POST" else 200)
 
 
 @login_required
@@ -535,7 +638,7 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
                 drop_rule_splits(workspace, [row.pk])
             if form.cleaned_data["also_similar"]:
                 ensure_rule(workspace, form.cleaned_data["match_text"], form.cleaned_data["category"])
-                categorize(Transaction.objects.filter(account__in=visible_accounts(request.user, workspace)).only("pk", "description", "amount_cents"), workspace)
+                categorize(Transaction.objects.filter(account__in=visible_accounts(request.user, workspace)).only("pk", "description", "amount_cents", "provider_category"), workspace)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
             evaluate(workspace)
         similar = form.cleaned_data["also_similar"]
@@ -545,7 +648,7 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
     where = "your personal view" if workspace.is_personal else workspace.name
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": row.description or "Transaction", "action": "Save changes", "cancel_url": back,
                   "help": f"{date_format(row.posted_on)} · {dollars(row.amount_cents)} original. Changes here apply to {where} only; the original entry stays as recorded.",
-                  "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit type" if row.import_batch_id else "Edit original entry",
+                  "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit type" if row.from_bank else "Edit original entry",
                   "split_url": reverse("transaction_split", args=[workspace.pk, account.pk, row.pk]) + (f"?next={quote(back)}" if request.GET.get("next") else "")}, status=400 if request.method == "POST" else 200)
 
 
@@ -709,7 +812,7 @@ def rule_edit(request, workspace_id, rule_id=None):
             return render(request, "budget/rule_form.html", {**context, "preview": found[:PREVIEW_SIZE], "match_count": len(found)})
         with transaction.atomic():
             form.save()
-            changed = categorize(history.only("pk", "description", "amount_cents"), workspace) if form.cleaned_data["apply_existing"] else 0
+            changed = categorize(history.only("pk", "description", "amount_cents", "provider_category"), workspace) if form.cleaned_data["apply_existing"] else 0
             evaluate(workspace)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
         messages.success(request, "Rule saved." + (f" {changed} existing transaction{'s' if changed != 1 else ''} updated." if form.cleaned_data["apply_existing"] else ""))

@@ -5,6 +5,7 @@ A private budgeting app for partners and friends who choose to share finances. S
 Status (2026-09-28): a working preview with synthetic data only, deployed to Render; not a real-data-ready release. Built by milestone:
 - **Milestone 1, foundation:** sign-in, private manual accounts, groups, explicit sharing, invitations with mailbox verification (group and standalone), password recovery, membership notices and member removal, a Settings page (username/email/password changes with email notices or confirmation; System/Light/Dark theme).
 - **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, and Timeline CSV export.
+- **Milestone 3, bank sync (started):** Plaid sandbox: connect a bank, choose accounts (private), Sync now, pending→posted kept, card payments as transfers, Plaid categories as a fallback; automatic sync by webhook comes next.
 - **Milestone 4, categories and budgets:**
   - workspace categories (a standard set, an Overview breakdown, a Timeline filter)
   - rules with preview and opt-in backfill
@@ -17,7 +18,7 @@ Status (2026-09-28): a working preview with synthetic data only, deployed to Ren
   - opt-in email alerts with one-click unsubscribe, off by default; written to the server log until the owner sets up an email provider
 - **Also:** installable to a phone home screen, tab pages prefetched, chart without flashes.
 
-Not started: Plaid bank sync (milestone 3), AI insights (6), statements (7), the release/load gate (8), and the planning tools (9: reports, goals, recurring, net worth). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
+Not started: AI insights (6), statements (7), the release/load gate (8), and the planning tools (9: reports, goals, recurring, net worth). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
 
 `main` holds the app (merged 2026-09-28) and Render deploys it. Day-to-day work happens in the worktree `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on `feat/project-foundation`, which `main` is fast-forwarded to on each push; run application commands there.
 
