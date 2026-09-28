@@ -1,3 +1,5 @@
+import csv
+import hashlib
 from datetime import timedelta
 from decimal import Decimal
 
@@ -5,7 +7,9 @@ from django import forms
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.formats import date_format
 
+from . import imports
 from .invitations import claim_email_send
 from .models import Account, Budget, Category, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .rules import normalize, suggest_keyword
@@ -35,6 +39,62 @@ class TransactionForm(forms.ModelForm):
     def save(self, commit=True):
         self.instance.amount_cents = int(self.cleaned_data["amount"] * 100)
         return super().save(commit)
+
+
+class ImportUploadForm(forms.Form):
+    file = forms.FileField(label="CSV file", widget=forms.ClearableFileInput(attrs={"accept": ".csv,text/csv"}))
+
+    def __init__(self, *args, account, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.account = account
+
+    def clean_file(self):
+        upload = self.cleaned_data["file"]
+        if upload.size > imports.MAX_BYTES:
+            raise forms.ValidationError("Files over 1 MB can't be imported yet. Split it into smaller files.")
+        raw = upload.read()
+        self.text, self.sha256 = imports.decode(raw), hashlib.sha256(raw).hexdigest()
+        try:
+            records = imports.rows(self.text)
+        except csv.Error:
+            raise forms.ValidationError("This doesn't look like a CSV file.")
+        count = imports.filled(records) - (1 if records and imports.has_header(records[0]) else 0)
+        if count < 1:
+            raise forms.ValidationError("This file has no rows to import.")
+        if count > imports.MAX_ROWS:
+            raise forms.ValidationError("Up to 5,000 rows per file for now. Split it into smaller files.")
+        if done := self.account.imports.filter(status="done", sha256=self.sha256).first():
+            raise forms.ValidationError(f"This exact file was already imported on {date_format(timezone.localtime(done.created_at))} ({done.row_count} rows).")
+        return upload
+
+
+class ImportMappingForm(forms.Form):
+    header = forms.BooleanField(required=False, label="The first row has column names")
+    date_col = forms.TypedChoiceField(coerce=int, label="Date")
+    description_col = forms.TypedChoiceField(coerce=int, label="Description")
+    amount_col = forms.TypedChoiceField(coerce=int, label="Amount, or money out")
+    credit_col = forms.TypedChoiceField(coerce=int, required=False, empty_value=None, label="Money in, only if it has its own column")
+    sign = forms.ChoiceField(label="In the amount column", choices=[
+        ("negative", "Money out is negative (banks)"), ("positive", "Money out is positive (cards)")])
+    incoming = forms.ChoiceField(label="Money in counts as", choices=[c for c in Transaction.CLASSIFICATIONS if c[0] != "expense"])
+    category_col = forms.TypedChoiceField(coerce=int, required=False, empty_value=None, label="Category, optional",
+                                          help_text="Names that match a category here are used; the rest are left to your rules.")
+
+    def __init__(self, *args, records, **kwargs):
+        super().__init__(*args, **kwargs)
+        header = imports.has_header(records[0])
+        sample = next((r for r in records[header:] if any(c.strip() for c in r)), [])
+        width = max(len(r) for r in records[:50])
+        columns = []
+        for i in range(width):
+            name = (records[0][i].strip() if header and i < len(records[0]) else "") or f"Column {i + 1}"
+            example = sample[i].strip() if i < len(sample) else ""
+            example = example[:15] + "…" if len(example) > 16 else example
+            columns.append((i, f"{name[:30]} (e.g. {example})" if example else name[:30]))
+        for name in ("date_col", "description_col", "amount_col"):
+            self.fields[name].choices = columns
+        for name in ("credit_col", "category_col"):
+            self.fields[name].choices = [("", "None")] + columns
 
 
 class AnnotationForm(forms.ModelForm):

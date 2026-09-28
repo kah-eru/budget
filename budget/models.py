@@ -80,13 +80,31 @@ class Transaction(models.Model):
     classification = models.CharField(max_length=10, choices=CLASSIFICATIONS, default="expense")
     pending = models.BooleanField(default=False)
     description = models.CharField(max_length=200, blank=True)
+    # Set for CSV rows: their date, amount and description are the bank's and stay read-only.
+    import_batch = models.ForeignKey("ImportBatch", on_delete=models.CASCADE, null=True, editable=False, related_name="transactions")
+    source_row = models.PositiveIntegerField(null=True, editable=False)
 
     class Meta:
         indexes = [models.Index(fields=["account", "posted_on", "id"])]
         constraints = [
             models.CheckConstraint(condition=Q(amount_cents__gt=0), name="transaction_amount_positive"),
             models.CheckConstraint(condition=Q(currency="USD"), name="transaction_usd_only"),
+            models.UniqueConstraint(fields=["import_batch", "source_row"], name="transaction_source_row_once"),
         ]
+
+
+class ImportBatch(models.Model):
+    # One uploaded CSV. The decoded file is kept only while previewing; the exact same file imports into an account once.
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="imports")
+    file_name = models.CharField(max_length=200)
+    sha256 = models.CharField(max_length=64)
+    content = models.TextField(blank=True)
+    status = models.CharField(max_length=7, choices=[("preview", "Preview"), ("done", "Imported")], default="preview")
+    row_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["account", "sha256"], condition=Q(status="done"), name="import_file_once")]
 
 
 STANDARD_CATEGORIES = ["Groceries", "Dining", "Housing", "Utilities", "Transport", "Shopping", "Health", "Entertainment", "Subscriptions", "Travel"]

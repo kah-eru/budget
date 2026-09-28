@@ -122,6 +122,7 @@
   /* :is() lifts select/textarea to the input's specificity so Flowbite's white form defaults lose in dark mode. */
   :is(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), select, textarea) {
     @apply block min-h-11 w-full rounded-lg border border-transparent bg-sunken p-3 text-base text-ink;
+    &:is(select) { padding-right: 2.5rem; }  /* long options stop short of the chevron */
   }
   input[type="checkbox"] { @apply mt-1 size-5 shrink-0 rounded; accent-color: var(--accent); }
   #id_accounts label { @apply flex min-h-11 cursor-pointer items-center gap-3 py-2; }

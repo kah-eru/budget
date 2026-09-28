@@ -33,7 +33,7 @@
 
 - [x] 2026-09-25: timeline on the filtered list: one-month default range, two-year cap, `reporting.daily()` zero-filled daily + cumulative (plan fixture `[10000, 0, -1500]` / `[10000, 10000, 8500]`, equal to `spending()`), accessible daily table, day headers, cursor restart on data/permission revision change. Bottom nav Overview/Timeline/More; collapsible workspace switcher. Standalone invites (personal-workspace invitation, no access granted) and password change on More.
 
-This is not milestone 1 completion. Milestone 2 remaining: CSV import (the Bklit running-total chart and Timeline CSV export landed 2026-09-25).
+This is not milestone 1 completion. Milestone 2 is built: CSV import landed 2026-09-28, and the Bklit running-total chart and Timeline CSV export on 2026-09-25.
 
 ## Global constraints
 
@@ -155,8 +155,8 @@ Create files only when their milestone needs them. Framework-required package fi
 - [ ] Build the timeline feed with `(date, ID)` cursor pagination (50 default/100 maximum rows), a two-year interactive range cap, daily totals, zero-day filling, and a cumulative chart with an accessible table. Reuse reporting arithmetic; label income/transfers separately and keep pending estimates out of posted totals.
 - [ ] Test $100 spend on day one, zero on day two, and a $15 refund on day three: daily cents `[10000, 0, -1500]`, cumulative `[10000, 10000, 8500]`. Test stable same-date ordering, permission filters, date boundaries, and cursor invalidation after a sync revision changes.
 - [ ] Add initial account/date/ID and workspace/category indexes; cap pages, avoid per-row related queries, and aggregate in SQL. Add bounded-query-count assertions for 1 versus 100 rows; exports and large imports run in worker batches once milestone 3 supplies jobs.
-- [ ] Implement CSV mapping/preview/commit. Reject malformed dates and sub-cent values, detect an identical file, and preview possible overlap without silently merging equal-looking purchases.
-- [ ] Add tests for exact-file repeat, two valid identical-looking purchases, invalid-row all-or-nothing import, and export formula escaping. Verify personal notes never appear in a group export.
+- [x] (2026-09-28; synchronous, 1 MB / 5,000 rows until milestone 3 jobs) Implement CSV mapping/preview/commit. Reject malformed dates and sub-cent values, detect an identical file, and preview possible overlap without silently merging equal-looking purchases.
+- [x] (2026-09-28) Add tests for exact-file repeat, two valid identical-looking purchases, invalid-row all-or-nothing import, and export formula escaping. Verify personal notes never appear in a group export.
 - [ ] Implement phone transaction rows, full-screen purchase editing, responsive filters, and tap/keyboard chart drilldown with equivalent tabular data. Preserve list position/filter URLs on Back, typed values on save failure, and visible actions when the virtual keyboard opens. Cancel stale filter requests.
 - [ ] Reuse Flowbite timeline/list/table, forms, drawer/dialog, progress, and loading components. Add Bklit daily/cumulative/category charts backed by the same server-calculated data and equivalent HTML tables; use Motion for brief transitions. Check negative refunds, zero days, keyboard/touch selection, reduced motion, chart-load failure, and dependency/bundle cost. Do not add a second chart engine for these views.
 - [ ] Run `python manage.py test budget.tests.test_reporting budget.tests.test_timeline budget.tests.test_imports`. Review phone/desktop screenshots and check 320/360/390/430/768/1024/1440 widths, keyboard use, chart-to-feed drilldown, and 200% text enlargement. Reuse this matrix for budgets, sharing, and Insights as they land.

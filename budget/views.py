@@ -27,9 +27,10 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 
+from . import imports
 from .account_mail import notify
 from .forms import (
-    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, IncomeForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, ImportMappingForm, ImportUploadForm, IncomeForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
 from .models import Budget, BudgetAlert, Category, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
@@ -311,7 +312,82 @@ def account_detail(request, workspace_id, account_id):
     account = get_object_or_404(visible_accounts(request.user, workspace), pk=account_id)
     # ponytail: newest 100 only; the workspace timeline has the cursor-paged full history.
     transactions = labelled(list(annotated(account.transactions.order_by("-posted_on", "-pk"), workspace)[:100]), workspace)
-    return render(request, "budget/account.html", {**page_context(request.user, workspace), "account": account, "transactions": transactions})
+    batches = account.imports.filter(status="done").order_by("-created_at")[:10] if account.owner_id == request.user.pk else []
+    return render(request, "budget/account.html", {**page_context(request.user, workspace), "account": account, "transactions": transactions, "imports": batches})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def account_import(request, workspace_id, account_id):
+    workspace = get_workspace(request.user, workspace_id)
+    account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
+    posted = request.method == "POST"
+    form = ImportUploadForm(request.POST if posted else None, request.FILES if posted else None, account=account)
+    if posted and form.is_valid():
+        # Unfinished previews hold a file's contents, so they don't linger.
+        account.imports.filter(status="preview", created_at__lt=timezone.now() - timedelta(days=1)).delete()
+        batch = account.imports.create(file_name=form.cleaned_data["file"].name[:200], sha256=form.sha256, content=form.text)
+        return redirect("import_preview", workspace.pk, account.pk, batch.pk)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": f"Import a CSV into {account.name}",
+                  "action": "Upload and preview", "cancel_url": reverse("account_detail", args=[workspace.pk, account.pk]),
+                  "help": "Your bank's CSV export, one transaction per row. You pick the columns and check a preview before anything is saved."},
+                  status=400 if posted else 200)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def import_preview(request, workspace_id, account_id, batch_id):
+    workspace = get_workspace(request.user, workspace_id)
+    account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
+    batch = get_object_or_404(account.imports, pk=batch_id)
+    back = reverse("account_detail", args=[workspace.pk, account.pk])
+    action = request.POST.get("action") if request.method == "POST" else None
+    if batch.status == "done":
+        messages.info(request, f"{batch.file_name} is already imported.")
+        return redirect(back)
+    if action == "cancel":
+        batch.delete()
+        return redirect(back)
+    records = imports.rows(batch.content)
+    header = imports.has_header(records[0])
+    initial = {**imports.guess(records[0] if header else [], records[header:]), "header": header}
+    form = ImportMappingForm(request.POST if action else None, initial=initial, records=records)
+    mapping = initial if not form.is_bound else form.cleaned_data if form.is_valid() else None
+    parsed, errors, skipped = imports.parse(records, mapping) if mapping else ([], [], 0)
+    if action == "import" and mapping and not errors:
+        result = imports.commit(batch, parsed, {int(k) for k in request.POST.getlist("keep") if k.isdigit()}, workspace)
+        if result is None:
+            messages.info(request, f"{batch.file_name} is already imported.")
+        else:
+            messages.success(request, f"Imported {result[0]} from {batch.file_name}." + (f" Skipped {result[1]} that look already imported." if result[1] else ""))
+        return redirect(back)
+    flagged = imports.overlaps(account, parsed)
+    keep = set(request.POST.getlist("keep")) if action else set()
+    categories = {c.name.casefold(): c.name for c in workspace.categories.filter(archived=False)}
+    for p in parsed:
+        p["flagged"], p["kept"] = p["source_row"] in flagged, str(p["source_row"]) in keep
+        p["category_name"] = categories.get(p["category"].casefold(), "")
+    return render(request, "budget/import_preview.html", {
+        **page_context(request.user, workspace), "account": account, "batch": batch, "form": form, "errors": errors[:20],
+        "more_errors": max(0, len(errors) - 20), "rows": parsed[:20], "more_rows": max(0, len(parsed) - 20),
+        "flagged": [p for p in parsed if p["flagged"]], "skipped": skipped, "cancel_url": back,
+        "count": sum(1 for p in parsed if not p["flagged"] or p["kept"]),
+        "out_cents": sum(p["amount_cents"] for p in parsed if p["classification"] == "expense"),
+        "in_cents": sum(p["amount_cents"] for p in parsed if p["classification"] != "expense"),
+    }, status=400 if action == "import" else 200)
+
+
+@login_required
+@require_POST
+def import_undo(request, workspace_id, account_id, batch_id):
+    workspace = get_workspace(request.user, workspace_id)
+    account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
+    batch = get_object_or_404(account.imports, pk=batch_id, status="done")
+    with transaction.atomic():
+        batch.delete()  # its transactions, their notes and splits go with it
+        bump_account_data(account)
+    messages.success(request, f"Removed the {batch.row_count} transactions imported from {batch.file_name}.")
+    return redirect("account_detail", workspace.pk, account.pk)
 
 
 PAGE_SIZE = 50
@@ -397,17 +473,20 @@ def transaction_edit(request, workspace_id, account_id, transaction_id=None):
     account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
     row = get_object_or_404(Transaction, account=account, pk=transaction_id) if transaction_id else Transaction(account=account)
     form = TransactionForm(request.POST if request.method == "POST" else None, instance=row)
+    if row.import_batch_id:  # the bank's date, amount and description stay as imported
+        for name in ("posted_on", "amount", "description", "pending"):
+            form.fields[name].disabled = True
     back = reverse("account_detail", args=[workspace.pk, account.pk])
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             form.save()
-            categorize_everywhere(form.instance)
+            categorize_everywhere([form.instance])
             bump_account_data(account)
             evaluate_account(account)
         messages.success(request, "Transaction saved.")
         return redirect(back)
     title = "Edit transaction" if transaction_id else f"Add a transaction to {account.name}"
-    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": title, "action": "Save transaction", "cancel_url": back, "help": "Manual entry. Transfers and card payments never count as spending."}, status=400 if request.method == "POST" else 200)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": title, "action": "Save transaction", "cancel_url": back, "help": "Imported from a CSV: the date, amount and description stay as the bank sent them. You can change the type." if row.import_batch_id else "Manual entry. Transfers and card payments never count as spending."}, status=400 if request.method == "POST" else 200)
 
 
 @login_required
@@ -438,7 +517,7 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
     where = "your personal view" if workspace.is_personal else workspace.name
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": row.description or "Transaction", "action": "Save changes", "cancel_url": back,
                   "help": f"{date_format(row.posted_on)} · {dollars(row.amount_cents)} original. Changes here apply to {where} only; the original entry stays as recorded.",
-                  "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit original entry",
+                  "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit type" if row.import_batch_id else "Edit original entry",
                   "split_url": reverse("transaction_split", args=[workspace.pk, account.pk, row.pk]) + (f"?next={quote(back)}" if request.GET.get("next") else "")}, status=400 if request.method == "POST" else 200)
 
 

@@ -84,8 +84,10 @@ def categorize(transactions, workspace):
     return len({a.transaction_id for a in created + updated} | set(stale))
 
 
-def categorize_everywhere(row):
-    """A new or edited transaction gets the current rules of every workspace that can see its account."""
-    account = row.account
+def categorize_everywhere(rows):
+    """New or edited transactions of one account get the current rules of every workspace that can see it."""
+    if not rows:
+        return
+    account = rows[0].account
     for workspace in Workspace.objects.filter(Q(owner_id=account.owner_id, is_personal=True) | Q(account_shares__account=account)).distinct():
-        categorize([row], workspace)
+        categorize(rows, workspace)
