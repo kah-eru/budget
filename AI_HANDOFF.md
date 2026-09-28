@@ -14,7 +14,7 @@ Latest request (2026-09-28): "push. don't need reports. i like goals, make them 
 - Details: [development guide](docs/development.md#planning-tools-net-worth-recurring-bills-goals--september-28).
 - Verification: 203 Django tests OK; 22/22 on Neon PostgreSQL; 10/10 Chrome checks; screenshots reviewed. Real sandbox: balances on all 14 accounts; the Bills page found monthly series in sandbox data.
 - **Owner actions (optional, free):** `TASKS_TOKEN` in Render, plus `TASKS_TOKEN` and `SITE_URL` as GitHub Actions secrets ([operations guide](docs/operations.md#daily-task-bill-reminders-and-catch-up-sync-optional-free)).
-- Committed locally; **not pushed**, waiting for "push". It runs migrations 0018-0020 and adds the Daily tasks workflow.
+- Pushed on "ok push" (2026-09-28): `main` fast-forwarded and both pushed. Render runs migrations 0018-0020 after CI; the Daily tasks workflow waits for its secrets (live site not checked by the agent).
 - Next: the user picks among AI insights (6), statements (7) and the release gate (8).
 - Follow-up question "did you update docs" (2026-09-28): yes. README, handoff, development, operations, plan, spec and wireframes are committed on the branch. `main` gets them on the next push (fast-forward). No product changes.
 
