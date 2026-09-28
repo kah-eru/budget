@@ -77,7 +77,7 @@ These fill gaps in the conversation and can be changed during review.
 | Friends | Invite into an existing finance group or create a separate group with that person; explicit account sharing determines visibility. |
 | Timeline | Dated purchase feed plus daily net spending and a cumulative spending chart for the selected period. |
 | AI activation | Optional, off until a user adds a key and consents; request-driven insights rather than unattended periodic charges. |
-| AI credentials | Each requesting user supplies their own provider key; group membership never grants use of another member's key. |
+| AI credentials | Each requesting user supplies their own provider key; group membership never grants use of another member's key. User-confirmed 2026-09-28: AI runs only through the API key each person enters themselves. No app or operator key, no shared or pooled group key, no fallback key; without a key, AI features stay off. |
 | AI provider | No user preference; choose one supported provider/model at implementation, not an arbitrary-endpoint or multi-provider framework. |
 | Capacity target | Proposed first-release benchmark: 1,000 registered users, 100 concurrent sessions, 1 million transactions. These are test targets, not measured claims. |
 
@@ -123,6 +123,7 @@ The app computes totals, percentages, comparison periods, and budget progress de
 
 Data and permission rules:
 
+- Keys (user-confirmed 2026-09-28): the only way the app calls an AI provider is with the API key the requesting person entered. The app ships and configures no key of its own, never falls back to one, and never uses a pooled group key.
 - Store each user's API key encrypted server-side; show only a masked identifier. Support replace/remove; never put keys in prompts, logs, browser storage, group settings, or exports. A user cannot spend another member's key by changing a request ID.
 - Viewing shared finances is not consent to send them to an external AI service. Each account owner separately opts in that account for AI analysis in that workspace and for the selected provider. Provider changes require fresh consent. Exclude accounts without consent and clearly label the analysis as partial; ordinary dashboard/timeline totals still include all visible accounts.
 - Category/merchant labels can also be sensitive. Preview the actual minimized payload; omit names of people, account numbers, account labels, credentials, notes, raw descriptions, individual purchases, and PDFs. Use aggregate counts and totals. Treat all labels as untrusted data, never as instructions.
@@ -193,6 +194,31 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 | Collaborative sharing for couples and families | Covered | Separate logins, groups, per-account sharing, joint accounts linked once and shared, and shared budgets (Accounts and sharing). |
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
+
+### Requested — 2026-09-28: Timeline by account
+
+The user asked for a per-account view: see every account's transactions together, or tick which accounts to include. A second layout lists each account side by side, with money moving between them drawn as lines that can be turned off. Wireframe: UX section 3b.
+- **Accounts:** the Timeline's account filter becomes tick boxes; none ticked means all visible accounts. Totals, the chart, the list and CSV export follow the ticks.
+- **Direction:** each transaction stores the direction the bank reported (`money_in`), because amounts are always positive.
+  - Plaid: from the sign of the amount.
+  - CSV: from the sign mapping.
+  - Manual entry: Type offers "Transfer out or card payment" and "Transfer in".
+  - Existing rows are backfilled: income and refunds in, expenses out, and transfers from their bank category.
+- **Pairs:**
+  - A transfer out is paired with a transfer in when:
+    - it's a different visible account
+    - the amount is the same
+    - the dates are within 5 days
+  - The closest date wins, and each row is used once.
+  - The type used is the workspace's, so an overlay can turn an expense into a transfer.
+  - The search runs 5 days past each end of the range.
+  - Unpaired transfers show "elsewhere".
+  - Only visible rows take part, so a private account in a group is never named or hinted.
+- **Side by side:**
+  - one lane per ticked account (or per account with rows in the range), with date bands across all lanes
+  - at most 400 rows, the newest first, and never a partial day
+  - lines are decoration over text that says where the money went
+- **Not included:** lines for ordinary spending or income, editing pairs by hand, and saving pairs. Pairs are computed for the page shown.
 
 ## 4. Plaid feasibility and integration
 

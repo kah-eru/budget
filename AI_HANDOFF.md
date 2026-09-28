@@ -2,6 +2,10 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): AI insights must use only an API key each user enters (no app or shared key); plus an account view on the Timeline: account tick boxes (none = total) and a Together / Side by side switch, where Side by side shows one dated list per account with toggleable lines for money moving between them, scrolling sideways.
+- Brainstorming (architectural). User chose: account view first, then AI insights; on the Timeline page; lines only between the user's own accounts (transfers/card payments), with 'elsewhere' stubs.
+- Design proposed in chat (new `Transaction.money_in`, `budget/flows.py` pairing within 5 days, SVG lines over server-rendered lanes). Waiting for the user's approval, then a short spec, then a plan. No code changed yet.
+
 Latest request (2026-09-28): "push. don't need reports. i like goals, make them optional, add recurring bills, and net worth." Pushed first (`bb77a20`). The user chose goals off until turned on, 3-day bill reminders, and net worth from synced balances plus manual items. Wireframes first (UX 6b), then three local commits:
 - **Net worth:** Plaid cached balances each sync, plus manual items (home, loan); groups count only shared accounts.
 - **Recurring:**

@@ -176,6 +176,46 @@ For another member's purchase, show a read-only detail page, not a Save button. 
 
 Rule journey: create from purchase -> choose exact merchant/description contains -> select or create category -> preview affected existing purchases -> choose Apply to existing history -> save rule. Preview states that manual category overrides will be preserved. Future matches use the saved rule automatically. A background backfill shows progress and a link back to results.
 
+## 3b. Timeline by account (2026-09-28)
+
+Decisions (user, 2026-09-28):
+- the account view lives on the Timeline page
+- none ticked means all accounts, the total
+- a second layout, **Side by side**, shows one dated list per account
+- lines connect money moving between your own accounts only: transfers and card payments. Spending and income stay plain rows.
+
+```text
+Timeline                     [Together | Side by side]
+Accounts · 3 of 14 ▾   [x] Checking ••0000 [x] Savings ••1111 [x] Card ••3333 [ ] …  [Show]
+[x] Show money moving                      (Side by side only)
+┌ scrolls both ways (max 75vh) ─────────────────────────────────────────┐
+│ Checking ••0000     │ Savings ••1111     │ Card ••3333                  │ sticky
+│ in +3,000 out −910  │ in +500            │ in +410 out −6               │
+├─ Sat, Sep 28 ───────┴────────────────────┴──────────────── (sticky left)
+│ Payroll     +3,000  │                    │                              │
+│ To savings    −500 ─┼──▶ From chk   +500 │                              │
+├─ Thu, Sep 26 ─────────────────────────────────────────────────────────
+│ Card payment  −410 ─┼────────────────────┼─▶ Payment              +410  │
+│                     │                    │   Starbucks              −6  │
+├─ Wed, Sep 25 ─────────────────────────────────────────────────────────
+│ Venmo  −200 ─▷ elsewhere                                                │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+**Flows:**
+- Timeline → tick accounts → Show. The totals, chart, list and CSV export all follow the ticks.
+- Side by side → scroll sideways through the lanes. Hover or focus a transfer to light up the other side.
+- Show money moving: turn the lines off or on. The choice is remembered on this device.
+
+**Text carries the meaning:** every paired row also says where the money went ("→ Savings ••1111", "← Checking ••0000, Oct 2", "→ elsewhere"). Screen readers and a failed script lose nothing.
+
+**Phone:** each lane is about 85% of the screen wide, so the next one peeks in. Lanes snap as you scroll, and the page itself never scrolls sideways.
+
+**Empty and limits:**
+- With nothing ticked, only accounts with transactions in the range get a lane.
+- An empty ticked lane says "No transactions in this range."
+- Over 400 rows: "Showing the newest 400 transactions. Narrow the dates to see older ones."
+
 ## 4. Budget and alert: set a threshold and act on it
 
 Journey: Budgets -> Create budget -> select category or merchant -> enter positive limit and monthly/yearly period -> save -> inspect progress. Push activation is optional and does not block saving a budget.

@@ -51,7 +51,7 @@ This is repository guidance, not a background hook. The skill is stored in Codex
 - Each person chooses which accounts to share. Private accounts stay out of group views and totals.
 - Statements where supported, with manual PDF upload and CSV import as fallbacks.
 - Invite friends from the start to share selected accounts, budgets, and spending views; no automatic access to personal finances.
-- Optional API-key-based AI insights about spending patterns and budget progress, with separate consent for sending shared data to an AI provider.
+- Optional AI insights about spending patterns and budget progress, run only through an API key each person enters themselves (no app or shared key; no key means no AI), with separate consent for sending shared data to an AI provider.
 - Scalable module boundaries, multiple web/worker instances, bounded queries, and a measured load-test gate from the first release.
 - Requested 2026-09-25 (designed, not built):
   - split transactions and standard categories
