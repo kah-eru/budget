@@ -16,7 +16,7 @@ Latest request (2026-09-28): AI insights must use only an API key each user ente
   - 11/11 Chrome checks, including the new `lanes.spec.ts`; screenshots reviewed
   - Fixed along the way: a doubled mask on synced account names; `imports.spec.ts` searches for its own row
   - Real sandbox rows: 121 transfers and 0 pairs, as expected, because sandbox accounts have no matching counterpart rows
-- Pushed on "push and push all changes to display on website" (2026-09-28): `main` fast-forwarded and both branches pushed. Render deploys after CI and runs migration 0021.
+- Pushed on "push and push all changes to display on website" (2026-09-28): `main` fast-forwarded and both branches pushed. CI passed for `9f025d9`; Render then deploys and runs migration 0021 (the live site was not checked by the agent).
 - Next: AI insights (6) with the user's own key only. Brainstorm first; the provider choice is the user's, since their key must match it.
 
 Latest request (2026-09-28): "push. don't need reports. i like goals, make them optional, add recurring bills, and net worth." Pushed first (`bb77a20`). The user chose goals off until turned on, 3-day bill reminders, and net worth from synced balances plus manual items. Wireframes first (UX 6b), then three local commits:
