@@ -132,22 +132,20 @@
 @layer components {
   .primary { @apply inline-flex min-h-12 items-center justify-center rounded-full bg-accent px-6 py-3 text-center text-base font-semibold text-on-accent hover:brightness-95; }
   .secondary { @apply inline-flex min-h-11 items-center justify-center rounded-full border border-line-strong bg-surface px-4 py-2 text-center text-base font-medium text-ink hover:bg-accent-soft; }
-  .workspace-link { @apply inline-flex min-h-11 items-center rounded-full border border-line-strong bg-surface px-4 py-2 text-sm font-medium; }
   .workspace-summary { @apply inline-flex min-h-11 max-w-full cursor-pointer list-none items-center gap-2 rounded-full border border-line-strong bg-surface px-4 py-2 text-sm; }
   .workspace-summary::-webkit-details-marker { display: none; }
-  details[open] > .workspace-summary > [aria-hidden] { transform: rotate(180deg); }
-  .workspace-link[aria-current="page"] { @apply border-accent bg-accent text-on-accent; }
+  details[open] > .workspace-summary > [aria-hidden], .workspace-summary:has(+ :popover-open) > [aria-hidden] { transform: rotate(180deg); }
   .nav-link { @apply flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1 text-center text-xs font-medium text-muted hover:text-ink; }
   .nav-link svg { @apply size-6; }
   .nav-link[aria-current="page"] { @apply font-bold text-ink; }
   .nav-link[aria-current="page"] svg { color: var(--accent); }
   /* Instant press feedback on pointer-down; scale is dropped for reduced motion, the colour change stays. */
-  .primary, .secondary, .workspace-link, .workspace-summary, .nav-link, .row-link { transition: transform 100ms ease-out, background-color 100ms ease-out; }
-  .primary:active, .secondary:active, .workspace-link:active, .workspace-summary:active, .nav-link:active { transform: scale(0.97); }
+  .primary, .secondary, .workspace-summary, .nav-link, .row-link { transition: transform 100ms ease-out, background-color 100ms ease-out; }
+  .primary:active, .secondary:active, .workspace-summary:active, .nav-link:active { transform: scale(0.97); }
   .secondary:active, .nav-link:active, .row-link:active { background-color: var(--pressed); }
   .primary:active { filter: brightness(0.9); }
   @media (prefers-reduced-motion: reduce) {
-    .primary:active, .secondary:active, .workspace-link:active, .workspace-summary:active, .nav-link:active { transform: none; }
+    .primary:active, .secondary:active, .workspace-summary:active, .nav-link:active { transform: none; }
   }
   /* Translucent nav so content reads as scrolling under it; solid when transparency is reduced. */
   /* Always above page content, including the Timeline's layered lanes. */
@@ -195,6 +193,7 @@
   @media (prefers-reduced-motion: reduce) { .menu, .menu:not(:popover-open) { transform: none; } }
   .menu-item { @apply flex min-h-11 w-full items-center rounded-lg px-3 text-sm font-medium text-ink; }
   .menu-item:hover, .menu-item:focus-visible { background: var(--accent-soft); }
+  .menu-item[aria-current="page"] { @apply font-bold text-accent-text; }
   /* Timeline Filters and Overview panels: hidden by CSS once JS runs, so nothing flashes; without JS they all show. */
   :root.js .filters-panel:not(.is-open) { display: none; }
   :root:not(.js) [data-filters-toggle] { display: none; }

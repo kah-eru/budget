@@ -40,7 +40,7 @@ from .forms import (
 from .invitations import claim_email_send
 from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Goal, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, net_worth, savings, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, net_worth, saved_daily, savings, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from . import push
 from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize
@@ -687,16 +687,33 @@ def import_undo(request, workspace_id, account_id, batch_id):
 PAGE_SIZE = 50
 
 
+def savings_mode(request):
+    """The header's Spending | Savings switch, kept in a cookie so the server can render the Timeline for it."""
+    return request.COOKIES.get("mode") == "savings"
+
+
+def timeline_scope(request, workspace):
+    """The Timeline's accounts and rows: everything visible, or in Savings mode only the savings accounts."""
+    accounts, rows = visible_accounts(request.user, workspace), visible_transactions(request.user, workspace)
+    if savings_mode(request):
+        accounts = accounts.filter(is_savings=True)
+        rows = rows.filter(account__in=accounts)
+    return accounts, rows
+
+
 @login_required
 def transaction_list(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
-    form = TransactionFilterForm(request.GET, accounts=visible_accounts(request.user, workspace), workspace=workspace)
-    context = {**page_context(request.user, workspace), "form": form, "rows": [], "next_query": None}
+    accounts, visible = timeline_scope(request, workspace)
+    saving = savings_mode(request)
+    form = TransactionFilterForm(request.GET, accounts=accounts, workspace=workspace)
+    context = {**page_context(request.user, workspace), "form": form, "rows": [], "next_query": None, "saving": saving,
+               "no_savings": saving and not accounts.exists()}
     if not form.is_valid():
         return render(request, "budget/transactions.html", context, status=400)
     start, end = form.cleaned_data["start"], form.cleaned_data["end"]
-    filtered_rows = form.apply(visible_transactions(request.user, workspace))
-    days = daily(filtered_rows, start, end)
+    filtered_rows = form.apply(visible)
+    days = (saved_daily if saving else daily)(filtered_rows, start, end)
     rows = filtered_rows.filter(posted_on__range=(start, end)).select_related("account__owner")
     # A cursor from before a data or sharing change could skip or repeat rows, so restart from newest.
     rev = f"{workspace.data_revision}-{workspace.permission_revision}"
@@ -731,7 +748,7 @@ def transaction_list(request, workspace_id):
         layouts[name] = "?" + query.urlencode()
     context.update(rows=page, days=days, start=start, end=end, rev=rev, stale=stale, back=request.get_full_path(),
                    newest_query="?" + newest.urlencode(), paged=bool(before) and not stale, layouts=layouts, layout=form.cleaned_data["view"],
-                   totals={k: sum(d[k] for d in days) for k in ("posted_cents", "pending_cents", "income_cents")},
+                   totals={k: sum(d[k] for d in days) for k in (("in_cents", "out_cents", "posted_cents") if saving else ("posted_cents", "pending_cents", "income_cents"))},
                    filtered=any(request.GET.get(name) for name in form.fields if name != "view"))
     if form.cleaned_data["view"] == "lanes":
         context.update(lane_context(request.user, workspace, form, filtered_rows, start, end))
@@ -761,11 +778,12 @@ def csv_cell(value):
 def transaction_export(request, workspace_id):
     """The Timeline's rows as CSV: same filters and range cap, no paging."""
     workspace = get_workspace(request.user, workspace_id)
-    form = TransactionFilterForm(request.GET, accounts=visible_accounts(request.user, workspace), workspace=workspace)
+    accounts, visible = timeline_scope(request, workspace)
+    form = TransactionFilterForm(request.GET, accounts=accounts, workspace=workspace)
     if not form.is_valid():
         return HttpResponse(" ".join(e for errors in form.errors.values() for e in errors), status=400, content_type="text/plain")
     start, end = form.cleaned_data["start"], form.cleaned_data["end"]
-    rows = labelled(list(form.apply(visible_transactions(request.user, workspace)).filter(posted_on__range=(start, end))
+    rows = labelled(list(form.apply(visible).filter(posted_on__range=(start, end))
                          .select_related("account__owner").order_by("-posted_on", "-pk")), workspace)
     response = HttpResponse(content_type="text/csv; charset=utf-8", headers={
         "Content-Disposition": f'attachment; filename="budget-{start:%Y-%m-%d}-{end:%Y-%m-%d}.csv"', "Cache-Control": "no-store"})

@@ -46,7 +46,7 @@ test("search transactions, edit from a filtered list and return to it; year view
   await page.setViewportSize({ width: 360, height: 800 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
   await page.screenshot({ path: ".local/transactions-phone.png", fullPage: true });
-  await page.getByRole("link", { name: /^Back to / }).click();
+  await page.getByRole("link", { name: "Overview", exact: true }).click();
   await page.getByRole("link", { name: "Year", exact: true }).click();
   await expect(page.getByRole("heading", { name: "2026", exact: true })).toBeVisible();
   for (const width of [320, 360]) {

@@ -628,4 +628,42 @@ Verification:
 - 220 Django tests OK, including new `test_savings.py` (5); savings, budgets and net worth 16/16 on Neon PostgreSQL. Migration drift clean.
 - 12/12 Chrome checks, with new `savings.spec.ts`: a manual savings account with a transfer in and out, the Overview card, the page, the chart and the Timeline link. Light and dark 360 px screenshots of the Month and Year views reviewed.
 
+## Spending | Savings in the header, on Overview and Timeline — September 28
+
+Why: the user's sketch:
+- switch between Spending and Savings on both tabs
+- drop the workspace name that repeats the selector
+- put the switch beside the selector, and Invite by the bell
+
+User choices: the Timeline in Savings shows only savings accounts; the Overview hides By category in Savings; the Timeline's "‹ Personal" link goes too.
+
+**Mode:**
+- A `mode=savings` cookie; when it's missing, the mode is spending. The `[data-switch]` handler writes it for a fieldset with `data-cookie`.
+- The server reads it:
+  - `base.html` puts `data-overview-mode` on `<html>`, so CSS shows the right panels before paint. The localStorage copy is gone.
+  - `views.savings_mode()` and `timeline_scope()`: in Savings, the Timeline and its CSV export use only `is_savings` accounts, and the tick boxes list only those.
+- The Timeline's switch has `data-reload`: it reloads without `account`, `before` and `rev`.
+- Every switch re-adds the speculation rules, so a tab prefetched in the old mode isn't served.
+
+**Timeline Savings card:**
+- `reporting.saved_daily(rows, start, end)` gives in, out, net and the running net per day: posted rows only, by `money_in`. `savings()` now uses it too.
+- It feeds the hero, the "Saved so far" chart, Money in / Money out / Net saved and the daily table.
+- The day headers show each day's net saved.
+
+**Header (`base.html`):**
+- Invite, or Manage sharing in a group, shows whenever a workspace is open. The username is hidden below `sm`.
+- The workspace selector is a button with a native popover `nav.menu`, capped at `max-h-96` and scrollable.
+- The shared menu code now aligns a left-side button's menu to the button's left edge.
+- "Workspace:" is screen-reader-only on phones, so the selector and the switch share a row at 320–360 px.
+
+**Overview:**
+- The visible title row and the in-card switch are gone; an `sr-only` h1 keeps the page's heading.
+- By category carries `data-mode="spending"`.
+
+**Verification:**
+- 221 Django tests OK. The new test covers the Timeline, the export, a group and the Overview under the cookie.
+- Savings and flows 17/17 on Neon PostgreSQL.
+- 12/12 Chrome checks. `savings.spec.ts` now switches in the header on the Overview, opens the Timeline in Savings, and switches both ways there.
+- Screenshots reviewed: 360 px light and dark, the open workspace menu, and the desktop header against the sketch.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

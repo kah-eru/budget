@@ -198,6 +198,10 @@ Permission rules from the rest of this document apply to every addition: workspa
 ### Requested — 2026-09-28: Savings
 
 Status: built 2026-09-28 (development guide "Savings page"). The user asked to see savings the way spending is shown. Wireframe: UX section 6c.
+- **One mode for the Overview and the Timeline** (the user's sketch, 2026-09-28):
+  - a header **Spending | Savings** switch beside the workspace selector
+  - in Savings, the Timeline lists only savings accounts, with money in, money out and net saved, and the Overview hides By category
+  - the choice is a per-browser `mode` cookie, not an account setting
 - **Which accounts:** `Account.is_savings`. A bank's savings, money market or CD account is marked at import, or on its next sync for older accounts. The owner's Savings account switch always wins.
 - **Money in and out:** by the bank's direction, posted rows only.
   - Interest is money in, and a transfer to checking is money out.

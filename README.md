@@ -17,7 +17,7 @@ Status (2026-09-28): a working preview with synthetic data only, deployed to Ren
   - in-app over-budget alerts, once per person, budget and period
   - phone push, off until the owner sets the two push keys
   - opt-in email alerts with one-click unsubscribe, off by default; written to the server log until the owner sets up an email provider
-- **Milestone 9, planning tools:** net worth (synced balances plus manual items); savings (an Overview **Spending | Savings** switch plus a Savings page; savings accounts marked from the bank type or by a switch; money in/out and net saved per month or year, with a chart); recurring bills and income with a 30-day forecast and 3-day bill reminders, optional goals (off until turned on). Reports were dropped by the user.
+- **Milestone 9, planning tools:** net worth (synced balances plus manual items); savings (a header **Spending | Savings** switch that turns both Overview and Timeline to savings accounts, plus a Savings page; savings accounts marked from the bank type or by a switch; money in/out and net saved per month or year, with a chart); recurring bills and income with a 30-day forecast and 3-day bill reminders, optional goals (off until turned on). Reports were dropped by the user.
 - **Also:** installable to a phone home screen, tab pages prefetched, charts without flashes, and made-up demo data for the local preview (`tests/browser/seed_demo.py`).
 
 Not started: AI insights (6), statements (7), the release/load gate (8). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).

@@ -28,9 +28,9 @@ const mountCharts = () => {
   });
 };
 
-// Overview switches: Spending | Savings (overviewMode) and Chart | Budgets (overview). base.html applies the saved choices
-// before paint as data attributes on <html>, and CSS shows the matching panels; without JS the switches stay hidden and
-// every panel shows.
+// Switches: the header's Spending | Savings (overviewMode) and Overview's Chart | Budgets (overview). base.html applies the
+// choices before paint as data attributes on <html>, and CSS shows the matching panels; without JS the switches stay hidden
+// and every panel shows. The mode lives in a cookie because the server renders the Timeline for it.
 document.querySelectorAll<HTMLFieldSetElement>("[data-switch]").forEach((fieldset) => {
   const key = fieldset.dataset.switch as "overview" | "overviewMode";
   const current = fieldset.querySelector<HTMLInputElement>(`input[value="${root.dataset[key]}"]`);
@@ -38,26 +38,47 @@ document.querySelectorAll<HTMLFieldSetElement>("[data-switch]").forEach((fieldse
   fieldset.hidden = false;
   fieldset.addEventListener("change", (event) => {
     const value = (event.target as HTMLInputElement).value;
-    root.dataset[key] = value;
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      // Storage blocked: the choice holds until the page changes.
+    if (fieldset.dataset.cookie) {
+      document.cookie = `${fieldset.dataset.cookie}=${value}; path=/; max-age=31536000; samesite=lax`;
+      // A tab page prefetched before the switch would open in the old mode, so prefetch again.
+      const rules = document.querySelector('script[type="speculationrules"]');
+      if (rules) {
+        const fresh = document.createElement("script");
+        fresh.type = "speculationrules";
+        fresh.textContent = rules.textContent;
+        rules.replaceWith(fresh);
+      }
+      if (fieldset.dataset.reload !== undefined) {
+        // The ticked accounts differ between modes, and a page cursor belongs to the old list.
+        const url = new URL(location.href);
+        ["account", "before", "rev"].forEach((name) => url.searchParams.delete(name));
+        location.replace(url);
+        return;
+      }
+    } else {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        // Storage blocked: the choice holds until the page changes.
+      }
     }
+    root.dataset[key] = value;
     mountCharts();
     if (!reduced) document.querySelectorAll<HTMLElement>(`[data-panel="${value}"], [data-mode="${value}"]`).forEach((panel) => panel.animate({ opacity: [0, 1] }, { duration: 150, easing: "ease-out" }));
   });
 });
 mountCharts();
 
-// ⋯ menus are native popovers (Escape and outside taps close them). Placed under their button's right edge, in page
-// coordinates so the menu scrolls with its button; without JS the browser centres them.
+// Menus are native popovers (Escape and outside taps close them). Placed under their button, along its left edge when it's
+// on the left of the screen and its right edge otherwise, in page coordinates so the menu scrolls with its button; without
+// JS the browser centres them.
 document.querySelectorAll<HTMLElement>(".menu[popover]").forEach((menu) => {
   const button = document.querySelector<HTMLElement>(`[popovertarget="${menu.id}"]`);
   menu.addEventListener("beforetoggle", (event) => {
     if ((event as ToggleEvent).newState !== "open" || !button) return;
     const r = button.getBoundingClientRect();
-    Object.assign(menu.style, { position: "absolute", inset: "auto", margin: "0", top: `${r.bottom + window.scrollY + 6}px`, right: `${Math.max(8, root.clientWidth - r.right)}px` });
+    const side = r.left < root.clientWidth / 2 ? { left: `${Math.max(8, r.left)}px`, transformOrigin: "top left" } : { right: `${Math.max(8, root.clientWidth - r.right)}px` };
+    Object.assign(menu.style, { position: "absolute", inset: "auto", margin: "0", top: `${r.bottom + window.scrollY + 6}px`, ...side });
   });
 });
 

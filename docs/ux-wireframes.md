@@ -49,6 +49,16 @@ Implemented 2026-09-25 (night): Robinhood-style visual layout in the user's pale
 
 ## Navigation and reusable components
 
+Header (user sketch, 2026-09-28):
+- Row 1: `Budget.`, then at the right Invite (Manage sharing in a group), the bell, and the username (hidden on phones).
+- Row 2: the workspace selector (a dropdown), with the **Spending | Savings** switch beside it on the Overview and the Timeline.
+- Pages don't repeat the workspace name.
+
+```text
+Budget.                          [+ Invite]  (bell)  browser-check
+[Workspace: Personal v]  [Spending | Savings]
+```
+
 The active workspace stays visible: Personal, Partner group, or a named Friends group. Switching context changes transactions, budgets, rules, and insights together. Ask before discarding an unsaved edit; never transfer a draft or permission decision silently between workspaces.
 
 Phone destinations: Overview, Timeline, Budgets, Insights, More. More opens a page containing Accounts, Sharing & people, Statements & imports, Notifications, and Settings. A notification button is also available in the header. Desktop uses the same destinations in a sidebar.
@@ -414,10 +424,21 @@ Update (user, 2026-09-28: "instead of scrolling down to savings, make it togglea
 
 The choice is remembered on the device.
 
+Update (user sketch, 2026-09-28):
+- The switch moved to the header, beside the workspace selector. It works on both the Overview and the Timeline, as one mode for both.
+- The workspace name above it and the Timeline's "‹ Personal" link are gone, and Invite sits by the bell.
+
+User choices:
+- **Timeline in Savings:**
+  - only the savings accounts' transactions
+  - the top card: net saved, the saved-so-far chart, Money in / Money out / Net saved, and a daily In / Out / Saved so far table
+  - each day's header shows that day's net
+  - search, dates and Graph | List still work
+- **Overview in Savings:** the By category card, which only covers spending, is hidden.
+
 ```text
-Overview top card
-Personal                                   [+ Invite]
-[Spending | Savings]
+Overview top card (Savings)
+[Workspace: Personal v]  [Spending | Savings]
 $12,400
 September 2026: +$300 saved · ↗ $120 more than August
 

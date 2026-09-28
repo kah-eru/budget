@@ -30,13 +30,41 @@ test("a savings account shows on Overview and the Savings page with its net save
   await add(page, name, "Transfer out or card payment", "200.00", "To checking");
 
   await page.setViewportSize({ width: 360, height: 800 });  // before the chart mounts, so it isn't caught redrawing
-  // Overview's top card flips to Savings in place, and the choice is remembered on this device.
+  // The header's switch flips Overview to Savings in place, and the choice is remembered on this device.
   await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Invite someone to Budget" })).toBeVisible();  // in the header now
   await page.locator("label.segment", { hasText: "Savings" }).click();
   const savingsMode = page.locator('[data-mode="savings"]').first();
   await expect(savingsMode).toBeVisible();
   await expect(savingsMode).toContainText("saved");
   await expect(page.locator('[data-mode="spending"]').first()).toBeHidden();
+  await expect(page.getByRole("region", { name: "By category" })).toBeHidden();
+  // The same mode on the Timeline: only savings accounts, with money in, out and net saved.
+  await page.getByRole("link", { name: "Timeline", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Savings", exact: true })).toBeVisible();
+  await expect(page.locator("main")).toContainText("From checking");
+  await expect(page.getByRole("img", { name: /^Net saved so far/ }).locator("svg").first()).toBeVisible();
+  await page.waitForTimeout(1000);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.waitForTimeout(300);  // buttons ease their background between themes
+    await page.screenshot({ path: `.local/timeline-savings-${scheme}.png` });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.locator("label.segment", { hasText: "Spending" }).click();
+  await expect(page.getByRole("heading", { name: "Spending", exact: true })).toBeVisible();
+  await page.locator("label.segment", { hasText: "Savings" }).click();
+  await expect(page.getByRole("heading", { name: "Savings", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /^Workspace:/ }).click();
+  await expect(page.getByRole("navigation", { name: "Workspaces" })).toBeVisible();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: ".local/workspace-menu-phone.png" });
+  await page.keyboard.press("Escape");
+  await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.waitForTimeout(1000);  // the chart redraws for the new width
+  await page.screenshot({ path: ".local/header-desktop.png" });
+  await page.setViewportSize({ width: 360, height: 800 });
   await page.reload();
   await expect(savingsMode).toBeVisible();
   await expect(page.locator('[data-mode="savings"] [data-spending-chart] svg').first()).toBeVisible();

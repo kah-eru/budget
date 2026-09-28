@@ -97,7 +97,7 @@ test("standalone invitation creates a private login with no group access", async
   await page.getByLabel("I want to finish setting up").check();
   await page.getByRole("button", { name: "Finish", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Your login is ready");
-  await page.getByText("Workspace:").click();
+  await page.getByRole("button", { name: /^Workspace:/ }).click();
   await expect(page.getByRole("navigation", { name: "Workspaces" }).getByRole("link")).toHaveCount(1);
   await page.screenshot({ path: ".local/switcher-phone.png" });
   await context.close();

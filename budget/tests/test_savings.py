@@ -77,6 +77,35 @@ class SavingsTests(TestCase):
         self.assertContains(overview, "No savings accounts yet")
         self.assertNotContains(overview, f"/workspaces/{self.personal.pk}/savings/")
 
+    def test_the_savings_mode_cookie_turns_the_timeline_and_export_to_savings_accounts(self):
+        self.login(self.alice)
+        url, sep = f"/workspaces/{self.personal.pk}/transactions/", {"start": "2026-09-01", "end": "2026-09-30"}
+        spending_view = self.client.get(url, sep)
+        self.assertContains(spending_view, "To savings")  # the checking side
+        self.assertNotContains(spending_view, "Saved so far")
+        self.client.cookies["mode"] = "savings"
+        response = self.client.get(url, sep)
+        self.assertNotContains(response, "To savings")
+        self.assertContains(response, "Saved so far")
+        self.assertEqual(set(response.context["form"].fields["account"].queryset), {self.savings, self.high_yield})
+        s = savings(self.alice, self.personal, *SEP)
+        self.assertEqual(response.context["totals"], {"in_cents": s["in_cents"], "out_cents": s["out_cents"], "posted_cents": s["net_cents"]})
+        export = self.client.get(url + "export.csv", sep).content.decode()
+        self.assertIn("From checking", export)
+        self.assertNotIn("To savings", export)
+        # One mode for both tabs: Overview renders it before paint and hides the spending-only By category card.
+        overview = self.client.get(f"/workspaces/{self.personal.pk}/")
+        self.assertContains(overview, '<html lang="en" data-overview-mode="savings">')
+        self.assertContains(overview, 'aria-labelledby="categories-title" class="card" data-mode="spending"')
+        # A group sees only the shared savings account.
+        self.login(self.bob)
+        group = self.client.get(f"/workspaces/{self.group.pk}/transactions/", sep)
+        self.assertEqual(list(group.context["form"].fields["account"].queryset), [self.savings])
+        self.assertNotContains(group, "Secret high-yield")
+        self.assertNotContains(group, "From savings")
+        Account.objects.filter(is_savings=True).update(is_savings=False)
+        self.assertContains(self.client.get(f"/workspaces/{self.group.pk}/transactions/", sep), "No savings accounts yet")
+
     def test_the_owner_switch_marks_savings(self):
         self.login(self.alice)
         self.client.post(f"/workspaces/{self.personal.pk}/accounts/{self.checking.pk}/edit/", {"name": "Checking", "balance_kind": "", "is_savings": "on"})
