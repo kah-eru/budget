@@ -1,0 +1,4 @@
+{% load money %}<li><a class="row-link -mx-2 flex min-h-14 items-center justify-between gap-3 rounded-lg px-2 py-3" href="{% url 'account_detail' workspace.pk a.pk %}">
+  <span class="min-w-0"><span class="block break-words font-semibold">{{ a.name }}</span><span class="block text-sm text-muted">{% if a.connection_id %}Synced{% else %}Manual{% endif %}{% if a.balance_updated_at %} · {{ a.balance_updated_at|timesince }} ago{% endif %}{% if not workspace.is_personal %} · {{ a.owner.username }}{% endif %}</span></span>
+  <span class="amount shrink-0 font-medium">{{ a.balance_cents|dollars }}</span>
+</a></li>

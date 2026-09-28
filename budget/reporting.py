@@ -129,6 +129,17 @@ def budget_progress(user, workspace, budgets, day):
     return result
 
 
+def net_worth(user, workspace):
+    """What's owned minus what's owed, from last known balances. A group sees only accounts shared with it."""
+    accounts = list(visible_accounts(user, workspace).select_related("owner").order_by("name", "pk"))
+    counted = [a for a in accounts if a.balance_kind and a.balance_cents is not None]
+    assets = [a for a in counted if a.balance_kind == "asset"]
+    debts = [a for a in counted if a.balance_kind == "liability"]
+    own, owe = sum(a.balance_cents for a in assets), sum(a.balance_cents for a in debts)
+    return {"assets": assets, "debts": debts, "uncounted": [a for a in accounts if a not in counted],
+            "own_cents": own, "owe_cents": owe, "net_cents": own - owe}
+
+
 def monthly_equivalent(budget):
     return budget.limit_cents if budget.period == "month" else budget.limit_cents / 12
 

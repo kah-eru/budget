@@ -16,9 +16,34 @@ from .rules import normalize, suggest_keyword
 
 
 class AccountForm(forms.ModelForm):
+    balance = forms.DecimalField(label="Current value (USD)", required=False, min_value=Decimal("0"), max_digits=14, decimal_places=2,
+                                 help_text="What it's worth, or what you still owe. Update it whenever you like.")
+
     class Meta:
         model = Account
-        fields = ["name"]
+        fields = ["name", "balance_kind"]
+        labels = {"balance_kind": "Counts in net worth as"}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.connection_id:
+            del self.fields["balance"]  # synced from the bank; only whether it counts can change
+        elif self.instance.balance_cents is not None:
+            self.initial["balance"] = Decimal(self.instance.balance_cents) / 100
+
+    def clean(self):
+        data = super().clean()
+        if "balance" in self.fields and data.get("balance_kind") and data.get("balance") is None:
+            self.add_error("balance", "Enter its current value, or choose Not counted.")
+        return data
+
+    def save(self, commit=True):
+        if "balance" in self.fields:
+            value = self.cleaned_data.get("balance")
+            new = None if value is None or not self.cleaned_data.get("balance_kind") else int(value * 100)
+            if new != self.instance.balance_cents:
+                self.instance.balance_cents, self.instance.balance_updated_at = new, timezone.now() if new is not None else None
+        return super().save(commit)
 
 
 class TransactionForm(forms.ModelForm):

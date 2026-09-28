@@ -1,0 +1,34 @@
+{% extends 'budget/base.html' %}
+{% load money %}
+{% block content %}
+<a class="chip -ml-3 mb-2 font-semibold" href="{% url 'workspace' workspace.pk %}" aria-label="Back to {{ workspace.name }}"><span aria-hidden="true" class="mr-1 text-xl leading-none">‹</span>{{ workspace.name }}</a>
+<section aria-labelledby="worth-title" class="card">
+  <h1 id="worth-title" class="mb-1 text-sm font-semibold text-accent-text">Net worth</h1>
+  <p class="amount mb-1 text-4xl font-semibold tracking-tight">{{ worth.net_cents|dollars }}</p>
+  <p class="text-sm text-muted">Own {{ worth.own_cents|dollars }} · Owe {{ worth.owe_cents|dollars }}. An estimate from each account's last known balance{% if not workspace.is_personal %}, shared accounts only{% endif %}. Not advice.</p>
+</section>
+<section aria-labelledby="own-title" class="card">
+  <h2 id="own-title" class="mb-1 text-2xl font-medium">Own</h2>
+  <ul class="divide-y divide-line">
+    {% for a in worth.assets %}{% include 'budget/components/worth_row.html' %}{% empty %}<li class="py-4 text-muted">Nothing counted yet.</li>{% endfor %}
+  </ul>
+</section>
+<section aria-labelledby="owe-title" class="card">
+  <h2 id="owe-title" class="mb-1 text-2xl font-medium">Owe</h2>
+  <ul class="divide-y divide-line">
+    {% for a in worth.debts %}{% include 'budget/components/worth_row.html' %}{% empty %}<li class="py-4 text-muted">No debts counted.</li>{% endfor %}
+  </ul>
+</section>
+{% if worth.uncounted %}
+<section aria-labelledby="uncounted-title" class="card">
+  <h2 id="uncounted-title" class="mb-1 text-2xl font-medium">Not counted</h2>
+  <ul class="divide-y divide-line">
+    {% for a in worth.uncounted %}
+    <li class="flex min-h-14 items-center justify-between gap-3 py-3"><span class="min-w-0 break-words font-medium">{{ a.name }}{% if not workspace.is_personal %} <span class="text-sm text-muted">· {{ a.owner.username }}</span>{% endif %}</span>
+      {% if a.owner_id == user.pk %}<a class="chip bg-accent-soft" href="{% url 'account_edit' workspace.pk a.pk %}" aria-label="Set a value for {{ a.name }}">Set value</a>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+<div class="flex flex-wrap gap-3"><a class="primary" href="{% url 'account_create' %}?kind=asset">Add something you own</a><a class="secondary" href="{% url 'account_create' %}?kind=liability">Add something you owe</a></div>
+{% endblock %}

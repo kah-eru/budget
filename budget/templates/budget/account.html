@@ -10,7 +10,7 @@
     <p class="mt-1 text-sm text-muted" role="status">{% if c.needs_reconnect %}Your bank needs you to sign in again before new transactions come in.{% elif c.status == 'error' %}Last sync failed ({{ c.error_code }}). Try Sync now later.{% elif not c.last_synced_at %}Not synced yet.{% else %}Updated {{ c.last_synced_at|timesince }} ago.{% if not c.history_ready %} Still loading history.{% endif %}{% endif %}</p>
     {% if c.needs_reconnect %}<a class="chip mt-2 bg-accent-soft" href="{% url 'bank_reconnect' c.pk %}">Reconnect</a>{% else %}<form method="post" action="{% url 'bank_sync' c.pk %}" class="mt-2">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="chip bg-accent-soft" type="submit">Sync now</button></form>{% endif %}
     {% endwith %}{% endif %}</div>
-    {% if account.owner_id == user.pk %}<div class="flex flex-wrap gap-3"><a class="primary" href="{% url 'transaction_create' workspace.pk account.pk %}">Add transaction</a><a class="secondary" href="{% url 'account_import' workspace.pk account.pk %}">Import CSV</a></div>{% endif %}
+    {% if account.owner_id == user.pk %}<div class="flex flex-wrap gap-3"><a class="primary" href="{% url 'transaction_create' workspace.pk account.pk %}">Add transaction</a><a class="secondary" href="{% url 'account_import' workspace.pk account.pk %}">Import CSV</a><a class="secondary" href="{% url 'account_edit' workspace.pk account.pk %}">Edit</a></div>{% endif %}
   </div>
   <h2 class="mb-2 text-xl font-semibold">Transactions</h2>
   <ul class="divide-y divide-line">

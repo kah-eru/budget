@@ -96,9 +96,32 @@ def exchange(public_token):
 
 def accounts(connection):
     response = _call("accounts_get", AccountsGetRequest(access_token=decrypt(connection.access_token)))
+    def current(a):
+        value = a.balances.current if a.balances else None
+        return None if value is None else Decimal(str(value))
     return {"institution_id": response.item.institution_id or "", "accounts": [
-        {"id": a.account_id, "name": a.name, "mask": a.mask or "", "type": str(a.type.value), "subtype": str(a.subtype.value) if a.subtype else ""}
+        {"id": a.account_id, "name": a.name, "mask": a.mask or "", "type": str(a.type.value), "subtype": str(a.subtype.value) if a.subtype else "",
+         "current": current(a), "currency": a.balances.iso_currency_code if a.balances else None}
         for a in response.accounts]}
+
+
+def record_balances(connection):
+    """Cached balances from /accounts/get (no extra Plaid product). The first balance also sets whether an account
+    counts as owned or owed; after that the owner's choice sticks. Never fails a sync."""
+    try:
+        offered = {a["id"]: a for a in accounts(connection)["accounts"]}
+    except PlaidError:
+        return
+    now = timezone.now()
+    for account in connection.accounts.all():
+        a = offered.get(account.provider_account_id)
+        if not a or a.get("current") is None or a.get("currency") not in ("USD", None):
+            continue
+        if account.balance_cents is None:
+            account.balance_kind = "liability" if a["type"] in ("credit", "loan") else "asset"
+        account.balance_cents = int((a["current"] * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        account.balance_updated_at = now
+        account.save(update_fields=["balance_kind", "balance_cents", "balance_updated_at"])
 
 
 def remove(connection):
@@ -213,6 +236,7 @@ def _sync_once(connection):
             categorize_everywhere(rows)
             bump_account_data(account)
             evaluate_account(account)
+    record_balances(locked)
     return "ok", sum(len(rows) for rows in touched.values())
 
 

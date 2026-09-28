@@ -43,6 +43,10 @@ class Account(models.Model):
     connection = models.ForeignKey("BankConnection", on_delete=models.SET_NULL, null=True, blank=True, editable=False, related_name="accounts")
     provider_account_id = models.CharField(max_length=100, blank=True, editable=False)
     mask = models.CharField(max_length=8, blank=True, editable=False)
+    # Net worth: the last known balance. Synced accounts get it from Plaid; manual ones (a home, a loan) are typed in.
+    balance_kind = models.CharField(max_length=9, blank=True, choices=[("", "Not counted"), ("asset", "Something you own"), ("liability", "Something you owe")])
+    balance_cents = models.BigIntegerField(null=True, blank=True, editable=False)  # an asset may be negative (overdrawn)
+    balance_updated_at = models.DateTimeField(null=True, editable=False)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["connection", "provider_account_id"], condition=Q(connection__isnull=False),

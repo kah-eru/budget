@@ -37,7 +37,7 @@ from .forms import (
 from .invitations import claim_email_send
 from .models import Account, BankConnection, Budget, BudgetAlert, Category, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, net_worth, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from . import push
 from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize
@@ -480,7 +480,32 @@ def workspace_detail(request, workspace_id):
     for c in context["categories"]:
         c["share"] = max(0, round(100 * c["posted_cents"] / top)) if top > 0 else 0
     context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
+    context["worth"] = net_worth(request.user, workspace)
     return render(request, "budget/workspace.html", context)
+
+
+@login_required
+def net_worth_page(request, workspace_id):
+    workspace = get_workspace(request.user, workspace_id)
+    return render(request, "budget/net_worth.html", {**page_context(request.user, workspace), "worth": net_worth(request.user, workspace)})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def account_edit(request, workspace_id, account_id):
+    workspace = get_workspace(request.user, workspace_id)
+    account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
+    form = AccountForm(request.POST if request.method == "POST" else None, instance=account)
+    back = reverse("account_detail", args=[workspace.pk, account.pk])
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            form.save()
+            bump_account_data(account)
+        messages.success(request, "Account saved.")
+        return redirect(back)
+    help = "Synced from your bank: its balance updates on every sync; choose whether it counts." if account.connection_id else "A manual account, or something you own or owe such as a home or a loan."
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": f"Edit {account.name}", "action": "Save account",
+                  "cancel_url": back, "help": help}, status=400 if request.method == "POST" else 200)
 
 
 @login_required
@@ -896,7 +921,8 @@ def transaction_split(request, workspace_id, account_id, transaction_id):
 @login_required
 @require_http_methods(["GET", "POST"])
 def account_create(request):
-    form = AccountForm(request.POST if request.method == "POST" else None)
+    kind = request.GET.get("kind")
+    form = AccountForm(request.POST if request.method == "POST" else None, initial={"balance_kind": kind} if kind in ("asset", "liability") else None)
     if request.method == "POST" and form.is_valid():
         account = form.save(commit=False)
         account.owner = request.user
@@ -905,7 +931,7 @@ def account_create(request):
             bump_account_data(account)
         messages.success(request, "Account created. It is private until you choose to share it.")
         return redirect("home")
-    return render(request, "budget/form.html", {**page_context(request.user), "form": form, "title": "Add a manual account", "action": "Create private account", "help": "Use a label, not an account number. Bank connections and CSV imports are not available yet."}, status=400 if request.method == "POST" else 200)
+    return render(request, "budget/form.html", {**page_context(request.user), "form": form, "title": "Add a manual account", "action": "Create private account", "help": "Use a label, not an account number. For something you own or owe, like a home or a loan, add its current value."}, status=400 if request.method == "POST" else 200)
 
 
 @login_required
