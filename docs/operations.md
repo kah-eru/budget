@@ -4,7 +4,7 @@ Status 2026-09-25: configuration committed; the service exists only after the ow
 
 ## Pieces
 
-- **Render web service** (free plan, user-chosen host), defined in [`render.yaml`](../render.yaml): builds CSS/JS with npm, collects static files, runs `migrate` then Gunicorn. It deploys `feat/project-foundation` automatically after the GitHub Actions CI run passes (`autoDeployTrigger: checksPass`).
+- **Render web service** (free plan, user-chosen host), defined in [`render.yaml`](../render.yaml): builds CSS/JS with npm, collects static files, runs `migrate` then Gunicorn. It deploys `main` automatically after the GitHub Actions CI run passes (`autoDeployTrigger: checksPass`). Until 2026-09-28 it deployed `feat/project-foundation`; the Blueprint was created from that branch, and its `render.yaml` now says `branch: main`.
 - **GitHub Actions** ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)): Django tests (SQLite, synthetic), migration drift, asset build and `check --deploy` on every push and pull request. It does not host anything.
 - **Neon PostgreSQL**: use a database and role *separate from* the development `budgetdb`, so tests and local work never touch the site's data.
 - **Static files** are served by WhiteNoise from the app (hashed names, long cache). **Email** goes to the Render service log for now (`DJANGO_EMAIL_BACKEND` = console): invitation, setup and reset links appear in Logs, which only the Render account owner can read.
@@ -40,7 +40,7 @@ Replacing the keys later makes existing devices turn notifications on again.
 
 ## Updating
 
-Push to `feat/project-foundation`; CI runs; Render deploys when CI passes. A failed CI run leaves the previous version online. Roll back from Render → Deploys → an earlier deploy.
+Fast-forward `main` to `feat/project-foundation` and push both; CI runs; Render deploys `main` when CI passes. If Render → budget → Settings still shows branch `feat/project-foundation`, change it to `main` there (the two stay identical, so either deploys the same code). A failed CI run leaves the previous version online. Roll back from Render → Deploys → an earlier deploy.
 
 ## Not yet done
 

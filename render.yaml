@@ -5,7 +5,7 @@ services:
     name: budget
     runtime: python
     plan: free
-    branch: feat/project-foundation  # application code lives here until it is merged to main
+    branch: main  # the app; work happens on feat/project-foundation and main is fast-forwarded on each push
     autoDeployTrigger: checksPass    # deploy only after the GitHub Actions CI run passes
     buildCommand: node --version && pip install -r requirements.txt && npm ci && npm run build && python manage.py collectstatic --noinput
     # ponytail: migrations run at start because free instances have no pre-deploy shell; move to preDeployCommand on a paid plan.

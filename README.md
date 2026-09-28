@@ -18,7 +18,7 @@ Status (2026-09-28): a working preview with synthetic data only, deployed to Ren
 
 Not started: Plaid bank sync (milestone 3), AI insights (6), statements (7), the release/load gate (8), and the planning tools (9: reports, goals, recurring, net worth). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
 
-Active implementation: `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation`, branch `feat/project-foundation`. The original checkout remains on `main`; run application commands inside the worktree.
+`main` holds the app (merged 2026-09-28) and Render deploys it. Day-to-day work happens in the worktree `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on `feat/project-foundation`, which `main` is fast-forwarded to on each push; run application commands there.
 
 Repository: [kah-eru/budget](https://github.com/kah-eru/budget).
 

@@ -2,6 +2,14 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): "i think this is a different branch right? can you make this one main? and then i thought you synced with plaid".
+- Merged `feat/project-foundation` into `main`, so `main` now holds the whole app. The docs were already identical on both branches, and the merge was clean.
+- `feat/project-foundation` was fast-forwarded to match. Work continues there in the worktree (its venv, node_modules and `.local/` stay there). Each push fast-forwards `main` and pushes both.
+- `render.yaml` now says `branch: main`. **Owner check:** Render → budget → Settings → Branch should read `main`; change it there if the Blueprint didn't sync. Both branches are identical, so the live site is unaffected either way.
+- The separate docs-sync step to root `main` is gone.
+- Plaid: not built and not connected. It is milestone 3 and needs a Plaid account with sandbox keys (free) from the owner. Real bank data also needs production approval and has costs, and the release gates come first.
+- Verification: pushed, remote heads checked. There were no code changes, so the tests were not rerun.
+
 Latest request (2026-09-28): "look at the md files and continue with what is supposed to be next". The docs said CSV import, so it was planned and built (plan approved).
 - Built: Account → Import CSV:
   - column mapping with an explicit sign, preview, all-or-nothing row errors
