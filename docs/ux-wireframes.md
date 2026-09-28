@@ -37,13 +37,13 @@ Update 2026-09-25 (budget types and splits): Add budget has a Type (Fixed bill /
 
 Update 2026-09-25 (categorize by example): Category → Add transactions has a search box, a ticked result list (hand-set rows unticked and labeled), a "Future transactions containing this go to <category>" option with an editable keyword, and "Add ticked to <category>". The transaction Edit page has "Also put other transactions with this name in this category" with a prefilled Name contains field. A filtered Timeline has an "Add transactions to <category>" chip.
 
-Update 2026-09-25 (budgets and alerts): Overview has a Budgets card above By category (spent of limit, bar, left/over) with Manage budgets. The header has a bell that becomes an "N new alerts" pill; it opens Alerts, a list of over-budget events with current amounts.
+Update 2026-09-25 (budgets and alerts): Overview has a Budgets card above By category (spent of limit, bar, left/over) with Manage budgets (replaced 2026-09-28 by the top card's Chart | Budgets switch, section 2). The header has a bell that becomes an "N new alerts" pill; it opens Alerts, a list of over-budget events with current amounts.
 
 Update 2026-09-25 (categories): Overview has a By category list (bar per category, tap to open the filtered Timeline) and a Manage categories link. Categories → Rules → Add rule has Preview matches and an Also apply to existing transactions option. The transaction Edit page has a Category field.
 
 Update 2026-09-25 (latest): More is now **Settings** (Your login: change username/email/password; Appearance: System/Light/Dark; Your data: CSV export; Add; Sign out), and the Timeline has an Export CSV chip.
 
-Implemented later on 2026-09-25: bottom navigation is Overview | Timeline | More (Budgets/Insights join when built). More holds Your login (Change password, Email verification, Sign out) and Add (Add account, New group, Invite someone to Budget). The workspace switcher is a one-line disclosure (Workspace: name). Timeline = filters -> range totals -> Daily totals table (disclosure) -> day-grouped feed -> Older transactions / Start from newest; a changed list restarts with a status note. Standalone invite: More -> Invite someone to Budget -> email + confirmation -> recipient opens link -> Create your login -> setup email -> choose username/password -> sign in -> Finish -> own Personal workspace only.
+Implemented later on 2026-09-25: bottom navigation is Overview | Timeline | More (More became Settings; Budgets opens from Overview; Insights joins when built). More holds Your login (Change password, Email verification, Sign out) and Add (Add account, New group, Invite someone to Budget). The workspace switcher is a one-line disclosure (Workspace: name). Timeline = filters -> range totals -> Daily totals table (disclosure) -> day-grouped feed -> Older transactions / Start from newest; a changed list restarts with a status note. Standalone invite: More -> Invite someone to Budget -> email + confirmation -> recipient opens link -> Create your login -> setup email -> choose username/password -> sign in -> Finish -> own Personal workspace only.
 
 Implemented 2026-09-25 (night): Robinhood-style visual layout in the user's palette. Overview = workspace name -> big period spending number -> change vs previous month/year -> bare running-total chart -> ← Month Year → chips -> Posted/Pending/Income rows -> View timeline row -> accounts with a per-account spending pill. Timeline = ‹ back link -> title/range -> big number -> chart -> stat rows -> Daily totals table -> Filters (disclosure, open when active) -> day-grouped feed. Bottom nav has icons with labels. Light: white with Bubblegum Pink/Lavender Blush; dark (OS setting): Coffee Bean with Black Cherry.
 
@@ -201,13 +201,13 @@ Rule journey: create from purchase -> choose exact merchant/description contains
 Decisions (user, 2026-09-28):
 - the account view lives on the Timeline page
 - none ticked means all accounts, the total
-- a second layout, **Side by side**, shows one dated list per account
+- a second layout, **List** (first called Side by side), shows one dated list per account
 - lines connect money moving between your own accounts only: transfers and card payments. Spending and income stay plain rows.
 
 ```text
-Timeline                     [Together | Side by side]
+Timeline                               [Graph | List]
 Accounts · 3 of 14 ▾   [x] Checking ••0000 [x] Savings ••1111 [x] Card ••3333 [ ] …  [Show]
-[x] Show money moving                      (Side by side only)
+[x] Show money moving                      (List only)
 ┌ scrolls both ways (max 75vh) ─────────────────────────────────────────┐
 │ Checking ••0000     │ Savings ••1111     │ Card ••3333                  │ sticky
 │ in +3,000 out −910  │ in +500            │ in +410 out −6               │
@@ -224,7 +224,7 @@ Accounts · 3 of 14 ▾   [x] Checking ••0000 [x] Savings ••1111 [x] Car
 
 **Flows:**
 - Timeline → tick accounts → Show. The totals, chart, list and CSV export all follow the ticks.
-- Side by side → scroll sideways through the lanes. Hover or focus a transfer to light up the other side.
+- List → scroll sideways through the lanes. Hover or focus a transfer to light up the other side.
 - Show money moving: turn the lines off or on. The choice is remembered on this device.
 
 **Text carries the meaning:** every paired row also says where the money went ("To Savings ••1111", "From Checking ••0000, Oct 2", "To elsewhere"). A line to elsewhere is a short stub ending in a small circle, so it never looks aimed at the next lane. Screen readers and a failed script lose nothing.
@@ -243,9 +243,9 @@ Accounts · 3 of 14 ▾   [x] Checking ••0000 [x] Savings ••1111 [x] Car
 - The filter fields sit side by side: 2 columns on a phone, 4 on a desktop.
 
 ```text
-Timeline                                   [⋯]  → Export CSV · [x] Show money moving (Side by side)
+Timeline                                   [⋯]  → Export CSV · [x] Show money moving (List)
 Sep 1 – Sep 28, 2026 · 2 of 14 accounts
-[Together | Side by side]      [Filters · on ▾]
+[Graph | List]                 [Filters · on ▾]
 ┌ Filters ───────────────────────────────────────────────────┐
 │ Search [.....................]   Person [▾]   Category [▾]  │
 │ From [date]   To [date]                                     │

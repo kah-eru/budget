@@ -2,6 +2,23 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+## Current snapshot (2026-09-28)
+
+- **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
+- **Git:** local `feat/project-foundation` is ahead of GitHub. `main` and `origin/*` stay at `2d5dc6a` until the next push. The next push brings the compact UI, the Graph | List fixes, savings and demo data, and adds migration 0022 (`Account.is_savings`).
+- **Last checks** (2026-09-28): 220 Django tests OK on SQLite; savings/budgets/net worth 16/16 on Neon PostgreSQL; 12/12 Chrome checks; screenshots reviewed.
+- **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
+- **Owner actions (optional):**
+  - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
+  - `TASKS_TOKEN` in Render, plus the GitHub secrets `TASKS_TOKEN` and `SITE_URL`
+  - VAPID keys; an email provider; the Render cold-start decision
+  - See the [operations guide](docs/operations.md).
+- **Next:** push when the owner says so; then AI insights (brainstorm first; the provider is the user's choice).
+
+Latest request (2026-09-28): "now update all docs". Brought README (status, requested-features status, integrations), spec (status line, alerts row, Graph | List note), UX (old Budgets card, nav, Graph | List labels), development guide (how to open the local preview), plan (savings, renames) and operations (live service, Not yet done) up to date, and added this snapshot. Docs only; no product changes.
+
+## Log (newest first)
+
 Latest request (2026-09-28): show savings and how much is in savings accounts; explain savings → checking → spending; give savings the same kinds of views as spending. Then: "seed the data for this browser-check account with accounts of all kinds, and transactions" ("can't see the savings button": it wasn't built yet). Plan approved.
 - Answered: a transfer lowers savings but is never spending; spending rises only when the money is spent (no double counting).
 - **Built:**

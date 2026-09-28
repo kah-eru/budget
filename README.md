@@ -4,7 +4,7 @@ A private budgeting app for partners and friends who choose to share finances. S
 
 Status (2026-09-28): a working preview with synthetic data only, deployed to Render; not a real-data-ready release. Built by milestone:
 - **Milestone 1, foundation:** sign-in, private manual accounts, groups, explicit sharing, invitations with mailbox verification (group and standalone), password recovery, membership notices and member removal, a Settings page (username/email/password changes with email notices or confirmation; System/Light/Dark theme).
-- **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, account tick boxes and a Side by side layout with toggleable lines for transfers between accounts, and Timeline CSV export.
+- **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, compact controls (a ⋯ menu with CSV export; Filters with account tick boxes and Select all), and a **Graph | List** switch where List shows one dated column per account with toggleable lines for transfers between them.
 - **Milestone 3, bank sync (sandbox):** Plaid sandbox: connect a bank, choose accounts (private), Sync now, pending→posted kept, card payments as transfers, Plaid categories as a fallback; automatic sync by signed webhook, Reconnect when the bank needs a new sign-in, a warning when the same bank is connected twice.
 - **Milestone 4, categories and budgets:**
   - workspace categories (a standard set, an Overview breakdown, a Timeline filter)
@@ -12,12 +12,13 @@ Status (2026-09-28): a working preview with synthetic data only, deployed to Ren
   - categorize by example (search, tick, keep the keyword as a rule)
   - split transactions, by hand or by a 70/30-style rule
   - monthly/yearly budgets by category or name, in three types (fixed bill, yearly/irregular cost, flexible) with a disposable income estimate
+  - an Overview **Chart | Budgets** switch: each budget's spent, left or over for the month or year (monthly budgets count 12 times in a year)
 - **Milestone 5, notifications:**
   - in-app over-budget alerts, once per person, budget and period
   - phone push, off until the owner sets the two push keys
   - opt-in email alerts with one-click unsubscribe, off by default; written to the server log until the owner sets up an email provider
-- **Milestone 9, planning tools:** net worth (synced balances plus manual items), a Savings page (savings accounts marked from the bank type or by a switch; money in/out, net saved per month or year, a chart), recurring bills and income with a 30-day forecast and 3-day bill reminders, optional goals (off until turned on). Reports were dropped by the user.
-- **Also:** installable to a phone home screen, tab pages prefetched, chart without flashes.
+- **Milestone 9, planning tools:** net worth (synced balances plus manual items); savings (an Overview **Spending | Savings** switch plus a Savings page; savings accounts marked from the bank type or by a switch; money in/out and net saved per month or year, with a chart); recurring bills and income with a 30-day forecast and 3-day bill reminders, optional goals (off until turned on). Reports were dropped by the user.
+- **Also:** installable to a phone home screen, tab pages prefetched, charts without flashes, and made-up demo data for the local preview (`tests/browser/seed_demo.py`).
 
 Not started: AI insights (6), statements (7), the release/load gate (8). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
 
@@ -53,15 +54,16 @@ This is repository guidance, not a background hook. The skill is stored in Codex
 - Invite friends from the start to share selected accounts, budgets, and spending views; no automatic access to personal finances.
 - Optional AI insights about spending patterns and budget progress, run only through an API key each person enters themselves (no app or shared key; no key means no AI), with separate consent for sending shared data to an AI provider.
 - Scalable module boundaries, multiple web/worker instances, bounded queries, and a measured load-test gate from the first release.
-- Requested 2026-09-25 (designed, not built):
-  - split transactions and standard categories
-  - fixed/irregular/flexible budgets with a disposable-income estimate
-  - pie and trend reports
-  - goals
-  - recurring-bill projection with a cash-flow forecast
-  - alerts for approaching limits, bills due and unusual activity, by push or email
-  - read-only net worth and investment monitoring
-  - loan accounts
+- Requested 2026-09-25, with status as of 2026-09-28:
+  - split transactions and standard categories: built
+  - fixed/irregular/flexible budgets with a disposable-income estimate: built
+  - pie and trend reports: dropped by the user
+  - goals: built, off until each person turns them on
+  - recurring-bill projection with a cash-flow forecast: built
+  - alerts: budget crossing and bills due are built; approaching-limit thresholds and unusual activity are not
+  - read-only net worth: built, without investment holdings detail
+  - loan accounts: built (synced or manual)
   - Details: spec section "Requested additions — 2026-09-25".
+- Requested 2026-09-28 and built: Timeline by account (Graph | List with money lines), a compact Timeline and Overview, and savings (spec sections "Requested — 2026-09-28").
 
-The design uses explicit proposed defaults for decisions we have not discussed. Django, the frontend tools above, and Manus for SEO only are user-confirmed. PostgreSQL is the configured backend; development uses a hosted Neon database (free plan, user-chosen) plus opt-in SQLite for fast local checks. Further mounted React components beyond the Timeline chart, shared-edit permissions, alert calculation, hosting and numeric capacity targets are still unverified. Bklit/Kokonut registries are configured, the Timeline chart uses Bklit; Kokonut awaits Insights. Manus, banks and AI remain disconnected; no provider costs or deployment are authorized.
+The design uses explicit proposed defaults for decisions we have not discussed. Django, the frontend tools above, and Manus for SEO only are user-confirmed. PostgreSQL is the configured backend; development uses a hosted Neon database (free plan, user-chosen) plus opt-in SQLite for fast local checks. Further mounted React components beyond the Timeline chart, shared-edit permissions, alert calculation, hosting and numeric capacity targets are still unverified. Bklit/Kokonut registries are configured; the Overview, Timeline and Savings charts use Bklit, and Kokonut awaits Insights. Manus and AI remain disconnected. Bank sync works against the free Plaid sandbox only, and on the live site it waits for the owner's Plaid keys in Render. No provider costs are authorized.

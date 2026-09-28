@@ -50,7 +50,7 @@ Browser checks require locally installed Google Chrome. Stop the ordinary develo
 .venv/Scripts/python.exe tests/browser/server.py
 ```
 
-Run `npm.cmd run test:browser` in another terminal, then stop the server with Ctrl+C. The helper migrates a separate `.local/browser.sqlite3`, seeds the existing synthetic browser account, generates an ephemeral secret and forces console-only email. It redirects console email to `.local/browser-server.log` and request/error logs to `.local/browser-server-errors.log`; the invitation browser test reads only these local synthetic emails. Tests add synthetic accounts/groups per run. All databases, mail tokens, screenshots and results stay in ignored `.local/`. Never use these deliberately public synthetic credentials or this server with private records.
+To look around by hand, open http://127.0.0.1:8000 and sign in as `browser-check` / `synthetic-browser-check-only` (public synthetic credentials). `.venv/Scripts/python tests/browser/seed_demo.py [--reset]` adds made-up demo accounts and six months of transactions to that user. Run `npm.cmd run test:browser` in another terminal, then stop the server with Ctrl+C. The helper migrates a separate `.local/browser.sqlite3`, seeds the existing synthetic browser account, generates an ephemeral secret and forces console-only email. It redirects console email to `.local/browser-server.log` and request/error logs to `.local/browser-server-errors.log`; the invitation browser test reads only these local synthetic emails. Tests add synthetic accounts/groups per run. All databases, mail tokens, screenshots and results stay in ignored `.local/`. Never use these deliberately public synthetic credentials or this server with private records.
 
 ## Previous foundation checkpoint — September 23
 
@@ -517,6 +517,8 @@ Owner actions for the daily task (optional, free):
 - In GitHub → Settings → Secrets → Actions, add `TASKS_TOKEN` (same value) and `SITE_URL` (the site's https address).
 
 ## Timeline by account: tick boxes and Side by side — September 28
+
+Renamed later the same day: the layouts are **Graph | List**; "Side by side" in this section means List.
 
 Why: the user wanted a per-account view: all accounts together, or ticked ones. A second layout lists each account side by side, with money moving between them drawn and toggleable. Their choices: on the Timeline page; lines only between their own accounts. Wireframe: UX section 3b; rules: spec "Requested — 2026-09-28".
 

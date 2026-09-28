@@ -1,6 +1,6 @@
 # Operations: online preview on Render
 
-Status 2026-09-25: configuration committed; the service exists only after the owner creates it in Render. **Synthetic data only.** This preview is not the real-data deployment; the release gates in the [build plan](superpowers/plans/2026-09-22-budget-app.md) (separate production database, email delivery, backups/restore, load test) still apply before real finances.
+Status 2026-09-28: the Render service is live and deploys `main` after CI passes (the agent doesn't check the live site). **Synthetic data only.** This preview is not the real-data deployment; the release gates in the [build plan](superpowers/plans/2026-09-22-budget-app.md) (separate production database, email delivery, backups/restore, load test) still apply before real finances.
 
 ## Pieces
 
@@ -79,4 +79,4 @@ Fast-forward `main` to `feat/project-foundation` and push both; CI runs; Render 
 
 ## Not yet done
 
-Real email provider, custom domain, backups/restore rehearsal, separate production database for real data, load test, and a `main`-branch deployment after merge. Manus SEO tracking needs a public page to track and is still not connected.
+Real email provider, custom domain, backups/restore rehearsal, separate production database for real data, and load test. The owner's optional switches are still off: Plaid keys, `TASKS_TOKEN`, VAPID keys. Manus SEO tracking needs a public page to track and is still not connected.
