@@ -194,6 +194,18 @@
   .menu-item { @apply flex min-h-11 w-full items-center rounded-lg px-3 text-sm font-medium text-ink; }
   .menu-item:hover, .menu-item:focus-visible { background: var(--accent-soft); }
   .menu-item[aria-current="page"] { @apply font-bold text-accent-text; }
+  /* Header: + (or Manage sharing) and the bell share one pill. */
+  .icon-pill { @apply inline-flex items-center gap-0.5 rounded-full border border-line-strong bg-surface p-0.5; }
+  .icon-pill-item { @apply inline-flex size-10 items-center justify-center rounded-full text-accent-text; transition: transform 100ms ease-out, background-color 100ms ease-out; }
+  .icon-pill-item svg { @apply size-5; }
+  .icon-pill-item:active { transform: scale(0.95); background-color: var(--pressed); }
+  .icon-pill .alerts-link { @apply min-h-10 min-w-10; }
+  /* A hero note: inline from sm up; on phones an (i) button opens it as a popover (placed by app.tsx). */
+  .info-button { @apply inline-flex size-8 shrink-0 items-center justify-center rounded-full text-accent-text; }
+  .info-button svg { @apply size-5; }
+  .tip { @apply mt-2 text-sm font-semibold text-accent-text; }
+  @media (width < 40rem) { .tip { @apply rounded-xl border border-line-strong bg-surface p-3 shadow-lg; } }
+  @media (width >= 40rem) { .tip[popover] { display: block; position: static; inset: auto; width: auto; height: auto; margin: 0.5rem 0 0; padding: 0; border: 0; background: none; overflow: visible; } }
   /* Timeline Filters and Overview panels: hidden by CSS once JS runs, so nothing flashes; without JS they all show. */
   :root.js .filters-panel:not(.is-open) { display: none; }
   :root:not(.js) [data-filters-toggle] { display: none; }

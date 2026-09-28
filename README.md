@@ -13,6 +13,7 @@ Status (2026-09-28): a working preview with synthetic data only, deployed to Ren
   - split transactions, by hand or by a 70/30-style rule
   - monthly/yearly budgets by category or name, in three types (fixed bill, yearly/irregular cost, flexible) with a disposable income estimate
   - an Overview **Chart | Budgets** switch: each budget's spent, left or over for the month or year (monthly budgets count 12 times in a year)
+  - **1M | 1Y | Lifetime** on the Overview, the Timeline and the Savings page (calendar month and year; Lifetime goes by month past two years)
 - **Milestone 5, notifications:**
   - in-app over-budget alerts, once per person, budget and period
   - phone push, off until the owner sets the two push keys

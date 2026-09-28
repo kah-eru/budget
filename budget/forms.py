@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm, UserCreationForm
-from django.db.models import Q
+from django.db.models import Min, Q
 from django.utils import timezone
 from django.utils.formats import date_format
 
@@ -248,6 +248,7 @@ class TransactionFilterForm(forms.Form):
     start = forms.DateField(label="From", required=False, widget=forms.DateInput(attrs={"type": "date"}))
     end = forms.DateField(label="To", required=False, widget=forms.DateInput(attrs={"type": "date"}))
     view = forms.ChoiceField(choices=[("together", "Together"), ("lanes", "Side by side")], required=False, widget=forms.HiddenInput)
+    span = forms.ChoiceField(choices=[("", "Dates"), ("all", "Lifetime")], required=False, widget=forms.HiddenInput)
 
     def __init__(self, *args, accounts, workspace, **kwargs):
         super().__init__(*args, **kwargs)
@@ -262,10 +263,16 @@ class TransactionFilterForm(forms.Form):
     MAX_DAYS = 731  # two-year interactive range; older history by moving the range
 
     def clean(self):
-        """Missing dates default to one calendar month: this month, To's month, or From's month."""
+        """Missing dates default to one calendar month: this month, To's month, or From's month. Lifetime (span=all, no
+        dates) runs from the first transaction in these accounts to today, past the two-year limit."""
         data = super().clean()
         start, end = data.get("start"), data.get("end")
         if "start" in self.errors or "end" in self.errors:
+            return data
+        if data.get("span") == "all" and not start and not end:
+            today = timezone.localdate()
+            first = Transaction.objects.filter(account__in=self.fields["account"].queryset).aggregate(d=Min("posted_on"))["d"]
+            data.update(start=min(first or today, today), end=today)
             return data
         if not end:
             end = (start.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1) if start else timezone.localdate()

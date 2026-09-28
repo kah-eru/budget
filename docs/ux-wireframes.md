@@ -59,6 +59,16 @@ Budget.                          [+ Invite]  (bell)  browser-check
 [Workspace: Personal v]  [Spending | Savings]
 ```
 
+Update (user, 2026-09-28):
+- **One pill:** + (Invite) and the bell share one border; the + is just a sign. In a group, a people icon opens Manage sharing.
+- **Phones:** the switch is right-aligned, and the selector is the same height as the switch (40 px).
+
+```text
+Phone
+Budget.                         ( +  bell )
+[Personal v]              [Spending | Savings]
+```
+
 The active workspace stays visible: Personal, Partner group, or a named Friends group. Switching context changes transactions, budgets, rules, and insights together. Ask before discarding an unsaved edit; never transfer a draft or permission decision silently between workspaces.
 
 Phone destinations: Overview, Timeline, Budgets, Insights, More. More opens a page containing Accounts, Sharing & people, Statements & imports, Notifications, and Settings. A notification button is also available in the header. Desktop uses the same destinations in a sidebar.
@@ -109,6 +119,22 @@ The two-line navigation here is notation for the five destinations, not a prescr
 Bank connection opens Plaid's existing Link UI. Reuse that flow; do not design a bank-password form. On return, list available accounts with import checkboxes and a Private badge. Cancel returns safely to Accounts. A partial initial import shows Loading history and the last bank update; it does not show a misleading zero-spend final result.
 
 ## 2. Overview: understand the period, then inspect
+
+Update (user, 2026-09-28):
+- **Period chips:** `← 1M 1Y Lifetime →`. 1M and 1Y are the calendar month and year, and the arrows step through them.
+- **Lifetime** runs from the first transaction to today:
+  - no arrows and no comparison
+  - "Lifetime spending · since March 2026"
+  - a chart by month and a per-year table
+  - the Budgets panel asks for 1M or 1Y
+- **The note under the total:** inline on wider screens. On phones an (i) opens it as a small popup that closes on a tap elsewhere, Escape, or focus leaving the (i).
+
+```text
+Phone
+$5,878.56 (i)          → (i): | September 2026 spending · ↗ $1,064.63 more than August |
+[chart]
+[←  1M  1Y  Lifetime  →]
+```
 
 Journey: select workspace/period -> see posted spend and budget status -> tap category/budget/recent transaction -> matching timeline or purchase.
 
@@ -207,6 +233,12 @@ For another member's purchase, show a read-only detail page, not a Save button. 
 Rule journey: create from purchase -> choose exact merchant/description contains -> select or create category -> preview affected existing purchases -> choose Apply to existing history -> save rule. Preview states that manual category overrides will be preserved. Future matches use the saved rule automatically. A background backfill shows progress and a link back to results.
 
 ## 3b. Timeline by account (2026-09-28)
+
+Update (user, 2026-09-28): the Timeline has range chips, **1M | 1Y | Lifetime**:
+- 1M and 1Y are the calendar month and year of the current range's end; Lifetime starts at the first transaction.
+- The chips keep the other filters, and they don't count as "Filters · on".
+- On phones they get their own row above Graph | List and Filters.
+- Lifetime past two years charts and totals by month.
 
 Decisions (user, 2026-09-28):
 - the account view lives on the Timeline page

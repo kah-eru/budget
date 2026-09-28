@@ -34,16 +34,18 @@
       <a href="{% url 'home' %}" class="text-xl font-bold tracking-tight">Budget<span class="text-accent" aria-hidden="true">.</span></a>
       {% if user.is_authenticated %}
       <span class="flex items-center gap-2">
-        {% if workspace %}{% if workspace.is_personal %}<a class="chip rounded-full bg-accent-soft" href="{% url 'invitation_create' workspace.pk %}" aria-label="Invite someone to Budget"><span aria-hidden="true" class="mr-1">+</span>Invite</a>{% else %}<a class="chip rounded-full bg-accent-soft" href="{% url 'sharing' workspace.pk %}">Manage sharing</a>{% endif %}{% endif %}
+        <span class="icon-pill">
+        {% if workspace %}{% if workspace.is_personal %}<a class="icon-pill-item" href="{% url 'invitation_create' workspace.pk %}" aria-label="Invite someone to Budget"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></a>{% else %}<a class="icon-pill-item" href="{% url 'sharing' workspace.pk %}" aria-label="Manage sharing"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></a>{% endif %}{% endif %}
         <a href="{% url 'alerts' %}" class="alerts-link{% if unread_alerts %} has-unread{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>{% if unread_alerts %}{{ unread_alerts }} new alert{{ unread_alerts|pluralize }}{% else %}<span class="sr-only">Alerts</span>{% endif %}</a>
+        </span>
         <span class="break-all rounded-full bg-surface px-3 py-1 text-sm text-muted max-sm:hidden">{{ user.username }}</span>
       </span>
       {% endif %}
     </header>
     {% if workspaces %}
     {% with here=request.resolver_match.url_name %}
-    <div class="mb-6 flex flex-wrap items-center gap-3">
-      <button class="workspace-summary" type="button" popovertarget="workspace-menu">{% if workspace %}<span class="max-sm:sr-only">Workspace:</span> <span class="font-semibold">{{ workspace.name }}</span>{% else %}Switch workspace{% endif %}<span aria-hidden="true">▾</span></button>
+    <div class="mb-6 flex flex-wrap items-center gap-3 max-sm:justify-between">
+      <button class="workspace-summary min-h-10" type="button" popovertarget="workspace-menu">{% if workspace %}<span class="max-sm:sr-only">Workspace:</span> <span class="font-semibold">{{ workspace.name }}</span>{% else %}Switch workspace{% endif %}<span aria-hidden="true">▾</span></button>
       <nav id="workspace-menu" popover class="menu max-h-96 overflow-y-auto" aria-label="Workspaces">
         {% for item in workspaces %}<a class="menu-item" href="{% url 'workspace' item.pk %}" {% if workspace.pk == item.pk %}aria-current="page"{% endif %}>{{ item.name }}</a>{% endfor %}
       </nav>

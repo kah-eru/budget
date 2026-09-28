@@ -1,0 +1,7 @@
+<nav aria-label="Period" class="mt-3 flex flex-wrap items-center justify-between gap-1 border-b border-line pb-3">
+  {% if kind != 'all' %}<a class="chip" href="?period={{ prev }}" aria-label="Previous {{ kind }}">←</a>{% endif %}
+  <a class="chip" href="?period={{ periods.month }}" {% if kind == 'month' %}aria-current="page"{% endif %}>1M</a>
+  <a class="chip" href="?period={{ periods.year }}" {% if kind == 'year' %}aria-current="page"{% endif %}>1Y</a>
+  <a class="chip" href="?period=all" {% if kind == 'all' %}aria-current="page"{% endif %}>Lifetime</a>
+  {% if kind != 'all' %}<a class="chip" href="?period={{ next }}" aria-label="Next {{ kind }}">→</a>{% endif %}
+</nav>

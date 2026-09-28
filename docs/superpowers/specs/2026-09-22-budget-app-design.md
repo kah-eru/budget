@@ -195,6 +195,14 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
+### Requested — 2026-09-28: 1M | 1Y | Lifetime and header polish
+
+Status: built 2026-09-28 (development guide "1M | 1Y | Lifetime"). User choices: calendar month and year, and a people icon for Manage sharing in groups. Wireframes: UX Navigation, §2 and §3b.
+- **Ranges:** the Overview, the Savings page and the Timeline get 1M | 1Y | Lifetime.
+  - Lifetime starts at the first visible transaction. It has no comparison and no budget period.
+  - Past two years it goes by month, so the two-year limit on custom Timeline ranges stays.
+- **Header:** + and the bell share one pill. On phones the Spending | Savings switch is right-aligned and the selector matches its height. The Overview note sits behind an (i) popup.
+
 ### Requested — 2026-09-28: Savings
 
 Status: built 2026-09-28 (development guide "Savings page"). The user asked to see savings the way spending is shown. Wireframe: UX section 6c.

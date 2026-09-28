@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // Synthetic data on the disposable local database only.
 test("search transactions, edit from a filtered list and return to it; year view reflows", async ({ page }) => {
+  test.setTimeout(60_000);  // the reused preview database grows with every run
   await page.goto("/login/");
   await page.getByLabel("Username", { exact: true }).fill("browser-check");
   await page.getByLabel("Password", { exact: true }).fill("synthetic-browser-check-only");
@@ -36,7 +37,7 @@ test("search transactions, edit from a filtered list and return to it; year view
   await page.getByRole("link", { name: new RegExp("^Edit Coffee " + suffix) }).click();
   await page.getByLabel("Display name").fill("Morning coffee " + suffix);
   await page.getByRole("button", { name: "Save changes" }).click();
-  expect(page.url()).toBe(filtered);
+  await expect(page).toHaveURL(filtered);
   await expect(page.locator("main")).toContainText("Morning coffee " + suffix);
   // The chart re-measures shortly after a resize, so poll instead of reading once.
   for (const width of [320, 360, 390, 768, 1440]) {
@@ -47,7 +48,7 @@ test("search transactions, edit from a filtered list and return to it; year view
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
   await page.screenshot({ path: ".local/transactions-phone.png", fullPage: true });
   await page.getByRole("link", { name: "Overview", exact: true }).click();
-  await page.getByRole("link", { name: "Year", exact: true }).click();
+  await page.getByRole("link", { name: "1Y", exact: true }).click();
   await expect(page.getByRole("heading", { name: "2026", exact: true })).toBeVisible();
   for (const width of [320, 360]) {
     await page.setViewportSize({ width, height: 900 });

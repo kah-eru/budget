@@ -16,7 +16,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.db.models import Count, F, Q
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
 from django.urls import reverse, reverse_lazy
@@ -40,7 +40,7 @@ from .forms import (
 from .invitations import claim_email_send
 from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Goal, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, net_worth, saved_daily, savings, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, budget_progress, by_category, by_year, disposable, daily, first_day, net_worth, period_bounds, saved_daily, savings, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from . import push
 from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize
@@ -483,7 +483,10 @@ def home(request):
 
 
 def period(value, today):
-    """'YYYY' is that year, 'YYYY-MM' that month; anything else is this month. Returns (kind, start, end)."""
+    """'YYYY' is that year, 'YYYY-MM' that month, 'all' Lifetime (its dates come from period_context); anything else is
+    this month. Returns (kind, start, end)."""
+    if value == "all":
+        return "all", None, None
     try:
         if len(value) == 4:
             return "year", date(int(value), 1, 1), date(int(value), 12, 31)
@@ -505,27 +508,39 @@ def labelled(rows, workspace):
     return rows
 
 
+def period_context(user, workspace, value):
+    """The Overview and Savings page period: 1M, 1Y (with ← →) or Lifetime (first transaction to today, nothing to compare
+    with). range_params is the same range for Timeline links."""
+    today = timezone.localdate()
+    kind, start, end = period(value, today)
+    if kind == "all":
+        start, end = first_day(user, workspace), today
+        return {"kind": kind, "start": start, "end": end, "label": "Lifetime", "prev_range": None, "range_params": [("span", "all")],
+                "periods": {"month": f"{today:%Y-%m}", "year": str(today.year)}}
+    if kind == "year":
+        label, prev, next_ = str(start.year), str(start.year - 1), str(start.year + 1)
+    else:
+        label, prev, next_ = date_format(start, "F Y"), f"{start - timedelta(days=1):%Y-%m}", f"{end + timedelta(days=1):%Y-%m}"
+    _, prev_start, prev_end = period(prev, start)
+    return {"kind": kind, "start": start, "end": end, "label": label, "prev": prev, "next": next_, "prev_range": (prev_start, prev_end),
+            "prev_label": prev if kind == "year" else date_format(prev_start, "F"),
+            "range_params": [("start", start.isoformat()), ("end", end.isoformat())],
+            "periods": {"month": f"{start:%Y-%m}", "year": str(start.year)}}
+
+
 @login_required
 def workspace_detail(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
     recurring.remind(workspace)
     context = page_context(request.user, workspace)
     context["memberships"] = Membership.objects.filter(workspace=workspace).select_related("user").exclude(user=workspace.owner)
-    kind, start, end = period(request.GET.get("period", ""), timezone.localdate())
-    context.update(kind=kind, start=start, end=end, month=spending(request.user, workspace, start, end))
-    if kind == "year":
-        months, running = monthly(request.user, workspace, start.year), 0
-        for m in months:
-            running += m["posted_cents"]
-            m.update(day=m["month"], cumulative_cents=running)
-        context.update(label=str(start.year), prev=str(start.year - 1), next=str(start.year + 1), months=months, series=months)
-        _, prev_start, prev_end = period(str(start.year - 1), start)
-    else:
-        context.update(label=date_format(start, "F Y"), prev=f"{start - timedelta(days=1):%Y-%m}", next=f"{end + timedelta(days=1):%Y-%m}",
-                       series=daily(visible_transactions(request.user, workspace), start, end))
-        _, prev_start, prev_end = period(f"{start - timedelta(days=1):%Y-%m}", start)
-    context["prev_label"] = str(prev_start.year) if kind == "year" else date_format(prev_start, "F")
-    context["change_cents"] = context["month"]["posted_cents"] - spending(request.user, workspace, prev_start, prev_end)["posted_cents"]
+    context.update(period_context(request.user, workspace, request.GET.get("period", "")))
+    kind, start, end, prev_range = context["kind"], context["start"], context["end"], context["prev_range"]
+    context["month"] = spending(request.user, workspace, start, end)
+    context["series"] = daily(visible_transactions(request.user, workspace), start, end, by_month=kind != "month")
+    context["table"] = {"year": context["series"], "all": by_year(context["series"])}.get(kind)
+    context["range_query"] = urlencode(context["range_params"])
+    context["change_cents"] = None if kind == "all" else context["month"]["posted_cents"] - spending(request.user, workspace, *prev_range)["posted_cents"]
     # One grouped query for each account's posted spending in the period (the row pill).
     per_account = {r["account"]: _shape(r)["posted_cents"] for r in visible_transactions(request.user, workspace)
                    .filter(posted_on__range=(start, end)).values("account").annotate(**_sums()).order_by()}
@@ -535,7 +550,8 @@ def workspace_detail(request, workspace_id):
     # Month view: monthly budgets for that month and yearly ones for their year. Year view: every budget over the year,
     # a monthly one at 12 times its limit. The total covers only budgets measured over the period shown.
     budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
-    context["budgets"] = budget_progress(request.user, workspace, budgets, start, span=(start, end) if kind == "year" else None)
+    # Lifetime has no budget period: the panel asks for 1M or 1Y instead.
+    context["budgets"] = [] if kind == "all" else budget_progress(request.user, workspace, budgets, start, span=(start, end) if kind == "year" else None)
     same = [p for p in context["budgets"] if (p["start"], p["end"]) == (start, end)]
     context["budget_totals"] = {"limit_cents": sum(p["limit_cents"] for p in same), "spent_cents": sum(p["spent_cents"] for p in same),
                                 "left_cents": sum(max(0, p["remaining_cents"]) for p in same), "over_cents": sum(max(0, -p["remaining_cents"]) for p in same)}
@@ -546,34 +562,28 @@ def workspace_detail(request, workspace_id):
     context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
     context["worth"] = net_worth(request.user, workspace)
     saved = savings(request.user, workspace, start, end)
-    saved.update(change_cents=saved["net_cents"] - savings(request.user, workspace, prev_start, prev_end)["net_cents"],
-                 timeline=savings_timeline(workspace, saved, start, end))
-    context.update(saved=saved, savings_series=saved["months"] if kind == "year" else saved["days"])
+    saved.update(change_cents=None if kind == "all" else saved["net_cents"] - savings(request.user, workspace, *prev_range)["net_cents"],
+                 timeline=savings_timeline(workspace, saved, context["range_params"]))
+    context.update(saved=saved, savings_series=saved["days"] if kind == "month" else saved["months"])
     return render(request, "budget/workspace.html", context)
 
 
-def savings_timeline(workspace, saved, start, end):
+def savings_timeline(workspace, saved, range_params):
     """The Timeline's List view with the savings accounts ticked, where each transfer shows its line to checking."""
     return reverse("transactions", args=[workspace.pk]) + "?" + urlencode(
-        [("view", "lanes"), ("start", start.isoformat()), ("end", end.isoformat()), *(("account", a.pk) for a in saved["accounts"])])
+        [("view", "lanes"), *range_params, *(("account", a.pk) for a in saved["accounts"])])
 
 
 @login_required
 def savings_page(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
-    kind, start, end = period(request.GET.get("period", ""), timezone.localdate())
-    saved = savings(request.user, workspace, start, end)
-    if kind == "year":
-        label, prev, next_ = str(start.year), str(start.year - 1), str(start.year + 1)
-    else:
-        label, prev, next_ = date_format(start, "F Y"), f"{start - timedelta(days=1):%Y-%m}", f"{end + timedelta(days=1):%Y-%m}"
-    _, prev_start, prev_end = period(prev, start)
-    timeline = savings_timeline(workspace, saved, start, end)
+    context = period_context(request.user, workspace, request.GET.get("period", ""))
+    kind = context["kind"]
+    saved = savings(request.user, workspace, context["start"], context["end"])
     return render(request, "budget/savings.html", {
-        **page_context(request.user, workspace), "saved": saved, "kind": kind, "start": start, "label": label, "prev": prev, "next": next_,
-        "series": saved["months"] if kind == "year" else saved["days"], "timeline": timeline,
-        "prev_label": str(prev_start.year) if kind == "year" else date_format(prev_start, "F"),
-        "change_cents": saved["net_cents"] - savings(request.user, workspace, prev_start, prev_end)["net_cents"]})
+        **page_context(request.user, workspace), **context, "saved": saved, "series": saved["days"] if kind == "month" else saved["months"],
+        "timeline": savings_timeline(workspace, saved, context["range_params"]),
+        "change_cents": None if kind == "all" else saved["net_cents"] - savings(request.user, workspace, *context["prev_range"])["net_cents"]})
 
 
 @login_required
@@ -713,7 +723,9 @@ def transaction_list(request, workspace_id):
         return render(request, "budget/transactions.html", context, status=400)
     start, end = form.cleaned_data["start"], form.cleaned_data["end"]
     filtered_rows = form.apply(visible)
-    days = (saved_daily if saving else daily)(filtered_rows, start, end)
+    series = saved_daily if saving else daily
+    by_month = (end - start).days > form.MAX_DAYS  # only Lifetime goes past two years; it charts by month
+    days = series(filtered_rows, start, end, by_month=by_month)
     rows = filtered_rows.filter(posted_on__range=(start, end)).select_related("account__owner")
     # A cursor from before a data or sharing change could skip or repeat rows, so restart from newest.
     rev = f"{workspace.data_revision}-{workspace.permission_revision}"
@@ -733,7 +745,8 @@ def transaction_list(request, workspace_id):
         params = request.GET.copy()
         params["before"], params["rev"] = f"{last.posted_on:%Y-%m-%d}_{last.pk}", rev
         context["next_query"] = "?" + params.urlencode()
-    by_day = {d["day"]: d["posted_cents"] for d in days}
+    heads = series(filtered_rows, page[-1].posted_on, page[0].posted_on) if by_month and page else days
+    by_day = {d["day"]: d["posted_cents"] for d in heads}
     for row in page:
         row.day_posted = by_day[row.posted_on]
     newest = request.GET.copy()
@@ -746,10 +759,28 @@ def transaction_list(request, workspace_id):
         query = newest.copy()
         query["view"] = name
         layouts[name] = "?" + query.urlencode()
+    # 1M and 1Y are the calendar month and year of the range's end; the other filters stay.
+    lifetime = form.cleaned_data["span"] == "all" and not request.GET.get("start") and not request.GET.get("end")
+    ranges, today = [], timezone.localdate()
+    for label, bounds in (("1M", period_bounds("month", end)), ("1Y", period_bounds("year", end)), ("Lifetime", None)):
+        query = newest.copy()
+        for key in ("start", "end", "span"):
+            query.pop(key, None)
+        if bounds:
+            query["start"], query["end"] = bounds[0].isoformat(), bounds[1].isoformat()
+        else:
+            query["span"] = "all"
+        current = lifetime if bounds is None else not lifetime and start == bounds[0] and end in (bounds[1], today)
+        ranges.append((label, "?" + query.urlencode(), current))
+    clear = QueryDict(mutable=True)
+    for key in ("view", "start", "end", "span"):
+        if request.GET.get(key):
+            clear[key] = request.GET[key]
     context.update(rows=page, days=days, start=start, end=end, rev=rev, stale=stale, back=request.get_full_path(),
                    newest_query="?" + newest.urlencode(), paged=bool(before) and not stale, layouts=layouts, layout=form.cleaned_data["view"],
+                   ranges=ranges, by_month=by_month, clear_query="?" + clear.urlencode() if clear else "",
                    totals={k: sum(d[k] for d in days) for k in (("in_cents", "out_cents", "posted_cents") if saving else ("posted_cents", "pending_cents", "income_cents"))},
-                   filtered=any(request.GET.get(name) for name in form.fields if name != "view"))
+                   filtered=any(request.GET.get(name) for name in form.fields if name not in ("view", "start", "end", "span")))
     if form.cleaned_data["view"] == "lanes":
         context.update(lane_context(request.user, workspace, form, filtered_rows, start, end))
     return render(request, "budget/transactions.html", context)
@@ -764,7 +795,8 @@ def lane_context(user, workspace, form, filtered_rows, start, end):
         rows = [r for r in rows[:flows.LANE_LIMIT] if r.posted_on != oldest] or rows[:flows.LANE_LIMIT]
     accounts = list(form.cleaned_data["account"]) or sorted({r.account for r in rows}, key=lambda a: (a.name, a.pk))
     # Partners may sit a few days outside the range; only visible transfers are candidates.
-    candidates = visible_transactions(user, workspace).filter(effective="transfer", posted_on__range=(start - flows.WINDOW, end + flows.WINDOW)).select_related("account")
+    oldest = rows[-1].posted_on if rows else start  # not the range start, so Lifetime doesn't scan every transfer
+    candidates = visible_transactions(user, workspace).filter(effective="transfer", posted_on__range=(oldest - flows.WINDOW, end + flows.WINDOW)).select_related("account")
     return {"lanes": accounts, "bands": flows.lanes(rows, accounts, candidates), "capped": capped}
 
 

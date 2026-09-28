@@ -666,4 +666,46 @@ User choices: the Timeline in Savings shows only savings accounts; the Overview 
 - 12/12 Chrome checks. `savings.spec.ts` now switches in the header on the Overview, opens the Timeline in Savings, and switches both ways there.
 - Screenshots reviewed: 360 px light and dark, the open workspace menu, and the desktop header against the sketch.
 
+## 1M | 1Y | Lifetime, the (i) note and the header pill — September 28
+
+Why: the user asked for:
+- the phone switch right-aligned, with the selector at its height
+- the Overview note behind an (i) popup on phones
+- + and the bell in one pill
+- a 1M, 1Y and Lifetime selector on the Timeline and the Overview
+
+User choices: calendar month and year; a people icon for Manage sharing in groups.
+
+**Reporting:**
+- `daily()` and `saved_daily()` take `by_month`: they group by `TruncMonth` and zero-fill the first of each month.
+- `monthly()` is gone. `savings()` now builds `months` with it too, which fixes multi-year ranges (it used to assume one year through `ExtractMonth`).
+- `by_year()` sums a monthly series per year; `first_day()` gives Lifetime's start.
+
+**Overview and Savings page:**
+- `period()` accepts `all`.
+- `period_context()` replaces the period code the two views duplicated: label, prev and next, `prev_range`, the chip targets (`periods`) and `range_params` for Timeline links (`span=all` or start/end).
+- Lifetime has no comparison and no arrows; the Budgets panel asks for 1M or 1Y, and the table shows per-year totals.
+- `components/period_nav.html` is the shared `← 1M 1Y Lifetime →` nav.
+
+**Timeline:**
+- `TransactionFilterForm` has a hidden `span`. `span=all` with no dates runs from the first transaction to today and skips `MAX_DAYS`.
+- The view builds the `ranges` chips (1M and 1Y are the month and year of the range's end) and keeps the other filters.
+- Past `MAX_DAYS` the series is by month. The list's day headers then come from a daily series over the page's own dates.
+- `filtered` ignores start, end and span, and Clear filters keeps the range.
+- In `lane_context`, transfer candidates start at the oldest lane row.
+
+**(i) note:**
+- The same `<p popover class="tip">` shows inline from `sm` up (CSS overrides the popover UA styles) and is an auto popover on phones, placed full width under the (i) by the shared popover code.
+- It closes on outside taps and Escape, and when focus leaves the (i). On close its inline placement is cleared, so a wider screen shows it inline again.
+
+**Header:** `.icon-pill` holds + (or the people icon) and the bell. The row 2 container is `max-sm:justify-between`, and the selector is `min-h-10`.
+
+**Verification:**
+- 222 Django tests OK (new: by-month across years; Lifetime Overview, Timeline and Savings page; chips aren't filters). 48/48 savings, flows, reporting and budgets tests on Neon PostgreSQL.
+- 13/13 Chrome checks, with new `ranges.spec.ts`: the phone (i) opens and closes, Lifetime on the Overview, the note inline at 1280 px, and the Timeline chips.
+- Screenshots reviewed: phone light and dark, the open tip, desktop Lifetime.
+- **Found:** the reused `.local/browser.sqlite3` keeps every run's data (116 budgets under `browser-check`), and `budget_progress` runs one query per name-match budget, so the Overview takes 1–3 s there.
+  - `transactions.spec.ts` now allows 60 s and waits for the URL after saving.
+  - Load-gate item: batch the name-match budgets.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

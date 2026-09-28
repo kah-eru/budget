@@ -66,6 +66,11 @@ class SavingsTests(TestCase):
         self.assertContains(response, "view=lanes")
         year = self.client.get(f"/workspaces/{self.personal.pk}/savings/", {"period": "2026"})
         self.assertEqual(len(year.context["saved"]["months"]), 12)
+        lifetime = self.client.get(f"/workspaces/{self.personal.pk}/savings/", {"period": "all"})
+        self.assertIsNone(lifetime.context["change_cents"])
+        self.assertContains(lifetime, "Lifetime: +$312.00 saved")  # August's 100 plus September's 212
+        self.assertContains(lifetime, "since August 2026")
+        self.assertContains(lifetime, "span=all")
         # Overview's top card switches to Savings in place, with the same period, change and Timeline link.
         overview = self.client.get(f"/workspaces/{self.personal.pk}/", {"period": "2026-09"})
         self.assertContains(overview, 'data-mode="savings"')

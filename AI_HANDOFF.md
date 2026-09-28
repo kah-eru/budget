@@ -5,8 +5,8 @@ Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 ## Current snapshot (2026-09-28)
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
-- **Git:** local `feat/project-foundation` is ahead of GitHub. `main` and `origin/*` stay at `2d5dc6a` until the next push. The next push brings the compact UI, the Graph | List fixes, savings and demo data, the header Spending | Savings switch, and adds migration 0022 (`Account.is_savings`).
-- **Last checks** (2026-09-28): 221 Django tests OK on SQLite; savings/flows 17/17 on Neon PostgreSQL; 12/12 Chrome checks; screenshots reviewed.
+- **Git:** local `feat/project-foundation` is ahead of GitHub. `main` and `origin/*` stay at `2d5dc6a` until the next push. The next push brings the compact UI, the Graph | List fixes, savings and demo data, the header Spending | Savings switch, 1M | 1Y | Lifetime and the header pill, and adds migration 0022 (`Account.is_savings`).
+- **Last checks** (2026-09-28): 222 Django tests OK on SQLite; savings/flows/reporting/budgets 48/48 on Neon PostgreSQL; 13/13 Chrome checks; screenshots reviewed.
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,21 @@ Updated: 2026-09-28. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** push when the owner says so; then AI insights (brainstorm first; the provider is the user's choice).
+
+Latest request (2026-09-28): on phones, right-align the Spending | Savings switch and match the selector's height; put the Overview note behind an (i) popup that closes on unfocus; put + and the bell in one pill (+ only); add 1M / 1Y / Lifetime to the Timeline and the Overview. Plan approved.
+- **User choices:** calendar month and year (the arrows stay); a people icon for Manage sharing in groups.
+- **Built:**
+  - `daily`/`saved_daily(by_month)`, `by_year`, `first_day`; `period_context()` shared by the Overview and the Savings page
+  - Timeline `span=all` and range chips
+  - the tip popover and the header pill
+  - Details: [development guide](docs/development.md#1m--1y--lifetime-the-i-note-and-the-header-pill--september-28).
+- **Verification:** 222 Django tests OK; 48/48 on Neon; 13/13 Chrome checks; screenshots reviewed.
+- **Found:** the reused preview database has grown with every test run: 116 budgets and 98 workspaces under `browser-check`. `budget_progress` runs one query per name-match budget, so the Overview takes 1–3 s there.
+  - `transactions.spec.ts` then hit its 30 s limit once. It now has 60 s and waits for the URL, and it passed three runs in a row. One failure right after that change left no details.
+  - Load-gate item: batch the name-match budgets. Optional: a fresh preview database.
+- Committed locally, **not pushed**. The preview server is running with it.
+
+## Log (newest first)
 
 Latest request (2026-09-28, with a sketch): switch Spending | Savings on both Overview and Timeline; drop the workspace name above the switch; put the switch beside the workspace selector; move Invite to the top right. Plan approved.
 - **User choices:** the Timeline in Savings shows only savings accounts; the Overview hides By category in Savings; remove the Timeline's "‹ Personal" link too.
@@ -23,8 +38,6 @@ Latest request (2026-09-28, with a sketch): switch Spending | Savings on both Ov
   - Details: [development guide](docs/development.md#spending--savings-in-the-header-on-overview-and-timeline--september-28).
 - **Verification:** 221 Django tests OK; 17/17 on Neon; 12/12 Chrome checks; screenshots reviewed.
 - Committed locally, **not pushed**. The preview server is running with it.
-
-## Log (newest first)
 
 Latest request (2026-09-28): "now update all docs". Brought README (status, requested-features status, integrations), spec (status line, alerts row, Graph | List note), UX (old Budgets card, nav, Graph | List labels), development guide (how to open the local preview), plan (savings, renames) and operations (live service, Not yet done) up to date, and added this snapshot. Docs only; no product changes.
 

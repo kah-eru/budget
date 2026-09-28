@@ -1,7 +1,8 @@
 from datetime import date, timedelta
 
-from django.db.models import F, FilteredRelation, Q, Sum
-from django.db.models.functions import Coalesce, ExtractMonth
+from django.db.models import F, FilteredRelation, Min, Q, Sum
+from django.db.models.functions import Coalesce, TruncMonth
+from django.utils import timezone
 
 from .models import SplitLine, Transaction
 from .permissions import visible_accounts
@@ -43,26 +44,50 @@ def spending(user, workspace, start, end):
 ZERO = {"posted_cents": 0, "pending_cents": 0, "income_cents": 0}
 
 
-def daily(rows, start, end):
-    """spending() per day of [start, end] for already-filtered visible rows: one grouped query, zero-filled,
-    plus the running posted total (refunds can make a day negative and pull the line down)."""
-    grouped = rows.filter(posted_on__range=(start, end)).values("posted_on").annotate(**_sums()).order_by()
-    found = {r["posted_on"]: _shape(r) for r in grouped}
+def _steps(start, end, by_month):
+    """Each day of [start, end], or the first of each month it touches."""
+    if not by_month:
+        return [start + timedelta(days=n) for n in range((end - start).days + 1)]
+    steps, month = [], start.replace(day=1)
+    while month <= end:
+        steps.append(month)
+        month = (month + timedelta(days=32)).replace(day=1)
+    return steps
+
+
+def _grouped(rows, start, end, by_month, sums):
+    """{day, or first of the month: aggregated sums} for rows in [start, end], from one grouped query."""
+    step = TruncMonth("posted_on") if by_month else F("posted_on")
+    return {r["step"]: r for r in rows.filter(posted_on__range=(start, end)).annotate(step=step).values("step").annotate(**sums).order_by()}
+
+
+def daily(rows, start, end, by_month=False):
+    """spending() per day of [start, end] (or per month) for already-filtered visible rows: one grouped query,
+    zero-filled, plus the running posted total (refunds can make a day negative and pull the line down)."""
+    found = {k: _shape(r) for k, r in _grouped(rows, start, end, by_month, _sums()).items()}
     days, running = [], 0
-    for offset in range((end - start).days + 1):
-        day = start + timedelta(days=offset)
+    for day in _steps(start, end, by_month):
         totals = found.get(day, ZERO)
         running += totals["posted_cents"]
         days.append({"day": day, **totals, "cumulative_cents": running})
     return days
 
 
-def monthly(user, workspace, year):
-    """spending() for each calendar month of the year, from one grouped query; empty months are zero."""
-    rows = (visible_transactions(user, workspace).filter(posted_on__range=(date(year, 1, 1), date(year, 12, 31)))
-            .annotate(m=ExtractMonth("posted_on")).values("m").annotate(**_sums()).order_by("m"))
-    found = {r["m"]: _shape(r) for r in rows}
-    return [{"month": date(year, m, 1), **found.get(m, ZERO)} for m in range(1, 13)]
+def by_year(months):
+    """daily(..., by_month=True) summed per calendar year (Lifetime's table)."""
+    years = {}
+    for m in months:
+        year = years.setdefault(m["day"].year, {"day": date(m["day"].year, 1, 1), **ZERO})
+        for key in ZERO:
+            year[key] += m[key]
+    return list(years.values())
+
+
+def first_day(user, workspace):
+    """Lifetime's start: the earliest transaction this user can see here, or today."""
+    today = timezone.localdate()
+    first = Transaction.objects.filter(account__in=visible_accounts(user, workspace)).aggregate(d=Min("posted_on"))["d"]
+    return min(first or today, today)
 
 
 def split_ids(workspace):
@@ -137,13 +162,12 @@ def _flows():
     return {"i": Coalesce(Sum("amount_cents", filter=Q(money_in=True)), 0), "o": Coalesce(Sum("amount_cents", filter=Q(money_in=False)), 0)}
 
 
-def saved_daily(rows, start, end):
-    """Net saved per day of [start, end] for rows already limited to savings accounts: posted only, money in minus money
-    out by the bank's direction, zero-filled, with the running net from `start`."""
-    found = {r["posted_on"]: r for r in rows.filter(pending=False, posted_on__range=(start, end)).values("posted_on").annotate(**_flows()).order_by()}
+def saved_daily(rows, start, end, by_month=False):
+    """Net saved per day of [start, end] (or per month) for rows already limited to savings accounts: posted only, money
+    in minus money out by the bank's direction, zero-filled, with the running net from `start`."""
+    found = _grouped(rows.filter(pending=False), start, end, by_month, _flows())
     days, running = [], 0
-    for offset in range((end - start).days + 1):
-        day = start + timedelta(days=offset)
+    for day in _steps(start, end, by_month):
         r = found.get(day, {"i": 0, "o": 0})
         running += r["i"] - r["o"]
         days.append({"day": day, "in_cents": r["i"], "out_cents": r["o"], "posted_cents": r["i"] - r["o"], "cumulative_cents": running})
@@ -161,13 +185,7 @@ def savings(user, workspace, start, end):
     for a in accounts:
         r = per_account.get(a.pk, {"i": 0, "o": 0})
         a.in_cents, a.out_cents, a.net_cents = r["i"], r["o"], r["i"] - r["o"]
-    days, months, running = saved_daily(rows, start, end), [], 0
-    if (end - start).days > 31:  # the Year view
-        per_month = {r["m"]: r for r in rows.annotate(m=ExtractMonth("posted_on")).values("m").annotate(**_flows()).order_by()}
-        for m in range(1, 13):
-            r = per_month.get(m, {"i": 0, "o": 0})
-            running += r["i"] - r["o"]
-            months.append({"day": date(start.year, m, 1), "in_cents": r["i"], "out_cents": r["o"], "posted_cents": r["i"] - r["o"], "cumulative_cents": running})
+    days, months = saved_daily(rows, start, end), saved_daily(rows, start, end, by_month=True)
     known = [a for a in accounts if a.balance_cents is not None]
     total_in, total_out = sum(a.in_cents for a in accounts), sum(a.out_cents for a in accounts)
     return {"accounts": accounts, "in_cents": total_in, "out_cents": total_out, "net_cents": total_in - total_out, "days": days, "months": months,

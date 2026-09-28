@@ -144,14 +144,40 @@ class AnnotationTests(TestCase):
 
 
 class YearlyTests(ReportingTests):
-    def test_monthly_matches_spending_for_every_month_and_the_year(self):
-        from budget.reporting import monthly
-        months = monthly(self.bob, self.group, 2026)
+    def test_by_month_matches_spending_for_every_month_and_the_year(self):
+        from budget.reporting import daily, visible_transactions
+        rows = visible_transactions(self.bob, self.group)
+        months = daily(rows, date(2026, 1, 1), date(2026, 12, 31), by_month=True)
         self.assertEqual(len(months), 12)
         self.assertEqual([m["posted_cents"] for m in months[:3]], [10900, 700, 0])
+        self.assertEqual(months[1]["cumulative_cents"], 11600)
         year = spending(self.bob, self.group, date(2026, 1, 1), date(2026, 12, 31))
         for key in year:
             self.assertEqual(sum(m[key] for m in months), year[key])
+        # Across a year boundary: one step per month touched.
+        self.assertEqual([m["day"] for m in daily(rows, date(2025, 12, 15), date(2026, 2, 1), by_month=True)],
+                         [date(2025, 12, 1), date(2026, 1, 1), date(2026, 2, 1)])
+
+    def test_lifetime_runs_from_the_first_transaction_without_comparison_or_budgets(self):
+        self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
+        Transaction.objects.create(account=self.shared, amount_cents=2500, classification="expense", posted_on=date(2023, 6, 1), description="Old")
+        response = self.client.get(f"/workspaces/{self.group.pk}/?period=all")
+        self.assertEqual(response.context["start"], date(2023, 6, 1))
+        self.assertContains(response, "Lifetime spending · since June 2023")
+        self.assertNotContains(response, 'aria-label="Previous')
+        self.assertContains(response, "Budgets cover a month or a year")
+        self.assertContains(response, '?period=2023">2023<')
+        self.assertContains(response, "?span=all")  # Timeline links keep the range
+        # The Timeline's Lifetime passes the two-year limit and charts by month; each day's header still renders.
+        url = f"/workspaces/{self.group.pk}/transactions/"
+        timeline = self.client.get(url, {"span": "all"})
+        self.assertTrue(timeline.context["by_month"])
+        self.assertEqual(timeline.context["days"][0]["day"], date(2023, 6, 1))
+        self.assertEqual(timeline.context["totals"]["posted_cents"], 2500 + 10900 + 700)
+        self.assertFalse(timeline.context["filtered"])  # a range chip isn't a filter
+        self.assertEqual([label for label, _, current in timeline.context["ranges"] if current], ["Lifetime"])
+        self.assertEqual([label for label, _, current in self.client.get(url).context["ranges"] if current], ["1M"])
+        self.assertEqual(self.client.get(url, {"start": "2023-06-01", "end": "2026-02-01"}).status_code, 400)
 
     def test_workspace_period_views(self):
         self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")

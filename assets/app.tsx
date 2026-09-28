@@ -72,12 +72,19 @@ mountCharts();
 // Menus are native popovers (Escape and outside taps close them). Placed under their button, along its left edge when it's
 // on the left of the screen and its right edge otherwise, in page coordinates so the menu scrolls with its button; without
 // JS the browser centres them.
-document.querySelectorAll<HTMLElement>(".menu[popover]").forEach((menu) => {
+// A hero note's tip spans the phone's width under its (i) and also closes when focus leaves the (i).
+document.querySelectorAll<HTMLElement>(".menu[popover], .tip[popover]").forEach((menu) => {
   const button = document.querySelector<HTMLElement>(`[popovertarget="${menu.id}"]`);
+  const tip = menu.classList.contains("tip");
+  if (tip) button?.addEventListener("blur", () => menu.matches(":popover-open") && menu.hidePopover());
   menu.addEventListener("beforetoggle", (event) => {
-    if ((event as ToggleEvent).newState !== "open" || !button) return;
+    if ((event as ToggleEvent).newState !== "open") {
+      if (tip) menu.removeAttribute("style"); // a wider screen shows the note inline, where the placement would misplace it
+      return;
+    }
+    if (!button) return;
     const r = button.getBoundingClientRect();
-    const side = r.left < root.clientWidth / 2 ? { left: `${Math.max(8, r.left)}px`, transformOrigin: "top left" } : { right: `${Math.max(8, root.clientWidth - r.right)}px` };
+    const side = tip ? { left: "1rem", right: "1rem" } : r.left < root.clientWidth / 2 ? { left: `${Math.max(8, r.left)}px`, transformOrigin: "top left" } : { right: `${Math.max(8, root.clientWidth - r.right)}px` };
     Object.assign(menu.style, { position: "absolute", inset: "auto", margin: "0", top: `${r.bottom + window.scrollY + 6}px`, ...side });
   });
 });
