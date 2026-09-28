@@ -2,6 +2,8 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): "i need to import the fake plaid data so can u push that stuff as well to the website? i think u said its in a seperate branch right". Answered: no separate branch; all code is on `main` and deployed. The sandbox data lives only in the ignored local test database, and a synced bank can't be copied to the live site: its access token is tied to the local key, and bank data doesn't belong in Git. To get it on the live site, the owner adds `PLAID_CLIENT_ID`, `PLAID_SECRET` and a new `PLAID_TOKEN_KEY` in Render, then uses Settings → Connect a bank there (sandbox login `user_good` / `pass_good`). See the operations guide. No product changes; docs commits pushed.
+
 Latest request (2026-09-28): AI insights must use only an API key each user enters, and update the docs. Also a per-account view: account tick boxes (none = total) and a second layout with one dated list per account, toggleable lines for money moving between them, scrolling sideways.
 - Decisions (brainstorming, plan approved): account view first, then AI insights; on the Timeline page; lines only between the user's own accounts (transfers and card payments), with an 'elsewhere' stub.
 - **Docs:** the AI key rule is recorded in the spec (credentials row plus data rules), plan milestone 6 and the README scope: no app, operator, pooled or fallback key; no key means no AI. Wireframe in UX 3b; rules in the spec section "Requested — 2026-09-28".
