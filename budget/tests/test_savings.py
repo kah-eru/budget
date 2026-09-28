@@ -66,9 +66,16 @@ class SavingsTests(TestCase):
         self.assertContains(response, "view=lanes")
         year = self.client.get(f"/workspaces/{self.personal.pk}/savings/", {"period": "2026"})
         self.assertEqual(len(year.context["saved"]["months"]), 12)
-        self.assertContains(self.client.get(f"/workspaces/{self.personal.pk}/", {"period": "2026-09"}), f"/workspaces/{self.personal.pk}/savings/")
+        # Overview's top card switches to Savings in place, with the same period, change and Timeline link.
+        overview = self.client.get(f"/workspaces/{self.personal.pk}/", {"period": "2026-09"})
+        self.assertContains(overview, 'data-mode="savings"')
+        self.assertEqual(overview.context["saved"]["change_cents"], 11200)
+        self.assertContains(overview, f"/workspaces/{self.personal.pk}/savings/")
+        self.assertContains(overview, "View savings transactions")
         Account.objects.filter(is_savings=True).update(is_savings=False)
-        self.assertNotContains(self.client.get(f"/workspaces/{self.personal.pk}/", {"period": "2026-09"}), f"/workspaces/{self.personal.pk}/savings/")
+        overview = self.client.get(f"/workspaces/{self.personal.pk}/", {"period": "2026-09"})
+        self.assertContains(overview, "No savings accounts yet")
+        self.assertNotContains(overview, f"/workspaces/{self.personal.pk}/savings/")
 
     def test_the_owner_switch_marks_savings(self):
         self.login(self.alice)

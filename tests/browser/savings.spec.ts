@@ -30,8 +30,19 @@ test("a savings account shows on Overview and the Savings page with its net save
   await add(page, name, "Transfer out or card payment", "200.00", "To checking");
 
   await page.setViewportSize({ width: 360, height: 800 });  // before the chart mounts, so it isn't caught redrawing
+  // Overview's top card flips to Savings in place, and the choice is remembered on this device.
   await page.getByRole("link", { name: "Overview", exact: true }).click();
-  await page.locator('a[href*="/savings/"]').first().click();  // the Overview card
+  await page.locator("label.segment", { hasText: "Savings" }).click();
+  const savingsMode = page.locator('[data-mode="savings"]').first();
+  await expect(savingsMode).toBeVisible();
+  await expect(savingsMode).toContainText("saved");
+  await expect(page.locator('[data-mode="spending"]').first()).toBeHidden();
+  await page.reload();
+  await expect(savingsMode).toBeVisible();
+  await expect(page.locator('[data-mode="savings"] [data-spending-chart] svg').first()).toBeVisible();
+  await page.waitForTimeout(1000);
+  await page.screenshot({ path: ".local/overview-savings.png" });
+  await page.getByRole("link", { name: "Savings accounts and details" }).click();
   await expect(page.getByRole("heading", { name: "Savings", exact: true })).toBeVisible();
   const row = page.locator("li", { hasText: name });
   await expect(row).toContainText("$2,000.00");

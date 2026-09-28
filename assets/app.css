@@ -199,6 +199,7 @@
   :root.js .filters-panel:not(.is-open) { display: none; }
   :root:not(.js) [data-filters-toggle] { display: none; }
   :root.js:not([data-overview="budgets"]) [data-panel="budgets"], :root.js[data-overview="budgets"] [data-panel="chart"] { display: none; }
+  :root.js:not([data-overview-mode="savings"]) [data-mode="savings"], :root.js[data-overview-mode="savings"] [data-mode="spending"] { display: none; }
   /* Timeline account tick boxes. */
   .tick-chip { @apply inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-surface py-2 pr-4 pl-3 text-sm font-medium has-[:checked]:border-accent has-[:checked]:bg-accent-soft; transition: background-color 100ms ease-out; }
   .tick-chip input { @apply mt-0; }

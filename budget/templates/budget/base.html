@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <title>{% block title %}Budget{% endblock %}</title>
-  <script>document.documentElement.classList.add("js");var v=document.createElement("style");v.textContent="@view-transition{navigation:auto}";document.head.appendChild(v);try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;if(localStorage.getItem("overview")==="budgets")document.documentElement.dataset.overview="budgets"}catch(e){}</script>
+  <script>document.documentElement.classList.add("js");var v=document.createElement("style");v.textContent="@view-transition{navigation:auto}";document.head.appendChild(v);try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;if(localStorage.getItem("overview")==="budgets")document.documentElement.dataset.overview="budgets";if(localStorage.getItem("overviewMode")==="savings")document.documentElement.dataset.overviewMode="savings"}catch(e){}</script>
   <link rel="stylesheet" href="{% static 'budget/dist/app.css' %}">
   <script type="module" src="{% static 'budget/dist/app.js' %}"></script>
   {# Installable: Add to Home Screen opens full screen. No service worker, so no financial page is ever cached offline. #}

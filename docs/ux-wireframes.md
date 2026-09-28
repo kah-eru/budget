@@ -405,10 +405,21 @@ Decisions (user, 2026-09-28):
 - savings accounts are marked automatically from the bank type (savings, money market, CD), plus a **Savings account** switch on every account
 - a Savings page reached from an Overview card
 
+Update (user, 2026-09-28: "instead of scrolling down to savings, make it toggleable"): the Overview top card has a **Spending | Savings** switch in place of the separate Savings card. Savings mode shows:
+- the total and net saved against the previous period
+- the saved-so-far chart
+- the shared Month/Year nav
+- Money in, Money out and Net saved
+- View savings transactions ›, and Savings accounts and details › (this page)
+
+The choice is remembered on the device.
+
 ```text
-Overview (only when there are savings accounts)
-| Savings                     $12,400 › |
-| +$300 saved in September              |
+Overview top card
+Personal                                   [+ Invite]
+[Spending | Savings]
+$12,400
+September 2026: +$300 saved · ↗ $120 more than August
 
 Savings                      ‹ Personal
 $12,400            ← total of last known balances

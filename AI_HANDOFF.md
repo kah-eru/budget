@@ -12,6 +12,7 @@ Latest request (2026-09-28): show savings and how much is in savings accounts; e
 - Details: [development guide](docs/development.md#savings-page-and-demo-data--september-28).
 - **Verification:** 220 Django tests OK; 16/16 on Neon; 12/12 Chrome checks; screenshots reviewed.
 - Committed locally; **not pushed** (includes migration 0022). The preview server is running with the new code and data.
+- Follow-up "instead of scrolling down to savings, make it toggleable between, savings and spending": the Overview top card now has a **Spending | Savings** switch (remembered per device; the Savings card below is removed). Charts are generalized to several per page. 220 Django tests and 12/12 Chrome checks OK; screenshots of both modes reviewed. Committed locally.
 - Next: the owner reviews the preview, then says push; then AI insights (6).
 
 Latest request (2026-09-28): make the frontend more compact.

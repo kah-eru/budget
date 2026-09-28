@@ -15,38 +15,40 @@ if (!reduced) {
 }
 
 // Chart code loads only on pages that have a chart. The server-rendered skeleton holds its space until it mounts.
-const chart = document.querySelector<HTMLElement>("[data-spending-chart]");
-const series = document.getElementById("daily-series");
-let chartMounted = false;
-const mountChart = () => {
-  if (chartMounted || !chart || !series) return;
-  chartMounted = true;
-  import("./spending-chart")
-    .then(({ mount }) => mount(chart, JSON.parse(series.textContent || "[]"), { total: chart.dataset.totalLabel || "Running total", day: chart.dataset.dayLabel || "That day" }))
-    .catch(() => chart.remove()); // the totals and the daily table stay
+// Each chart mounts once it's visible, so one in a hidden Overview panel never measures an empty box.
+const mounted = new Set<HTMLElement>();
+const mountCharts = () => {
+  document.querySelectorAll<HTMLElement>("[data-spending-chart]").forEach((chart) => {
+    const series = document.getElementById(chart.dataset.series || "daily-series");
+    if (mounted.has(chart) || !series || !chart.getClientRects().length) return;
+    mounted.add(chart);
+    import("./spending-chart")
+      .then(({ mount }) => mount(chart, JSON.parse(series.textContent || "[]"), { total: chart.dataset.totalLabel || "Running total", day: chart.dataset.dayLabel || "That day" }))
+      .catch(() => chart.remove()); // the totals and the daily table stay
+  });
 };
 
-// Overview's Chart | Budgets switch. base.html sets data-overview before paint from the saved choice, and CSS shows that
-// panel; without JS the switch stays hidden and the budget list shows. The chart mounts only once its panel is visible.
-const overview = document.querySelector<HTMLFieldSetElement>("[data-overview-switch]");
-if (overview) {
-  const current = overview.querySelector<HTMLInputElement>(`input[value="${root.dataset.overview || "chart"}"]`);
+// Overview switches: Spending | Savings (overviewMode) and Chart | Budgets (overview). base.html applies the saved choices
+// before paint as data attributes on <html>, and CSS shows the matching panels; without JS the switches stay hidden and
+// every panel shows.
+document.querySelectorAll<HTMLFieldSetElement>("[data-switch]").forEach((fieldset) => {
+  const key = fieldset.dataset.switch as "overview" | "overviewMode";
+  const current = fieldset.querySelector<HTMLInputElement>(`input[value="${root.dataset[key]}"]`);
   if (current) current.checked = true;
-  overview.hidden = false;
-  overview.addEventListener("change", (event) => {
+  fieldset.hidden = false;
+  fieldset.addEventListener("change", (event) => {
     const value = (event.target as HTMLInputElement).value;
-    root.dataset.overview = value;
+    root.dataset[key] = value;
     try {
-      localStorage.setItem("overview", value);
+      localStorage.setItem(key, value);
     } catch {
       // Storage blocked: the choice holds until the page changes.
     }
-    if (value === "chart") mountChart();
-    const panel = document.querySelector<HTMLElement>(`[data-panel="${value}"]`);
-    if (panel && !reduced) panel.animate({ opacity: [0, 1] }, { duration: 150, easing: "ease-out" });
+    mountCharts();
+    if (!reduced) document.querySelectorAll<HTMLElement>(`[data-panel="${value}"], [data-mode="${value}"]`).forEach((panel) => panel.animate({ opacity: [0, 1] }, { duration: 150, easing: "ease-out" }));
   });
-}
-if (!(overview && root.dataset.overview === "budgets")) mountChart();
+});
+mountCharts();
 
 // ⋯ menus are native popovers (Escape and outside taps close them). Placed under their button's right edge, in page
 // coordinates so the menu scrolls with its button; without JS the browser centres them.

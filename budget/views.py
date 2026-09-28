@@ -545,8 +545,17 @@ def workspace_detail(request, workspace_id):
         c["share"] = max(0, round(100 * c["posted_cents"] / top)) if top > 0 else 0
     context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
     context["worth"] = net_worth(request.user, workspace)
-    context["saved"] = savings(request.user, workspace, start, end)
+    saved = savings(request.user, workspace, start, end)
+    saved.update(change_cents=saved["net_cents"] - savings(request.user, workspace, prev_start, prev_end)["net_cents"],
+                 timeline=savings_timeline(workspace, saved, start, end))
+    context.update(saved=saved, savings_series=saved["months"] if kind == "year" else saved["days"])
     return render(request, "budget/workspace.html", context)
+
+
+def savings_timeline(workspace, saved, start, end):
+    """The Timeline's List view with the savings accounts ticked, where each transfer shows its line to checking."""
+    return reverse("transactions", args=[workspace.pk]) + "?" + urlencode(
+        [("view", "lanes"), ("start", start.isoformat()), ("end", end.isoformat()), *(("account", a.pk) for a in saved["accounts"])])
 
 
 @login_required
@@ -559,9 +568,7 @@ def savings_page(request, workspace_id):
     else:
         label, prev, next_ = date_format(start, "F Y"), f"{start - timedelta(days=1):%Y-%m}", f"{end + timedelta(days=1):%Y-%m}"
     _, prev_start, prev_end = period(prev, start)
-    # The List view shows each savings account's lane with the lines to checking.
-    timeline = reverse("transactions", args=[workspace.pk]) + "?" + urlencode(
-        [("view", "lanes"), ("start", start.isoformat()), ("end", end.isoformat()), *(("account", a.pk) for a in saved["accounts"])])
+    timeline = savings_timeline(workspace, saved, start, end)
     return render(request, "budget/savings.html", {
         **page_context(request.user, workspace), "saved": saved, "kind": kind, "start": start, "label": label, "prev": prev, "next": next_,
         "series": saved["months"] if kind == "year" else saved["days"], "timeline": timeline,

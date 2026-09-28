@@ -606,6 +606,12 @@ Why: the user asked to see savings and how much is in savings accounts, and how 
 - `savings_page` (`workspaces/<id>/savings/?period=`): the hero, change against the previous period, the chart (`spending-chart.tsx` now takes tooltip labels from `data-total-label` / `data-day-label`), Month/Year, In/Out/Net, a Year table, accounts, and "View savings transactions" (the Timeline List view with the savings accounts ticked).
 - The Overview card shows only when there are savings accounts.
 
+**Overview Spending | Savings switch** (the user's follow-up: "make it toggleable between savings and spending"):
+- The top card flips in place. The separate Overview Savings card is gone.
+- A generic `[data-switch]` handler in `app.tsx` serves both Overview switches. `base.html` applies the saved `overview` / `overviewMode` choices before the page draws, and CSS shows the matching `[data-panel]` / `[data-mode]` panels.
+- Charts: several per page (`data-series`), each mounted once visible.
+- The workspace view adds the savings change, `savings_timeline()` and `savings_series`.
+
 **Demo data:**
 - `tests/browser/seed_demo.py [--reset]` fills the preview's `browser-check` user in `.local/browser.sqlite3` with made-up data.
 - Eight "Demo" accounts: checking, savings, high-yield, brokerage, a home estimate, a card, a car loan and a cash wallet.
