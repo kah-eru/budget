@@ -1,0 +1,56 @@
+{% extends 'budget/base.html' %}
+{% load money %}
+{% block content %}
+<a class="chip -ml-3 mb-2 font-semibold" href="{% url 'workspace' workspace.pk %}" aria-label="Back to {{ workspace.name }}"><span aria-hidden="true" class="mr-1 text-xl leading-none">‹</span>{{ workspace.name }}</a>
+<section aria-labelledby="savings-title" class="card">
+  <h1 id="savings-title" class="text-sm font-semibold text-accent-text">Savings</h1>
+  <p class="hero-amount mt-2">{{ saved.balance_cents|dollars }}</p>
+  {% if saved.accounts %}
+  <p class="mt-2 text-sm font-semibold text-accent-text">{{ label }}: {% if saved.net_cents >= 0 %}+{{ saved.net_cents|dollars }} saved{% else %}{{ saved.net_cents|dollars|cut:'-' }} taken out{% endif %} ·
+    {% if change_cents > 0 %}<span aria-hidden="true">↗</span> {{ change_cents|dollars }} more than {{ prev_label }}{% elif change_cents < 0 %}<span aria-hidden="true">↘</span> {{ change_cents|dollars|cut:'-' }} less than {{ prev_label }}{% else %}same as {{ prev_label }}{% endif %}</p>
+  <div data-spending-chart data-total-label="Saved so far" data-day-label="{% if kind == 'year' %}That month{% else %}That day{% endif %}" class="chart-slot mt-3 overflow-hidden" role="img" aria-label="Net saved so far, {{ label }}. The totals below have the same numbers.">{% include "budget/components/chart_skeleton.html" %}</div>
+  {{ series|json_script:'daily-series' }}
+  {% endif %}
+  <nav aria-label="Period" class="mt-3 flex flex-wrap items-center justify-between gap-1 border-b border-line pb-3">
+    <a class="chip" href="?period={{ prev }}" aria-label="Previous {{ kind }}">←</a>
+    <a class="chip" href="?period={{ start|date:'Y-m' }}" {% if kind == 'month' %}aria-current="page"{% endif %}>Month</a>
+    <a class="chip" href="?period={{ start.year }}" {% if kind == 'year' %}aria-current="page"{% endif %}>Year</a>
+    <a class="chip" href="?period={{ next }}" aria-label="Next {{ kind }}">→</a>
+  </nav>
+  {% if saved.accounts %}
+  <dl>
+    <div class="stat-row"><dt>Money in</dt><dd class="amount font-semibold">{{ saved.in_cents|dollars }}</dd></div>
+    <div class="stat-row"><dt>Money out</dt><dd class="amount font-semibold">{{ saved.out_cents|dollars }}</dd></div>
+    <div class="stat-row"><dt>Net saved</dt><dd class="amount font-semibold">{% if saved.net_cents > 0 %}+{% endif %}{{ saved.net_cents|dollars }}</dd></div>
+  </dl>
+  <a class="stat-row chevron font-medium" href="{{ timeline }}"><span class="flex-1">View savings transactions</span></a>
+  {% if kind == 'year' %}
+  <div class="mt-5 overflow-x-auto" role="region" aria-label="Savings by month" tabindex="0">
+    <table class="w-full text-left text-sm">
+      <thead class="text-muted"><tr><th scope="col" class="py-2 pr-3 font-medium">Month</th><th scope="col" class="py-2 pr-3 text-right font-medium">In</th><th scope="col" class="py-2 pr-3 text-right font-medium">Out</th><th scope="col" class="py-2 text-right font-medium">Net</th></tr></thead>
+      <tbody class="divide-y divide-line">
+        {% for m in saved.months %}<tr><th scope="row" class="py-2 pr-3 font-medium"><a href="?period={{ m.day|date:'Y-m' }}">{{ m.day|date:'F' }}</a></th><td class="amount py-2 pr-3 text-right">{{ m.in_cents|dollars }}</td><td class="amount py-2 pr-3 text-right">{{ m.out_cents|dollars }}</td><td class="amount py-2 text-right">{% if m.posted_cents > 0 %}+{% endif %}{{ m.posted_cents|dollars }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  <p class="mt-3 text-sm text-muted">The total is each account's last known balance{% if saved.unknown %}; {{ saved.unknown }} without a balance {{ saved.unknown|pluralize:"isn't,aren't" }} in it{% endif %}. A transfer to checking is money out here, and it counts as spending only once that money is spent. Moves between two savings accounts cancel out. Pending isn't counted.</p>
+  {% else %}
+  <p class="mt-3 text-muted">No savings accounts yet. To add one, open an account, choose Edit and turn on Savings account. Banks' savings, money market and CD accounts are marked for you.</p>
+  {% endif %}
+</section>
+{% if saved.accounts %}
+<section aria-labelledby="savings-accounts-title" class="card">
+  <h2 id="savings-accounts-title" class="mb-1 text-2xl font-medium">Savings accounts</h2>
+  <ul class="divide-y divide-line">
+    {% for a in saved.accounts %}
+    <li class="flex min-h-16 items-center justify-between gap-3 py-3">
+      <span class="min-w-0"><a class="block break-words font-semibold" href="{% url 'account_detail' workspace.pk a.pk %}">{{ a.name }}</a>
+        <span class="block text-sm text-muted">{% if not workspace.is_personal %}{{ a.owner.username }} · {% endif %}{% if a.balance_cents is not None %}<span class="amount">{{ a.balance_cents|dollars }}</span>{% else %}No balance{% if a.owner_id == user.pk %} · <a href="{% url 'account_edit' workspace.pk a.pk %}">Add one</a>{% endif %}{% endif %}</span></span>
+      <span class="amount shrink-0 font-semibold" aria-label="Net {{ a.net_cents|dollars }} in {{ label }}">{% if a.net_cents > 0 %}+{% endif %}{{ a.net_cents|dollars }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

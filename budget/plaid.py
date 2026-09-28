@@ -37,6 +37,7 @@ COOLDOWN = timedelta(seconds=60)  # between Sync now presses
 # ponytail: syncs run inside the web request, claimed per connection; a crashed one frees after LEASE. Real leases come with worker jobs.
 LEASE = timedelta(minutes=5)
 MUTATION = "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION"
+SAVINGS_SUBTYPES = {"savings", "money market", "cd"}
 TRANSFERS = ("TRANSFER_IN", "TRANSFER_OUT", "LOAN_PAYMENTS")  # card payments and moves between accounts are never spending
 UPDATED = ["account", "provider_id", "posted_on", "amount_cents", "classification", "pending", "description", "provider_category", "money_in"]
 
@@ -119,9 +120,11 @@ def record_balances(connection):
             continue
         if account.balance_cents is None:
             account.balance_kind = "liability" if a["type"] in ("credit", "loan") else "asset"
+        if account.is_savings is None:
+            account.is_savings = a.get("subtype") in SAVINGS_SUBTYPES
         account.balance_cents = int((a["current"] * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
         account.balance_updated_at = now
-        account.save(update_fields=["balance_kind", "balance_cents", "balance_updated_at"])
+        account.save(update_fields=["balance_kind", "balance_cents", "balance_updated_at", "is_savings"])
 
 
 def remove(connection):

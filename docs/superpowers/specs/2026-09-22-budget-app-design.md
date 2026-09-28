@@ -195,6 +195,21 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
+### Requested — 2026-09-28: Savings
+
+Status: built 2026-09-28 (development guide "Savings page"). The user asked to see savings the way spending is shown. Wireframe: UX section 6c.
+- **Which accounts:** `Account.is_savings`. A bank's savings, money market or CD account is marked at import, or on its next sync for older accounts. The owner's Savings account switch always wins.
+- **Money in and out:** by the bank's direction, posted rows only.
+  - Interest is money in, and a transfer to checking is money out.
+  - A move between two savings accounts nets out.
+  - Moving money is never spending: spending rises only when the money is spent (no double counting).
+- **Page:**
+  - the total of last known balances (accounts without one are listed separately)
+  - net saved per Month or Year against the previous period
+  - a "saved so far" chart (the chart scale starts at zero, so a raw balance line would look flat)
+  - money in, out and net; a Year table; per-account rows; a link to the Timeline List view with the savings accounts ticked
+- **Groups:** shared savings accounts only.
+
 ### Requested — 2026-09-28: Timeline by account
 
 Status: built 2026-09-28 (development guide "Timeline by account"). The user asked for a per-account view: see every account's transactions together, or tick which accounts to include. A second layout lists each account side by side, with money moving between them drawn as lines that can be turned off. Wireframe: UX section 3b.

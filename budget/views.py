@@ -3,7 +3,7 @@ import json
 from datetime import date, timedelta
 from decimal import Decimal
 from smtplib import SMTPException
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from django import forms
 from django.conf import settings
@@ -40,7 +40,7 @@ from .forms import (
 from .invitations import claim_email_send
 from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Goal, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, net_worth, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, net_worth, savings, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from . import push
 from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize
@@ -176,7 +176,7 @@ def bank_accounts(request, connection_id):
         with transaction.atomic():
             for a in chosen:
                 Account.objects.create(owner=request.user, name=(f"{a['name']} ••{a['mask']}" if a["mask"] else a["name"])[:80],
-                                       connection=connection, provider_account_id=a["id"], mask=a["mask"])
+                                       connection=connection, provider_account_id=a["id"], mask=a["mask"], is_savings=a.get("subtype") in bank.SAVINGS_SUBTYPES)
             if chosen and connection.cursor:
                 # The cursor already passed these accounts' history, so fetch it all again; known rows are updated, not duplicated.
                 BankConnection.objects.filter(pk=connection.pk).update(cursor="", needs_sync=True)
@@ -545,7 +545,28 @@ def workspace_detail(request, workspace_id):
         c["share"] = max(0, round(100 * c["posted_cents"] / top)) if top > 0 else 0
     context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
     context["worth"] = net_worth(request.user, workspace)
+    context["saved"] = savings(request.user, workspace, start, end)
     return render(request, "budget/workspace.html", context)
+
+
+@login_required
+def savings_page(request, workspace_id):
+    workspace = get_workspace(request.user, workspace_id)
+    kind, start, end = period(request.GET.get("period", ""), timezone.localdate())
+    saved = savings(request.user, workspace, start, end)
+    if kind == "year":
+        label, prev, next_ = str(start.year), str(start.year - 1), str(start.year + 1)
+    else:
+        label, prev, next_ = date_format(start, "F Y"), f"{start - timedelta(days=1):%Y-%m}", f"{end + timedelta(days=1):%Y-%m}"
+    _, prev_start, prev_end = period(prev, start)
+    # The List view shows each savings account's lane with the lines to checking.
+    timeline = reverse("transactions", args=[workspace.pk]) + "?" + urlencode(
+        [("view", "lanes"), ("start", start.isoformat()), ("end", end.isoformat()), *(("account", a.pk) for a in saved["accounts"])])
+    return render(request, "budget/savings.html", {
+        **page_context(request.user, workspace), "saved": saved, "kind": kind, "start": start, "label": label, "prev": prev, "next": next_,
+        "series": saved["months"] if kind == "year" else saved["days"], "timeline": timeline,
+        "prev_label": str(prev_start.year) if kind == "year" else date_format(prev_start, "F"),
+        "change_cents": saved["net_cents"] - savings(request.user, workspace, prev_start, prev_end)["net_cents"]})
 
 
 @login_required

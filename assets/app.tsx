@@ -22,7 +22,7 @@ const mountChart = () => {
   if (chartMounted || !chart || !series) return;
   chartMounted = true;
   import("./spending-chart")
-    .then(({ mount }) => mount(chart, JSON.parse(series.textContent || "[]")))
+    .then(({ mount }) => mount(chart, JSON.parse(series.textContent || "[]"), { total: chart.dataset.totalLabel || "Running total", day: chart.dataset.dayLabel || "That day" }))
     .catch(() => chart.remove()); // the totals and the daily table stay
 };
 

@@ -590,4 +590,34 @@ Verification:
 - 11/11 Chrome checks, with specs updated for the new controls; `budgets.spec.ts` checks the switch survives a reload.
 - Screenshots reviewed: phone filters, desktop menu, Overview Budgets in light and dark.
 
+## Savings page and demo data — September 28
+
+Why: the user asked to see savings and how much is in savings accounts, and how savings → checking → spending is tracked. They chose automatic marking plus a switch, and a page reached from an Overview card. Wireframe: UX §6c.
+
+**The rule:** a transfer lowers the savings balance but is never spending. Spending rises only when the money is spent from checking, so nothing is counted twice.
+
+**Savings page:**
+- `Account.is_savings` (migration 0022): null until decided.
+  - `bank_accounts` sets it from the Plaid subtype (`plaid.SAVINGS_SUBTYPES`: savings, money market, cd); `record_balances` fills it only while null.
+  - The Edit page has a "Savings account" switch (`AccountForm`), and the owner's choice sticks.
+- `reporting.savings(user, workspace, start, end)`:
+  - visible savings accounts, posted rows, by `money_in`: in, out and net per account, per day and, for a year, per month
+  - `cumulative_cents` is the net saved so far; the balance is the sum of known balances
+- `savings_page` (`workspaces/<id>/savings/?period=`): the hero, change against the previous period, the chart (`spending-chart.tsx` now takes tooltip labels from `data-total-label` / `data-day-label`), Month/Year, In/Out/Net, a Year table, accounts, and "View savings transactions" (the Timeline List view with the savings accounts ticked).
+- The Overview card shows only when there are savings accounts.
+
+**Demo data:**
+- `tests/browser/seed_demo.py [--reset]` fills the preview's `browser-check` user in `.local/browser.sqlite3` with made-up data.
+- Eight "Demo" accounts: checking, savings, high-yield, brokerage, a home estimate, a card, a car loan and a cash wallet.
+- About 250 transactions over six months:
+  - payroll, rent, utilities, card spending by category, subscriptions, a refund, two pending
+  - interest
+  - paired transfers: checking → savings, savings → high-yield, sometimes savings → checking, card and loan payments, a brokerage contribution, an ATM withdrawal
+- Five budgets are added when missing.
+- It refuses to run twice without `--reset`. Synced sandbox accounts are marked as savings on their next Sync now.
+
+Verification:
+- 220 Django tests OK, including new `test_savings.py` (5); savings, budgets and net worth 16/16 on Neon PostgreSQL. Migration drift clean.
+- 12/12 Chrome checks, with new `savings.spec.ts`: a manual savings account with a transfer in and out, the Overview card, the page, the chart and the Timeline link. Light and dark 360 px screenshots of the Month and Year views reviewed.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

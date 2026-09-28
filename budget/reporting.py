@@ -133,6 +133,37 @@ def budget_progress(user, workspace, budgets, day, span=None):
     return result
 
 
+def savings(user, workspace, start, end):
+    """Money in and out of the savings accounts this user can see here, posted only, by the bank's direction: a transfer to
+    checking is money out and interest is money in, while a move between two savings accounts nets out. Moving money is
+    never spending; spending() counts it only once it's spent. cumulative_cents is the running net saved from `start`,
+    because the chart's scale starts at zero. balance_cents sums the last known balances."""
+    accounts = list(visible_accounts(user, workspace).filter(is_savings=True).select_related("owner").order_by("name", "pk"))
+    rows = Transaction.objects.filter(account__in=accounts, pending=False, posted_on__range=(start, end))
+    flows = {"i": Coalesce(Sum("amount_cents", filter=Q(money_in=True)), 0), "o": Coalesce(Sum("amount_cents", filter=Q(money_in=False)), 0)}
+    per_account = {r["account"]: r for r in rows.values("account").annotate(**flows).order_by()}
+    for a in accounts:
+        r = per_account.get(a.pk, {"i": 0, "o": 0})
+        a.in_cents, a.out_cents, a.net_cents = r["i"], r["o"], r["i"] - r["o"]
+    per_day = {r["posted_on"]: r["i"] - r["o"] for r in rows.values("posted_on").annotate(**flows).order_by()}
+    days, running = [], 0
+    for offset in range((end - start).days + 1):
+        day = start + timedelta(days=offset)
+        running += per_day.get(day, 0)
+        days.append({"day": day, "posted_cents": per_day.get(day, 0), "cumulative_cents": running})
+    months, running = [], 0
+    if (end - start).days > 31:  # the Year view
+        per_month = {r["m"]: r for r in rows.annotate(m=ExtractMonth("posted_on")).values("m").annotate(**flows).order_by()}
+        for m in range(1, 13):
+            r = per_month.get(m, {"i": 0, "o": 0})
+            running += r["i"] - r["o"]
+            months.append({"day": date(start.year, m, 1), "in_cents": r["i"], "out_cents": r["o"], "posted_cents": r["i"] - r["o"], "cumulative_cents": running})
+    known = [a for a in accounts if a.balance_cents is not None]
+    total_in, total_out = sum(a.in_cents for a in accounts), sum(a.out_cents for a in accounts)
+    return {"accounts": accounts, "in_cents": total_in, "out_cents": total_out, "net_cents": total_in - total_out, "days": days, "months": months,
+            "balance_cents": sum(a.balance_cents for a in known), "unknown": len(accounts) - len(known)}
+
+
 def net_worth(user, workspace):
     """What's owned minus what's owed, from last known balances. A group sees only accounts shared with it."""
     accounts = list(visible_accounts(user, workspace).select_related("owner").order_by("name", "pk"))

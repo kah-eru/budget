@@ -399,6 +399,37 @@ Empty states:
 - no bills: "Bills that repeat show up here after three payments; or add one"
 - Goals off: no goal UI anywhere
 
+## 6c. Savings (2026-09-28)
+
+Decisions (user, 2026-09-28):
+- savings accounts are marked automatically from the bank type (savings, money market, CD), plus a **Savings account** switch on every account
+- a Savings page reached from an Overview card
+
+```text
+Overview (only when there are savings accounts)
+| Savings                     $12,400 › |
+| +$300 saved in September              |
+
+Savings                      ‹ Personal
+$12,400            ← total of last known balances
+September: +$300 saved · ↗ $120 more than August
+   ‾‾\__/‾‾‾‾\_/‾   saved so far this month (dips on withdrawals)
+[←  Month  Year  →]
+Money in        $1,000
+Money out         $700
+Net saved        +$300
+View savings transactions ›   → Timeline List view with these accounts ticked
+(Year view: a month-by-month In / Out / Net table)
+
+Savings accounts
+  Demo Savings ••9910      $12,400   +$200
+  Rainy day                $2,000    +$100
+  Emergency jar            No balance · Add one
+```
+
+- **Transfers:** a transfer to checking is money out here. It counts as spending only once the money is spent from checking, so it's never counted twice.
+- **Empty state:** "No savings accounts yet. To add one, open an account, choose Edit and turn on Savings account."
+
 ## 7. Secondary paths and recovery
 
 | Starting point | Happy path | Required recovery |

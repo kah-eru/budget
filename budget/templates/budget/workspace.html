@@ -57,6 +57,12 @@
   {% endif %}
   <p class="mt-3 text-sm text-muted">{% if workspace.is_personal %}All your accounts.{% else %}Only accounts shared with this group.{% endif %} Transfers and card payments are excluded.</p>
 </section>
+{% if saved.accounts %}
+<a class="card row-link block" href="{% url 'savings' workspace.pk %}?period={% if kind == 'year' %}{{ start.year }}{% else %}{{ start|date:'Y-m' }}{% endif %}">
+  <span class="flex items-baseline justify-between gap-3"><span class="text-2xl font-medium">Savings</span><span class="amount text-2xl font-semibold">{{ saved.balance_cents|dollars }}</span></span>
+  <span class="mt-1 block text-sm text-muted">{% if saved.net_cents >= 0 %}+{{ saved.net_cents|dollars }} saved{% else %}{{ saved.net_cents|dollars|cut:'-' }} taken out{% endif %} in {{ label }}</span>
+</a>
+{% endif %}
 {% if worth.assets or worth.debts %}
 <a class="card row-link block" href="{% url 'net_worth' workspace.pk %}">
   <span class="flex items-baseline justify-between gap-3"><span class="text-2xl font-medium">Net worth</span><span class="amount text-2xl font-semibold">{{ worth.net_cents|dollars }}</span></span>

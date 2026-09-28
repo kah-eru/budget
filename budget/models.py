@@ -48,6 +48,8 @@ class Account(models.Model):
     balance_kind = models.CharField(max_length=9, blank=True, choices=[("", "Not counted"), ("asset", "Something you own"), ("liability", "Something you owe")])
     balance_cents = models.BigIntegerField(null=True, blank=True, editable=False)  # an asset may be negative (overdrawn)
     balance_updated_at = models.DateTimeField(null=True, editable=False)
+    # Shown on the Savings page. None: not decided yet, so a bank's savings/money market/CD type fills it in; the owner's choice sticks.
+    is_savings = models.BooleanField(null=True)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["connection", "provider_account_id"], condition=Q(connection__isnull=False),

@@ -18,10 +18,11 @@ from .rules import normalize, suggest_keyword
 class AccountForm(forms.ModelForm):
     balance = forms.DecimalField(label="Current value (USD)", required=False, min_value=Decimal("0"), max_digits=14, decimal_places=2,
                                  help_text="What it's worth, or what you still owe. Update it whenever you like.")
+    is_savings = forms.BooleanField(label="Savings account", required=False, help_text="Shows on the Savings page.")
 
     class Meta:
         model = Account
-        fields = ["name", "balance_kind"]
+        fields = ["name", "balance_kind", "is_savings"]
         labels = {"balance_kind": "Counts in net worth as"}
 
     def __init__(self, *args, **kwargs):

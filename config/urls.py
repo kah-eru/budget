@@ -57,6 +57,7 @@ urlpatterns = [
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/", views.account_detail, name="account_detail"),
     path("workspaces/<int:workspace_id>/accounts/<int:account_id>/edit/", views.account_edit, name="account_edit"),
     path("workspaces/<int:workspace_id>/net-worth/", views.net_worth_page, name="net_worth"),
+    path("workspaces/<int:workspace_id>/savings/", views.savings_page, name="savings"),
     path("workspaces/<int:workspace_id>/bills/", views.bills, name="bills"),
     path("workspaces/<int:workspace_id>/bills/new/", views.bill_edit, name="bill_create"),
     path("workspaces/<int:workspace_id>/bills/<int:recurring_id>/", views.bill_edit, name="bill_edit"),

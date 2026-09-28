@@ -2,6 +2,18 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): show savings and how much is in savings accounts; explain savings → checking → spending; give savings the same kinds of views as spending. Then: "seed the data for this browser-check account with accounts of all kinds, and transactions" ("can't see the savings button": it wasn't built yet). Plan approved.
+- Answered: a transfer lowers savings but is never spending; spending rises only when the money is spent (no double counting).
+- **Built:**
+  - `Account.is_savings` (migration 0022; from the Plaid subtype, plus a Savings account switch on Edit)
+  - `reporting.savings`; a Savings page (`workspaces/<id>/savings/`) and an Overview Savings card
+  - chart tooltip labels via data attributes
+  - `tests/browser/seed_demo.py` with made-up demo data. It has been run: 248 transactions in 8 Demo accounts in the preview database.
+- Details: [development guide](docs/development.md#savings-page-and-demo-data--september-28).
+- **Verification:** 220 Django tests OK; 16/16 on Neon; 12/12 Chrome checks; screenshots reviewed.
+- Committed locally; **not pushed** (includes migration 0022). The preview server is running with the new code and data.
+- Next: the owner reviews the preview, then says push; then AI insights (6).
+
 Latest request (2026-09-28): make the frontend more compact.
 - **Timeline:** Export CSV and Show money moving in a ⋯ menu at the top right; account tick boxes with Select all only inside Filters; filter fields side by side.
 - **Overview:** a small switch turns the chart into a budget list (spent, left, over for the period shown).
