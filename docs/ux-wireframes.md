@@ -23,6 +23,8 @@ Update 2026-09-25 (requested features): Reports, Goals, Bills & recurring, and N
 
 Update 2026-09-25 (speed pass): charts hold their exact space while loading (a placeholder line appears only if loading takes over 1.5 s, and the chart is excluded from the page crossfade); tab pages are prefetched and pages crossfade (the bottom nav stays put); Add to Home Screen opens the app full screen.
 
+Update 2026-09-28 (CSV import): The account page has Import CSV next to Add transaction and an Imports list with Undo import. Upload leads to one Check file.csv page: Columns (header row, date, description, amount or money out, optional money in, sign, money-in type, optional category) → Update preview → preview rows (money in with +) → a collapsed "N look already imported" list with tick-to-keep → Import N transactions / Cancel. Row errors appear at the top and nothing is saved. This sits on the account page rather than More → Imports for now.
+
 Update 2026-09-25 (split rules and push): Add rule has an optional Split with + share (%). Settings has a Notifications card (Turn on/off for this device, with an iPhone Home Screen hint), shown only when push is available.
 
 Update 2026-09-25 (budget types and splits): Add budget has a Type (Fixed bill / Yearly or irregular cost / Flexible spending) and a due day for fixed bills. Budgets shows a Monthly plan (estimate) card: income, fixed bills, set-asides, disposable income, flexible budgets, and what is unplanned. The transaction Edit page links to Split across categories, with up to four category and amount lines that must add up exactly.

@@ -2,6 +2,20 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): "look at the md files and continue with what is supposed to be next". The docs said CSV import, so it was planned and built (plan approved).
+- Built: Account → Import CSV:
+  - column mapping with an explicit sign, preview, all-or-nothing row errors
+  - the same file imports once; duplicate rows are flagged one for one; undo
+  - imported date, amount and description read-only; rules, budgets and alerts run after an import
+- Also an app-wide select padding fix.
+- Files: `budget/imports.py`, migration 0014, forms/views/urls, `import_preview.html`, `account.html`, `tests/browser/imports.spec.ts`.
+- Details: [development guide](docs/development.md#csv-import--september-28).
+- Verification: 157 Django tests OK; 28/28 on Neon PostgreSQL; 9/9 Chrome checks; screenshots reviewed.
+- Committed locally (see Git); **not pushed**, waiting for the user's "push". Pushing deploys to Render and runs migration 0014.
+- Next: email alerts (the user must choose a provider), milestone 9 (wireframes first), Plaid (milestone 3). Open owner actions are unchanged (VAPID keys, email provider, cold start).
+
+Latest request (2026-09-28): `/model opus`. No product or repository changes requested; this environment does not expose a model-switch control, so the active model was not changed. Read the required project context and confirmed the original checkout is clean on `main`; no verification commands were run. Next: continue when the user sends a task supported by the current model/session.
+
 Latest request (2026-09-28): "update all the docs if you haven't already".
 - Fetched GitHub: nothing new since 2026-09-25 (no home-computer commits), and both checkouts are clean.
 - Rewrote the README status by milestone; it still said "milestone 1 is in progress".

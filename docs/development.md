@@ -325,4 +325,35 @@ Verification:
 - 8/8 Chrome checks. Budgets covers a 70/30 split rule; Settings covers the Notifications section and a push-only `/sw.js`.
 - Initial JS 1.22 kB gzip; the push chunk is 0.87 kB and loads only on Settings.
 
-Continue: email alerts (provider needed), CSV import, then milestone 9 (reports, goals, recurring, net worth) (requested 2026-09-25), then phone push. Still open from milestone 2: CSV import. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## CSV import — September 28
+
+Why: the docs listed CSV import as next, and it was the last open part of milestone 2. The user said "look at the md files and continue with what is supposed to be next".
+
+What it does (`budget/imports.py`, `ImportBatch` and `Transaction.import_batch`/`source_row` in migration 0014, `ImportUploadForm`/`ImportMappingForm`, views `account_import`, `import_preview`, `import_undo`, template `import_preview.html`):
+- **Account → Import CSV** (owner only; a group member or outsider gets 404) → upload → **Check file.csv**.
+  - The preview page picks columns by name (date, description, amount or money out, an optional money-in column, an optional category) and guesses whether the file has a header row.
+  - The sign convention is explicit ("Money out is negative (banks)" or "positive (cards)"). The default is whichever sign most amounts have. Money in counts as income, refund or transfer.
+  - The page shows the first 20 rows, money in marked with a +, and totals. Nothing is saved until **Import N transactions**.
+- **All or nothing:** a bad date, a non-number, NaN/Infinity, a fraction of a cent, $10bn or more, or both in/out filled lists the problem rows ("Row 4: …", spreadsheet row numbers) and saves nothing. Rows with no amount are left out and counted.
+- **Duplicates:**
+  - The same file (SHA-256) imports into an account once. This is enforced by a database constraint on finished imports, plus a locked preview row, so double-clicking Import saves one set.
+  - Rows with the same date, amount and name as ones already in the account are flagged, matched one for one. Two real $4.50 coffees stay two when only one is already there. Flagged rows are left out unless ticked.
+  - Identical rows inside one file are always imported.
+- **Imported rows are read-only:** the original entry shows date, amount, description and pending as disabled, and posted changes are ignored. Only the type can change, and the link reads "Edit type". Workspace names, categories, notes and splits work as for manual rows.
+- After an import, rules run in every workspace that can see the account. A category column counts as a hand choice, in the workspace the import started from; unknown names are left to rules. Budgets are re-evaluated, so alerts and phone push fire as for manual entries.
+- **Imports** on the account page lists finished files with **Undo import**, which removes that file's transactions with their notes and splits.
+- Unfinished previews keep the file's text only until imported, cancelled or a day old; they are deleted on the next upload to that account.
+- Limits, marked `ponytail:`:
+  - 1 MB and 5,000 rows per file, processed during the request; the milestone 3 worker jobs are the upgrade.
+  - Comma-separated only.
+  - US and ISO dates only (a DD/MM format picker if one shows up).
+- Known gap: a checking account's card payment imports as money out (an expense) unless its type is changed. Rules only set categories today.
+- Selects now leave room for the arrow, so long options no longer run into it (app-wide CSS fix).
+
+Verification:
+- 157 Django tests OK on SQLite (4 PG-only skipped), including new `test_imports.py` (13). The tests failed first.
+- Imports, rules, alerts and concurrency 28/28 on Neon PostgreSQL.
+- `check` and migration drift clean.
+- 9/9 Chrome checks. New `imports.spec.ts`: upload, sign flip, preview, import, read-only amount, Timeline, undo. Light and dark 360 px screenshots reviewed.
+
+Continue: email alerts (provider needed), then milestone 9 (reports, goals, recurring, net worth; wireframes first), then Plaid (milestone 3). Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
