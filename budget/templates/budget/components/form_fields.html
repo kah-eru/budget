@@ -1,0 +1,14 @@
+{% if form.non_field_errors %}<div role="alert" class="mb-4 rounded-lg border border-danger bg-danger-soft p-4 text-danger">{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form %}
+<div class="mb-5">
+  {% if field.field.widget.input_type == 'checkbox' and field.name == 'accounts' %}
+  <fieldset><legend class="mb-2 font-medium">{{ field.label }}</legend>{{ field }}</fieldset>
+  {% elif field.field.widget.input_type == 'checkbox' %}
+  <label class="flex cursor-pointer items-start gap-3 py-3">{{ field }}<span>{{ field.label }}</span></label>
+  {% else %}
+  <label for="{{ field.id_for_label }}" class="mb-2 block font-medium">{{ field.label }}</label>{{ field }}
+  {% endif %}
+  {% if field.help_text %}<p class="mt-2 text-sm text-muted">{{ field.help_text }}</p>{% endif %}
+  {% if field.errors %}<div role="alert" class="mt-2 text-sm text-danger">{{ field.errors }}</div>{% endif %}
+</div>
+{% endfor %}

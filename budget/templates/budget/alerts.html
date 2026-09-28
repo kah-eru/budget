@@ -1,0 +1,18 @@
+{% extends 'budget/base.html' %}
+{% load money %}
+{% block content %}
+<section aria-labelledby="alerts-title" class="card">
+  <h1 id="alerts-title" class="mb-1 text-3xl">Alerts</h1>
+  <p class="mb-4 text-muted">When posted spending goes over a budget, you get one alert for that period. Amounts are current.</p>
+  <ul class="divide-y divide-line">
+    {% for alert in alerts %}{% with p=alert.progress %}
+    <li><a class="row-link -mx-2 block rounded-lg px-2 py-3" href="{% url 'budget_edit' alert.budget.workspace_id alert.budget_id %}">
+      <span class="flex flex-wrap items-baseline justify-between gap-x-3"><span class="min-w-0 break-words font-semibold">{% if alert.read_at is None %}<span class="unread-dot" aria-hidden="true"></span><span class="sr-only">New: </span>{% endif %}{{ alert.budget }} went over budget</span><span class="text-sm text-muted">{{ alert.created_at|date:'M j' }}</span></span>
+      <span class="mt-1 block text-sm text-muted">{{ alert.budget.workspace.name }} · {% if alert.budget.period == 'year' %}{{ p.start.year }}{% else %}{{ p.start|date:'F Y' }}{% endif %} · {{ p.spent_cents|dollars }} of {{ alert.budget.limit_cents|dollars }} · {% if p.over %}<span class="font-semibold text-danger">{{ p.remaining_cents|dollars|cut:'-' }} over</span>{% else %}back under by {{ p.remaining_cents|dollars }}{% endif %}</span>
+    </a></li>
+    {% endwith %}{% empty %}
+    <li class="py-5 text-muted">No alerts. Add a budget to get one when spending goes over.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

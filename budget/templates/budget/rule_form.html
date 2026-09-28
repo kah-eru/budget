@@ -1,0 +1,17 @@
+{% extends 'budget/base.html' %}
+{% load money %}
+{% block content %}
+<section class="max-w-xl card">
+  <h1 class="mb-2 text-3xl">{% if rule.pk %}Edit rule{% else %}Add a rule{% endif %}</h1>
+  <p class="mb-6 text-muted">Applies to new and edited transactions in {% if workspace.is_personal %}your personal view{% else %}{{ workspace.name }}{% endif %}. The original entries never change.</p>
+  <form method="post">{% csrf_token %}{% include 'budget/components/form_fields.html' %}
+    {% if preview is not None %}
+    <div role="status" class="mb-4 rounded-lg bg-accent-soft p-4">
+      <p class="font-semibold">{{ match_count }} transaction{{ match_count|pluralize }} match{{ match_count|pluralize:"es," }}{% if match_count > preview|length %}, showing the newest {{ preview|length }}{% endif %}</p>
+      <ul class="mt-2 text-sm">{% for row in preview %}<li class="flex justify-between gap-3 py-1"><span class="min-w-0 break-words">{{ row.posted_on }} · {{ row.description }}</span><span class="amount">{{ row.amount_cents|dollars }}</span></li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <div class="flex flex-wrap gap-3"><button class="primary" type="submit">Save rule</button><button class="secondary" type="submit" name="preview" value="1">Preview matches</button><a class="secondary" href="{{ cancel_url }}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}

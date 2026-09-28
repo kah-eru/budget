@@ -1,0 +1,16 @@
+{% extends 'budget/base.html' %}
+{% block title %}Sign in · Budget{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-md card">
+  <h1 class="mb-2 text-3xl">Your finances, your choice.</h1>
+  <p class="mb-6 text-muted">Sign in to your private workspace. Accounts stay private until you share them.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include 'budget/components/form_fields.html' %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="primary w-full">Sign in</button>
+  </form>
+  <a class="secondary mt-4" href="{% url 'password_reset' %}">Forgot your password?</a>
+  <p class="mt-4 text-sm text-muted">Use your invitation to create an account, or ask the operator for access. Public sign-up is disabled.</p>
+</section>
+{% endblock %}

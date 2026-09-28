@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: pip install -r requirements.txt
+      - run: npm ci
+      - run: npm run build
+      # Synthetic SQLite tests; PostgreSQL-only locking tests are skipped here and run against Neon locally.
+      - run: python manage.py test --settings=config.test_settings --noinput
+      - run: python manage.py makemigrations --check --dry-run --settings=config.test_settings
+      - name: Production settings check
+        env:
+          DJANGO_SECRET_KEY: ci-only-${{ github.run_id }}-not-a-deployment-secret-value-padding-0123456789
+          DJANGO_ALLOWED_HOSTS: example.invalid
+          BUDGET_BEHIND_PROXY: "1"
+        run: python manage.py check --deploy --fail-level WARNING

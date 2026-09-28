@@ -1,0 +1,22 @@
+{% extends 'budget/base.html' %}
+{% load money %}
+{% block content %}
+<section class="max-w-xl card">
+  <h1 class="mb-2 text-3xl">Split {{ row.description|default:"transaction" }}</h1>
+  <p class="mb-6 text-muted">{{ row.posted_on }} · {{ row.amount_cents|dollars }}. The lines must add up to exactly {{ row.amount_cents|dollars }}. Each line counts in its own category and budget in {% if workspace.is_personal %}your personal view{% else %}{{ workspace.name }}{% endif %} only.</p>
+  <form method="post">{% csrf_token %}
+    {% if form.non_field_errors %}<div role="alert" class="mb-4 rounded-lg border border-danger bg-danger-soft p-4 text-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="mb-1 grid grid-cols-[1fr_8rem] gap-2 text-sm font-medium text-muted" aria-hidden="true"><span>Category</span><span>Amount (USD)</span></div>
+    {% for category, amount in form.slots %}
+    <fieldset class="mb-3 grid grid-cols-[1fr_8rem] gap-2">
+      <legend class="sr-only">Line {{ forloop.counter }}</legend>
+      <div><label for="{{ category.id_for_label }}" class="sr-only">{{ category.label }}</label>{{ category }}</div>
+      <div><label for="{{ amount.id_for_label }}" class="sr-only">{{ amount.label }}</label>{{ amount }}
+        {% if amount.errors %}<div role="alert" class="mt-1 text-sm text-danger">{{ amount.errors }}</div>{% endif %}</div>
+    </fieldset>
+    {% endfor %}
+    <div class="mt-4 flex flex-wrap gap-3"><button class="primary" type="submit">Save split</button><a class="secondary" href="{{ cancel_url }}">Cancel</a></div>
+  </form>
+  {% if existing %}<form method="post" class="mt-6 border-t border-line pt-4">{% csrf_token %}<button class="secondary text-danger" type="submit" name="remove" value="1">Remove split</button></form>{% endif %}
+</section>
+{% endblock %}
