@@ -237,6 +237,7 @@ Accounts · 3 of 14 ▾   [x] Checking ••0000 [x] Savings ••1111 [x] Car
 - Over 400 rows: "Showing the newest 400 transactions. Narrow the dates to see older ones."
 
 **Compact controls (user, 2026-09-28):**
+- The layout buttons are now **Graph | List** (they were Together | Side by side); the List view's heading is "By account".
 - Export CSV and Show money moving live in a ⋯ menu at the top right.
 - The account tick boxes, with Select all, appear only inside Filters.
 - The filter fields sit side by side: 2 columns on a phone, 4 on a desktop.

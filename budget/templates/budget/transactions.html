@@ -15,8 +15,8 @@
 {% if start %}<p class="mb-3 text-muted">{{ start|date:'M j, Y' }} – {{ end|date:'M j, Y' }} · {% if form.cleaned_data.account %}{{ form.cleaned_data.account|length }} of {{ form.fields.account.queryset|length }} accounts{% elif workspace.is_personal %}All your accounts{% else %}Only accounts shared with this group{% endif %}</p>{% endif %}
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
   <nav aria-label="Layout" class="flex gap-1">
-    <a class="chip" href="{{ layouts.together }}" {% if layout != 'lanes' %}aria-current="page"{% endif %}>Together</a>
-    <a class="chip" href="{{ layouts.lanes }}" {% if layout == 'lanes' %}aria-current="page"{% endif %}>Side by side</a>
+    <a class="chip" href="{{ layouts.together }}" {% if layout != 'lanes' %}aria-current="page"{% endif %}>Graph</a>
+    <a class="chip" href="{{ layouts.lanes }}" {% if layout == 'lanes' %}aria-current="page"{% endif %}>List</a>
   </nav>
   <button class="workspace-summary" type="button" data-filters-toggle aria-controls="filters-panel" aria-expanded="{% if form.errors %}true{% else %}false{% endif %}">Filters{% if filtered %} · on{% endif %}<span aria-hidden="true">▾</span></button>
 </div>

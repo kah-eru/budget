@@ -48,7 +48,7 @@ test("Timeline side by side joins a transfer across two accounts and the lines t
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.getByRole("button", { name: "Apply filters" }).click();
   await expect(page.locator("main")).toContainText("2 of");
-  await page.getByRole("link", { name: "Side by side" }).click();
+  await page.getByRole("link", { name: "List", exact: true }).click();
 
   const lanes = page.getByRole("region", { name: "Transactions by account" });
   await expect(lanes.locator(".lane-head")).toHaveCount(2);

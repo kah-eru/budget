@@ -580,6 +580,11 @@ Why: the user wanted the frontend more compact. They chose to remove the Overvie
 - The total line covers only budgets measured over the period shown, so a yearly budget stays out of a month's total: spent of limit · left · over.
 - `budget_progress(..., span=)`: in the Year view a monthly budget uses the whole year and 12 times its limit, and every result carries `limit_cents`. Alerts and the Budgets page call it unchanged.
 
+Owner review in the local preview found three things, all fixed:
+- The column header strip broke at each gutter. Each head now also covers the gutter after it.
+- Lane rows drew over the bottom menu. The bottom nav now has `z-index: 40`, and `.lanes` isolates its own layering.
+- The layout buttons are renamed **Graph | List**.
+
 Verification:
 - 215 Django tests OK (new: the year view counts 12 times and totals follow the period; the menu and accounts sit inside Filters).
 - 11/11 Chrome checks, with specs updated for the new controls; `budgets.spec.ts` checks the switch survives a reload.

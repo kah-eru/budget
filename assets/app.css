@@ -150,7 +150,8 @@
     .primary:active, .secondary:active, .workspace-link:active, .workspace-summary:active, .nav-link:active { transform: none; }
   }
   /* Translucent nav so content reads as scrolling under it; solid when transparency is reduced. */
-  .bottom-nav { view-transition-name: bottom-nav; padding-bottom: env(safe-area-inset-bottom, 0px); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(16px) saturate(160%); }
+  /* Always above page content, including the Timeline's layered lanes. */
+  .bottom-nav { z-index: 40; view-transition-name: bottom-nav; padding-bottom: env(safe-area-inset-bottom, 0px); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(16px) saturate(160%); }
   @media (prefers-reduced-transparency: reduce) { .bottom-nav { background: var(--surface); backdrop-filter: none; } }
   /* Flat sections: spacing and hairlines separate content, not boxes. */
   .card { @apply mb-8; }
@@ -203,9 +204,12 @@
   .tick-chip input { @apply mt-0; }
   /* Side by side: one lane per account, a date band across all lanes. It scrolls both ways inside its own box, so the page never scrolls sideways
      and the lane names stay on top. On a phone the next lane peeks in at the edge. The gutters hold the money lines. */
-  .lanes { position: relative; display: grid; grid-template-columns: repeat(var(--lanes), minmax(min(calc(100vw - 7.5rem), 18rem), 1fr)); column-gap: 2.5rem;
+  .lanes { position: relative; isolation: isolate; display: grid; grid-template-columns: repeat(var(--lanes), minmax(min(calc(100vw - 7.5rem), 18rem), 1fr)); column-gap: 2.5rem;
            max-height: 75vh; overflow: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: 0.75rem; @apply rounded-lg border border-line px-3; }
-  .lane-head { position: sticky; top: 0; z-index: 3; scroll-snap-align: start; @apply min-w-0 bg-surface pt-3 pb-2; box-shadow: 0 1px 0 var(--line); }
+  /* The header strip stays whole: each head also covers the gutter after it (and the first one the left padding). */
+  .lane-head { position: sticky; top: 0; z-index: 3; scroll-snap-align: start; margin-right: -2.5rem; padding-right: 2.5rem; @apply min-w-0 bg-surface pt-3 pb-2; box-shadow: 0 1px 0 var(--line); }
+  .lane-head:first-of-type { margin-left: -0.75rem; padding-left: 0.75rem; }
+  .lane-head:last-of-type { margin-right: 0; padding-right: 0; }
   .lane-day { grid-column: 1 / -1; @apply mt-2 border-b border-line py-1.5 text-xs font-semibold text-muted; }
   .lane-day > span { position: sticky; left: 0; }
   .lane-empty { grid-column: 1 / -1; @apply py-5 text-muted; }
