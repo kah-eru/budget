@@ -254,6 +254,72 @@ Journey: Insights -> configure personal key if missing -> choose workspace/perio
 
 The ellipsis is a wireframe position for the user's actual configured allowance, not permission to ship placeholder copy. Preview uses plain language for categories/totals shared with the selected provider. Key input appears only in Settings and is masked after save. Missing consent gives a partial-analysis notice, not an attempt to grant permission for another owner. During generation show progress and allow navigation away; return to the same job without another charge. Failure retains context and explains whether retry could incur another charge.
 
+## 6b. Planning tools: net worth, bills, goals (2026-09-28)
+
+Decisions (user, 2026-09-28):
+- no Reports
+- Goals are off until turned on in Settings, per person
+- bill reminders come 3 days before a due date
+- net worth counts synced bank balances plus manual items
+
+Net worth opens from Overview. Bills & recurring and Goals open from Budgets.
+
+```text
+Overview (card appears once any account has a balance)
+| Net worth            $182,400 › |
+| Own $214,900 · Owe $32,500      |
+
+Net worth                      (estimate from last known balances)
+| $182,400                                  |
+| Own                                        |
+|  Plaid Checking ••0000   $1,250  2h ago  › |
+|  Home (manual)         $400,000  Sep 28  › |
+| Owe                                        |
+|  Plaid Credit Card ••3333  $410  2h ago  › |
+|  Car loan (manual)      $12,300  Sep 28  › |
+| Not counted: Old wallet            Set ›   |
+| [Add something you own or owe]             |
+
+Budgets page (new cards)
+| Bills & recurring                       › |
+| Next: Rent $1,500 due Oct 1 (in 3 days)   |
+| Goals (only if turned on)               › |
+| Emergency fund ██████░░ 62% · $250/mo      |
+
+Bills & recurring
+| Next 30 days (estimate)                    |
+|  Oct 1  Rent            $1,500             |
+|  Oct 3  Payroll        +$3,000             |
+|  Bills $1,500 · Income $3,000 · Left $1,500 |
+| Your recurring bills and income            |
+|  Rent · monthly · $1,500 · reminder on   › |
+| Found in your transactions                 |
+|  Spotify · monthly · ~$11.99 (4 times)     |
+|  [Confirm] [Not recurring]                 |
+| [Add a bill or income]                     |
+
+Goals (Settings → Goals: On)
+| Emergency fund · savings                   |
+|  ██████░░ $6,200 of $10,000 · by Jun 2027  |
+|  About $423/month to get there           › |
+| [Add a goal]                               |
+
+Alerts inbox: bill reminders sit with budget alerts
+|  • Bill due Oct 1: Rent · $1,500           |
+```
+
+Flows:
+- **Manual item:** Net worth → Add something you own or owe → name, own or owe, value → back to Net worth.
+- **Recurring bill:**
+  - Budgets → Bills & recurring → Confirm a found series (or Add), then edit its amount, due date, interval and reminder.
+  - 3 days before each due date, everyone in the workspace gets an Alerts entry. Push and email carry only "A bill is due soon".
+- **Goal:** Settings → Goals → Turn on → Budgets → Goals → Add a goal (savings or debt, target, optional date, an optional linked account) → progress and the monthly amount needed.
+
+Empty states:
+- no balances: the Net worth card is hidden and the page explains how to add a value
+- no bills: "Bills that repeat show up here after three payments; or add one"
+- Goals off: no goal UI anywhere
+
 ## 7. Secondary paths and recovery
 
 | Starting point | Happy path | Required recovery |
