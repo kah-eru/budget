@@ -557,4 +557,32 @@ Verification:
 - `imports.spec.ts` now searches for its own row: the shared test user has over 50 rows this month.
 - The real sandbox rows in the local test database give 121 transfers and 0 pairs. That's expected: each sandbox account's transfers stand alone. For example, the card's $2,078.50 autopay has no matching checking row.
 
+## Compact Timeline controls and the Overview Chart | Budgets switch — September 28
+
+Why: the user wanted the frontend more compact. They chose to remove the Overview Budgets card, and to count monthly budgets × 12 in the Year view. Wireframes: UX §2 and §3b.
+
+**Timeline:**
+- **⋯ menu:** a native `popover` (`#timeline-menu`) holds Export CSV and, in Side by side, Show money moving.
+  - Placed under the button by `app.tsx` in page coordinates, so it scrolls with the button. Escape and outside taps close it.
+  - A 150 ms scale and fade from the corner (`@starting-style`); without JS the browser centres it.
+- **Filters:**
+  - The toggle is a disclosure button (`aria-expanded`) on the same row as Together | Side by side.
+  - The `js` class set before the page draws hides the panel, so nothing flashes. Without JS the panel is open and the button hidden.
+  - The fields are 2 across on a phone and 4 on a desktop (Search takes 2).
+  - The account tick boxes moved inside the form (no `form=` attribute any more), with **Select all / Clear all** and a live "N of M" count.
+
+**Overview:**
+- A small **Chart | Budgets** segmented switch on the top card.
+  - The choice is saved in `localStorage` and applied before the page draws (a `data-overview` attribute from `base.html`), so the other panel never flashes. Without JS the budget list shows.
+  - The chart mounts only when its panel is first shown.
+- The separate Budgets card is gone. "Manage budgets ›" stays visible under both views, since it's the way to the Budgets page.
+- Each budget row: name (· fixed, · year for a yearly budget in a month), then "left", "to go", "Paid" or "over" in the danger colour. A bar shows "$X of $Y", with pending.
+- The total line covers only budgets measured over the period shown, so a yearly budget stays out of a month's total: spent of limit · left · over.
+- `budget_progress(..., span=)`: in the Year view a monthly budget uses the whole year and 12 times its limit, and every result carries `limit_cents`. Alerts and the Budgets page call it unchanged.
+
+Verification:
+- 215 Django tests OK (new: the year view counts 12 times and totals follow the period; the menu and accounts sit inside Filters).
+- 11/11 Chrome checks, with specs updated for the new controls; `budgets.spec.ts` checks the switch survives a reload.
+- Screenshots reviewed: phone filters, desktop menu, Overview Budgets in light and dark.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

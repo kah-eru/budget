@@ -74,6 +74,25 @@ class BudgetTests(TestCase):
         page = self.client.get(f"/workspaces/{self.group.pk}/", {"period": "2026-05"}).content.decode()
         self.assertIn("$10.25 over", page)
 
+    def test_year_view_counts_monthly_budgets_twelve_times_and_totals_match_the_period(self):
+        monthly = Budget.objects.create(workspace=self.group, category=self.dining, limit_cents=40000)
+        yearly = Budget.objects.create(workspace=self.group, name_match="insurance", period="year", limit_cents=120000)
+        self.spend(50000, category=self.dining)  # May, $100 over the month
+        self.spend(10000, day=date(2026, 2, 3), category=self.dining)
+        self.spend(60000, description="Car insurance")
+        year = (date(2026, 1, 1), date(2026, 12, 31))
+        p = budget_progress(self.bob, self.group, [monthly, yearly], MAY, span=year)
+        self.assertEqual([(r["spent_cents"], r["limit_cents"], r["start"]) for r in p], [(60000, 480000, year[0]), (60000, 120000, year[0])])
+        self.login(self.bob)
+        page = self.client.get(f"/workspaces/{self.group.pk}/", {"period": "2026"})
+        self.assertEqual(page.context["budget_totals"], {"limit_cents": 600000, "spent_cents": 120000, "left_cents": 480000, "over_cents": 0})
+        page = self.client.get(f"/workspaces/{self.group.pk}/", {"period": "2026-05"})
+        # A yearly budget shows in a month but stays out of that month's total.
+        self.assertEqual(page.context["budget_totals"], {"limit_cents": 40000, "spent_cents": 50000, "left_cents": 0, "over_cents": 10000})
+        self.assertContains(page, 'data-panel="budgets"')
+        self.assertContains(page, "Manage budgets")
+        self.assertNotContains(page, "budgets-title")  # the separate Budgets card is gone
+
     def test_delete_and_outsiders(self):
         budget = Budget.objects.create(workspace=self.group, category=self.dining, limit_cents=5000)
         self.login(self.eve)

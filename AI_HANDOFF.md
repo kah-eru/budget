@@ -2,6 +2,23 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): make the frontend more compact.
+- **Timeline:** Export CSV and Show money moving in a ⋯ menu at the top right; account tick boxes with Select all only inside Filters; filter fields side by side.
+- **Overview:** a small switch turns the chart into a budget list (spent, left, over for the period shown).
+- User choices: remove the separate Overview Budgets card; the Year view counts monthly budgets × 12.
+- **Built:**
+  - a native popover menu
+  - a Filters disclosure button (no flash; open without JS)
+  - a 2/4-column filter grid; accounts inside the form, with Select all / Clear all and a live count
+  - the Overview Chart | Budgets switch, saved per device and applied before the page draws
+  - `budget_progress(span=)` for the Year view, and totals that cover only the period shown
+  - "Manage budgets" stays visible on Overview
+- Details: [development guide](docs/development.md#compact-timeline-controls-and-the-overview-chart--budgets-switch--september-28).
+- **Verification:** 215 Django tests OK; 11/11 Chrome checks; screenshots reviewed (phone filters, desktop menu, Overview Budgets light and dark).
+- Committed locally; **not pushed**. No migrations.
+- Note: the owner's editor selection shared a line of the local `.local/plaid.env` (the local token key) in chat. It was not repeated or used. Render should get a newly generated `PLAID_TOKEN_KEY`.
+- Next: push when asked; then AI insights (6) with the user's own key.
+
 Latest request (2026-09-28): "i need to import the fake plaid data so can u push that stuff as well to the website? i think u said its in a seperate branch right". Answered: no separate branch; all code is on `main` and deployed. The sandbox data lives only in the ignored local test database, and a synced bank can't be copied to the live site: its access token is tied to the local key, and bank data doesn't belong in Git. To get it on the live site, the owner adds `PLAID_CLIENT_ID`, `PLAID_SECRET` and a new `PLAID_TOKEN_KEY` in Render, then uses Settings → Connect a bank there (sandbox login `user_good` / `pass_good`). See the operations guide. No product changes; docs commits pushed.
 
 Latest request (2026-09-28): AI insights must use only an API key each user enters, and update the docs. Also a per-account view: account tick boxes (none = total) and a second layout with one dated list per account, toggleable lines for money moving between them, scrolling sideways.

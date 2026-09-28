@@ -184,6 +184,20 @@
   .chart-slot { view-transition-name: chart; }
   ::view-transition-old(chart) { display: none; }
   ::view-transition-group(chart), ::view-transition-new(chart) { animation: none; }
+  /* ⋯ menu: a native popover under its button (placed by app.tsx), growing from the button's corner. */
+  .menu-button { @apply -mr-2 inline-flex size-11 shrink-0 items-center justify-center rounded-full text-accent-text; transition: transform 100ms ease-out, background-color 100ms ease-out; }
+  .menu-button:active { transform: scale(0.95); background-color: var(--pressed); }
+  .menu { min-width: 13rem; transform-origin: top right; @apply rounded-xl border border-line-strong bg-surface p-1.5 text-ink shadow-lg;
+          transition: opacity 150ms ease-out, transform 150ms ease-out, overlay 150ms ease-out allow-discrete, display 150ms ease-out allow-discrete; }
+  .menu:not(:popover-open) { opacity: 0; transform: scale(0.96); }
+  @starting-style { .menu:popover-open { opacity: 0; transform: scale(0.96); } }
+  @media (prefers-reduced-motion: reduce) { .menu, .menu:not(:popover-open) { transform: none; } }
+  .menu-item { @apply flex min-h-11 w-full items-center rounded-lg px-3 text-sm font-medium text-ink; }
+  .menu-item:hover, .menu-item:focus-visible { background: var(--accent-soft); }
+  /* Timeline Filters and Overview panels: hidden by CSS once JS runs, so nothing flashes; without JS they all show. */
+  :root.js .filters-panel:not(.is-open) { display: none; }
+  :root:not(.js) [data-filters-toggle] { display: none; }
+  :root.js:not([data-overview="budgets"]) [data-panel="budgets"], :root.js[data-overview="budgets"] [data-panel="chart"] { display: none; }
   /* Timeline account tick boxes. */
   .tick-chip { @apply inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-surface py-2 pr-4 pl-3 text-sm font-medium has-[:checked]:border-accent has-[:checked]:bg-accent-soft; transition: background-color 100ms ease-out; }
   .tick-chip input { @apply mt-0; }

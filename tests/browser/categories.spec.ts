@@ -71,7 +71,8 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByRole("button", { name: "Save budget" }).click();
   await page.goto("/");
   await page.goto(page.url().split("?")[0] + "?period=2026-04");
-  const budgets = page.getByRole("region", { name: "Budgets" });
+  await page.locator("label.segment", { hasText: "Budgets" }).click();  // Overview's Chart | Budgets switch
+  const budgets = page.getByRole("region", { name: /^Budgets/ });
   await expect(budgets.getByRole("link", { name: new RegExp("market " + suffix) })).toContainText("$12.10 over");
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });

@@ -532,9 +532,13 @@ def workspace_detail(request, workspace_id):
     context["accounts"] = list(visible_accounts(request.user, workspace).select_related("owner").order_by("name", "pk"))
     for account in context["accounts"]:
         account.period_cents = per_account.get(account.pk, 0)
-    # Month view: monthly budgets for that month and yearly ones for its year; year view: yearly budgets only.
+    # Month view: monthly budgets for that month and yearly ones for their year. Year view: every budget over the year,
+    # a monthly one at 12 times its limit. The total covers only budgets measured over the period shown.
     budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
-    context["budgets"] = budget_progress(request.user, workspace, budgets if kind == "month" else budgets.filter(period="year"), start)
+    context["budgets"] = budget_progress(request.user, workspace, budgets, start, span=(start, end) if kind == "year" else None)
+    same = [p for p in context["budgets"] if (p["start"], p["end"]) == (start, end)]
+    context["budget_totals"] = {"limit_cents": sum(p["limit_cents"] for p in same), "spent_cents": sum(p["spent_cents"] for p in same),
+                                "left_cents": sum(max(0, p["remaining_cents"]) for p in same), "over_cents": sum(max(0, -p["remaining_cents"]) for p in same)}
     context["categories"] = by_category(visible_transactions(request.user, workspace), start, end, workspace)
     top = max((c["posted_cents"] for c in context["categories"]), default=0)
     for c in context["categories"]:
@@ -700,8 +704,7 @@ def transaction_list(request, workspace_id):
     context.update(rows=page, days=days, start=start, end=end, rev=rev, stale=stale, back=request.get_full_path(),
                    newest_query="?" + newest.urlencode(), paged=bool(before) and not stale, layouts=layouts, layout=form.cleaned_data["view"],
                    totals={k: sum(d[k] for d in days) for k in ("posted_cents", "pending_cents", "income_cents")},
-                   filtered=any(request.GET.get(name) for name in form.fields if name != "view"),
-                   searched=any(request.GET.get(name) for name in form.fields if name not in ("view", "account")))
+                   filtered=any(request.GET.get(name) for name in form.fields if name != "view"))
     if form.cleaned_data["view"] == "lanes":
         context.update(lane_context(request.user, workspace, form, filtered_rows, start, end))
     return render(request, "budget/transactions.html", context)

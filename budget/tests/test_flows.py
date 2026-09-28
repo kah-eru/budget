@@ -143,6 +143,16 @@ class LanesPageTests(TestCase):
         self.assertNotContains(response, "Secret stash")
         self.assertNotContains(response, "Stash in")
 
+    def test_export_sits_in_the_menu_and_accounts_inside_filters(self):
+        response = self.get(self.alice, self.personal, account=[self.savings.pk])
+        html = response.content.decode()
+        self.assertIn('id="timeline-menu"', html)
+        self.assertIn("/transactions/export.csv", html)
+        self.assertNotIn('form="timeline-filters"', html)
+        start = html.index('id="timeline-filters"')
+        self.assertIn(f'value="{self.savings.pk}"', html[start:html.index("</form>", start)])
+        self.assertTrue(response.context["filtered"])
+
     def test_a_partner_outside_the_range_is_named_with_its_date(self):
         response = self.get(self.alice, self.personal, view="lanes", end="2026-09-10")
         self.assertContains(response, "To Savings ••1111, Sep 11")

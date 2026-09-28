@@ -21,6 +21,26 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   };
   await add("Fixed bill", "Housing", "1500", "1");
   await add("Yearly or irregular cost", "Health", "1200");
+  // Overview's Chart | Budgets switch shows each budget and is remembered on this device.
+  await page.goto("/");
+  await page.locator("label.segment", { hasText: "Budgets" }).click();
+  const budgetsPanel = page.locator('[data-panel="budgets"]');
+  await expect(budgetsPanel).toBeVisible();
+  await expect(budgetsPanel).toContainText("Housing");
+  await expect(page.locator('[data-panel="chart"]')).toBeHidden();
+  await page.reload();
+  await expect(budgetsPanel).toBeVisible();
+  await page.setViewportSize({ width: 360, height: 800 });
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await page.screenshot({ path: `.local/overview-budgets-${scheme}.png` });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.locator("label.segment", { hasText: "Chart" }).click();
+  await expect(page.locator('[data-panel="chart"]')).toBeVisible();
+  await page.getByRole("link", { name: "Manage budgets" }).click();
   const plan = page.getByRole("region", { name: /Monthly plan/ });
   await expect(plan).toContainText("Disposable income");
   await expect(plan).toContainText("$5,000.00");

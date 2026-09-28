@@ -40,6 +40,7 @@ test("theme choice applies, survives reload and returns to system; Timeline expo
 
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
   const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "More actions" }).click();
   await page.getByRole("link", { name: /^Export CSV/ }).click();
   expect((await download).suggestedFilename()).toMatch(/^budget-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/);
 });

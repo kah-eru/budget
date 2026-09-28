@@ -99,13 +99,17 @@ def period_bounds(kind, day):
     return start, (start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
 
-def budget_progress(user, workspace, budgets, day):
+def budget_progress(user, workspace, budgets, day, span=None):
     """Each budget's period containing `day`: posted net spending (refunds reduce it), pending as a separate
-    estimate, remaining (negative when over) and whether posted spending is strictly above the limit."""
+    estimate, remaining (negative when over) and whether posted spending is strictly above the limit.
+    span: a whole year for the Overview's Year view, where a monthly budget counts 12 times its limit."""
     rows = visible_transactions(user, workspace)
     result, per_period = [], {}
     for budget in budgets:
         start, end = period_bounds(budget.period, day)
+        limit = budget.limit_cents
+        if span and budget.period == "month":
+            (start, end), limit = span, limit * 12
         in_period = rows.filter(posted_on__range=(start, end))
         if budget.category_id:
             # Category totals once per period, shared by every category budget in it (splits count per line).
@@ -120,10 +124,10 @@ def budget_progress(user, workspace, budgets, day):
                     sign = 1 if row.effective == "expense" else -1
                     totals["pending_cents" if row.pending else "posted_cents"] += sign * row.amount_cents
         spent = totals["posted_cents"]
-        result.append({"budget": budget, "start": start, "end": end, "spent_cents": spent, "pending_cents": totals["pending_cents"],
-                       "remaining_cents": budget.limit_cents - spent, "over": spent > budget.limit_cents,
-                       "share": min(100, max(0, round(100 * spent / budget.limit_cents))),
-                       "paid": spent >= budget.limit_cents,  # fixed bills
+        result.append({"budget": budget, "start": start, "end": end, "limit_cents": limit, "spent_cents": spent, "pending_cents": totals["pending_cents"],
+                       "remaining_cents": limit - spent, "over": spent > limit,
+                       "share": min(100, max(0, round(100 * spent / limit))),
+                       "paid": spent >= limit,  # fixed bills
                        "set_aside_monthly_cents": round(budget.limit_cents / 12),  # irregular costs
                        "set_aside_to_date_cents": budget.limit_cents * day.month // 12})
     return result

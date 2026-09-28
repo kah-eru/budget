@@ -35,10 +35,18 @@ test("Timeline side by side joins a transfer across two accounts and the lines t
   await add(page, checking, "Expense", "4.50", "Coffee " + suffix);
 
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
-  await page.getByText(/^Accounts · /).click();
+  await page.getByRole("button", { name: /^Filters/ }).click();
+  await page.getByRole("button", { name: "Select all" }).click();
+  await expect(page.getByRole("checkbox", { name: savings })).toBeChecked();
+  await expect(page.locator("[data-account-count]")).not.toHaveText("All");
+  await page.getByRole("button", { name: "Clear all" }).click();
+  await expect(page.getByRole("checkbox", { name: savings })).not.toBeChecked();
   await page.getByRole("checkbox", { name: checking }).check();
   await page.getByRole("checkbox", { name: savings }).check();
-  await page.getByRole("button", { name: "Show these accounts" }).click();
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.screenshot({ path: ".local/filters-phone.png" });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.getByRole("button", { name: "Apply filters" }).click();
   await expect(page.locator("main")).toContainText("2 of");
   await page.getByRole("link", { name: "Side by side" }).click();
 
@@ -62,10 +70,13 @@ test("Timeline side by side joins a transfer across two accounts and the lines t
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.screenshot({ path: ".local/lanes-desktop.png", fullPage: true });
 
-  // The lines turn off, stay off after a reload on this device, and turn back on.
+  // The lines turn off from the ⋯ menu, stay off after a reload on this device, and turn back on.
+  await page.getByRole("button", { name: "More actions" }).click();
+  await page.screenshot({ path: ".local/menu-desktop.png" });
   await page.getByLabel("Show money moving").uncheck();
   await expect(lanes.locator("svg.flows")).toHaveClass(/is-off/);
   await page.reload();
+  await page.getByRole("button", { name: "More actions" }).click();
   await expect(page.getByLabel("Show money moving")).not.toBeChecked();
   await page.getByLabel("Show money moving").check();
   await expect(lanes.locator("svg.flows")).not.toHaveClass(/is-off/);

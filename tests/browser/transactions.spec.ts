@@ -23,6 +23,7 @@ test("search transactions, edit from a filtered list and return to it; year view
   }
   await page.goto(page.url() + "?period=2026-03");
   await page.getByRole("link", { name: "View March 2026 timeline" }).click();
+  await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByLabel("Search").fill("coffee " + suffix);
   await page.getByRole("button", { name: "Apply filters" }).click();
   const filtered = page.url();

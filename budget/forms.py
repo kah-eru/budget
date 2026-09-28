@@ -240,9 +240,8 @@ class AnnotationForm(forms.ModelForm):
 
 class TransactionFilterForm(forms.Form):
     q = forms.CharField(label="Search", max_length=100, required=False, widget=forms.TextInput(attrs={"type": "search", "placeholder": "Name or description"}))
-    # None ticked means every visible account. The boxes sit above the Filters panel and join its form by the form attribute.
-    account = forms.ModelMultipleChoiceField(queryset=Account.objects.none(), required=False, label="Accounts",
-                                             widget=forms.CheckboxSelectMultiple(attrs={"form": "timeline-filters"}))
+    # None ticked means every visible account.
+    account = forms.ModelMultipleChoiceField(queryset=Account.objects.none(), required=False, label="Accounts", widget=forms.CheckboxSelectMultiple)
     person = forms.ModelChoiceField(queryset=User.objects.none(), required=False, empty_label="Everyone")
     category = forms.ChoiceField(required=False)
     start = forms.DateField(label="From", required=False, widget=forms.DateInput(attrs={"type": "date"}))

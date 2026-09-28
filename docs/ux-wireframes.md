@@ -129,6 +129,26 @@ Journey: select workspace/period -> see posted spend and budget status -> tap ca
 
 Sync my accounts only refreshes connections owned by the current user, even in a group. Show each connection's state and allow retry/reconnect from Accounts. Other members' shared data shows its own freshness; membership does not grant control of their connections. Empty budgets offer Create a budget. Always label money as posted/pending rather than blending the two.
 
+**Compact Overview (user, 2026-09-28):**
+- A small **Chart | Budgets** switch on the top card replaces the separate Budgets card.
+- The Year view counts monthly budgets × 12.
+- The choice is remembered on this device. Without JavaScript the budget list shows.
+
+```text
+Personal                                   [+ Invite]
+$1,234.56
+September 2026 spending · ↗ $20 more than August
+                                     [Chart | Budgets]
+Budgets view:
+  Groceries      ████░░  $320 of $400      $80 left
+  Dining         ██████  $210 of $200      $10 over
+  Rent · fixed   Paid    $1,500 of $1,500
+  Car insurance · 2026   $600 of $1,200   $600 left   (yearly; not in the month total)
+  This month: $2,030 of $2,100 · $80 left · $10 over
+  Manage budgets ›
+[←  Month  Year  →]
+```
+
 ## 3. Timeline: investigate, filter, and edit
 
 Journey: Timeline -> filters/date/chart point -> purchase -> edit -> save -> return to the same position and filters.
@@ -215,6 +235,24 @@ Accounts · 3 of 14 ▾   [x] Checking ••0000 [x] Savings ••1111 [x] Car
 - With nothing ticked, only accounts with transactions in the range get a lane.
 - An empty ticked lane says "No transactions in this range."
 - Over 400 rows: "Showing the newest 400 transactions. Narrow the dates to see older ones."
+
+**Compact controls (user, 2026-09-28):**
+- Export CSV and Show money moving live in a ⋯ menu at the top right.
+- The account tick boxes, with Select all, appear only inside Filters.
+- The filter fields sit side by side: 2 columns on a phone, 4 on a desktop.
+
+```text
+Timeline                                   [⋯]  → Export CSV · [x] Show money moving (Side by side)
+Sep 1 – Sep 28, 2026 · 2 of 14 accounts
+[Together | Side by side]      [Filters · on ▾]
+┌ Filters ───────────────────────────────────────────────────┐
+│ Search [.....................]   Person [▾]   Category [▾]  │
+│ From [date]   To [date]                                     │
+│ Accounts · 2 of 14                          [Select all]    │
+│ (x) Checking ••0000  ( ) Savings ••1111  …  (scrolls)       │
+│ [Apply filters] [Clear filters]                             │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## 4. Budget and alert: set a threshold and act on it
 
