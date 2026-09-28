@@ -38,7 +38,7 @@ COOLDOWN = timedelta(seconds=60)  # between Sync now presses
 LEASE = timedelta(minutes=5)
 MUTATION = "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION"
 TRANSFERS = ("TRANSFER_IN", "TRANSFER_OUT", "LOAN_PAYMENTS")  # card payments and moves between accounts are never spending
-UPDATED = ["account", "provider_id", "posted_on", "amount_cents", "classification", "pending", "description", "provider_category"]
+UPDATED = ["account", "provider_id", "posted_on", "amount_cents", "classification", "pending", "description", "provider_category", "money_in"]
 
 
 class PlaidError(Exception):
@@ -175,7 +175,7 @@ def classify(amount, category):
 def _fields(t):
     cents = int((abs(t["amount"]) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
     return {"posted_on": t["date"], "amount_cents": cents, "classification": classify(t["amount"], t["category"]), "pending": t["pending"],
-            "description": t["name"][:200], "provider_category": t["category"][:100]}
+            "description": t["name"][:200], "provider_category": t["category"][:100], "money_in": t["amount"] < 0}
 
 
 def _apply(connection, added, modified, removed):

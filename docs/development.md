@@ -516,4 +516,45 @@ Owner actions for the daily task (optional, free):
 - Add it as `TASKS_TOKEN` in Render.
 - In GitHub → Settings → Secrets → Actions, add `TASKS_TOKEN` (same value) and `SITE_URL` (the site's https address).
 
+## Timeline by account: tick boxes and Side by side — September 28
+
+Why: the user wanted a per-account view: all accounts together, or ticked ones. A second layout lists each account side by side, with money moving between them drawn and toggleable. Their choices: on the Timeline page; lines only between their own accounts. Wireframe: UX section 3b; rules: spec "Requested — 2026-09-28".
+
+**Direction** (migration 0021):
+- `Transaction.money_in` records which way the bank moved the money.
+- Plaid sets it from the sign, CSV from the sign mapping. By hand, Type offers "Transfer out or card payment" and "Transfer in"; bank rows keep the bank's direction.
+- The backfill for older rows:
+  - income and refunds are in
+  - a transfer is in when it's `TRANSFER_IN…`, a CSV row, or a `LOAN_PAYMENTS…` row on a liability account
+  - everything else is out
+
+**Tick boxes:**
+- The Timeline's account filter is now tick boxes, in a collapsed "Accounts · 2 of 14" panel above Filters; none ticked means all.
+- They join the Filters form with the `form` attribute, so dates, search and CSV export keep working. The Filters panel opens only for its own filters.
+
+**Side by side** (`?view=lanes`; `budget/flows.py`, `lane_context` in views, `components/lanes.html`):
+- **Lanes:**
+  - one lane per ticked account, or per account with rows in the range
+  - date bands across every lane, newest first, at most 400 rows, never a partial day
+  - lane headers show money in and out for the range
+  - the lanes scroll both ways inside their own box: sticky lane names, sticky dates
+- **`flows.pair`:**
+  - transfers only (the workspace's type), one for one
+  - the same amount, opposite directions, another account, at most 5 days apart; the closest date wins
+  - candidates are the visible transfers from 5 days before the range to 5 days after, so a private account is never a partner and shows as "elsewhere"
+- **Row text:** every transfer says "To Savings ••1111", "From Checking ••0000, Sep 10" or "To elsewhere".
+- **`assets/flows.ts`** (a lazy 1.5 kB chunk) draws one SVG that's hidden from screen readers:
+  - curves with arrowheads between pairs; dashed when pending
+  - a short stub ending in a small circle for elsewhere, so it never looks aimed at the next lane
+  - hover or focus lights up both sides
+  - draw-in unless reduced motion is on; redraws on resize
+  - Show money moving hides the lines and is remembered in the browser; storage failures are ignored
+- Synced account names already carry their mask ("Plaid Checking ••0000"), so the view never adds it again.
+
+Verification:
+- 213 Django tests OK on SQLite (4 PG-only skipped), including new `test_flows.py` (10). `check` and migration drift clean; flows, Timeline and import tests 27/27 on Neon PostgreSQL.
+- 11/11 Chrome checks. The new `lanes.spec.ts`: two accounts, transfer out and in by hand, ticked, Side by side, one line and one stub drawn, lanes scroll inside their box at 360 px, and the toggle survives a reload. Light, dark and desktop screenshots reviewed.
+- `imports.spec.ts` now searches for its own row: the shared test user has over 50 rows this month.
+- The real sandbox rows in the local test database give 121 transfers and 0 pairs. That's expected: each sandbox account's transfers stand alone. For example, the card's $2,078.50 autopay has no matching checking row.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

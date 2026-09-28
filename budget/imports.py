@@ -111,7 +111,7 @@ def parse(records, m):
             skipped += 1
             continue
         parsed.append({"source_row": n, "posted_on": posted_on, "description": _cell(r, m["description_col"])[:200],
-                       "amount_cents": abs(out), "classification": "expense" if out > 0 else m["incoming"],
+                       "amount_cents": abs(out), "classification": "expense" if out > 0 else m["incoming"], "money_in": out < 0,
                        "category": _cell(r, m["category_col"])})
     return parsed, errors, skipped
 
@@ -143,7 +143,7 @@ def commit(batch, parsed, keep, workspace):
             skip = overlaps(batch.account, parsed) - set(keep)
             chosen = [p for p in parsed if p["source_row"] not in skip]
             new = Transaction.objects.bulk_create([Transaction(account=batch.account, import_batch=batch, **{k: p[k] for k in (
-                "source_row", "posted_on", "description", "amount_cents", "classification")}) for p in chosen])
+                "source_row", "posted_on", "description", "amount_cents", "classification", "money_in")}) for p in chosen])
             # A category column counts as the owner's choice, in the workspace the import was started from.
             categories = {c.name.casefold(): c for c in workspace.categories.filter(archived=False)}
             TransactionAnnotation.objects.bulk_create([

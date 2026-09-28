@@ -1,0 +1,24 @@
+{% load money %}<section aria-labelledby="lanes-title" class="card">
+  <div class="mb-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+    <h2 id="lanes-title" class="text-xl font-semibold">Side by side</h2>
+    <label class="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium" data-flow-toggle hidden><input type="checkbox" checked> Show money moving</label>
+  </div>
+  <p class="mb-3 text-sm text-muted">One column per account, newest first. Lines join transfers and card payments between them.</p>
+  {% if capped %}<p role="status" class="mb-3 rounded-lg border border-line-strong p-3 text-sm">Showing the newest transactions only. Narrow the dates to see older ones.</p>{% endif %}
+  {% if lanes %}
+  <div class="lanes" data-lanes role="region" aria-label="Transactions by account" tabindex="0" style="--lanes: {{ lanes|length }}">
+    {% for a in lanes %}<div class="lane-head"><span class="block truncate font-semibold">{{ a.name }}</span><span class="block text-xs text-muted amount">{% if not workspace.is_personal %}{{ a.owner.username }} · {% endif %}{% if a.in_cents or a.out_cents %}In {{ a.in_cents|dollars }} · Out {{ a.out_cents|dollars }}{% else %}No transactions in this range{% endif %}</span></div>{% endfor %}
+    {% for day, cells in bands %}
+    <h3 class="lane-day"><span>{{ day|date:'D, M j' }}</span></h3>
+    {% for a, rows in cells %}<ul class="lane-cell" aria-label="{{ a.name }}">
+      {% for row in rows %}<li id="t{{ row.pk }}" class="lane-row"{% if row.effective == 'transfer' %} data-flow="{% if row.money_in %}in{% else %}out{% endif %}"{% if row.partner %} data-partner="t{{ row.partner.pk }}"{% endif %}{% endif %}{% if row.pending or row.partner.pending %} data-pending{% endif %}>
+        {% if row.account.owner_id == user.pk %}<a class="lane-name" href="{% url 'annotation_edit' workspace.pk row.account_id row.pk %}?next={{ back|urlencode:'' }}">{{ row.ann_name|default:row.description|default:"(no description)" }}</a>{% else %}<span class="lane-name">{{ row.ann_name|default:row.description|default:"(no description)" }}</span>{% endif %}
+        <span class="amount font-medium">{% if row.money_in %}+{% else %}−{% endif %}{{ row.amount_cents|dollars }}</span>
+        {% if row.effective == 'transfer' or row.pending %}<span class="lane-note">{% if row.effective == 'transfer' %}{% if row.partner %}{% if row.money_in %}From{% else %}To{% endif %} {{ row.partner.account.name }}{% if row.partner.posted_on != row.posted_on %}, {{ row.partner.posted_on|date:'M j' }}{% endif %}{% elif row.money_in %}From elsewhere{% else %}To elsewhere{% endif %}{% endif %}{% if row.pending %}{% if row.effective == 'transfer' %} · {% endif %}Pending{% endif %}</span>{% endif %}
+      </li>{% endfor %}
+    </ul>{% endfor %}
+    {% empty %}<p class="lane-empty">No transactions in this range.</p>
+    {% endfor %}
+  </div>
+  {% else %}<p class="py-5 text-muted">{% if filtered %}No transactions match these filters.{% else %}No transactions in this range.{% endif %}</p>{% endif %}
+</section>

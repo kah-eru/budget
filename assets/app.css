@@ -184,6 +184,34 @@
   .chart-slot { view-transition-name: chart; }
   ::view-transition-old(chart) { display: none; }
   ::view-transition-group(chart), ::view-transition-new(chart) { animation: none; }
+  /* Timeline account tick boxes. */
+  .tick-chip { @apply inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-surface py-2 pr-4 pl-3 text-sm font-medium has-[:checked]:border-accent has-[:checked]:bg-accent-soft; transition: background-color 100ms ease-out; }
+  .tick-chip input { @apply mt-0; }
+  /* Side by side: one lane per account, a date band across all lanes. It scrolls both ways inside its own box, so the page never scrolls sideways
+     and the lane names stay on top. On a phone the next lane peeks in at the edge. The gutters hold the money lines. */
+  .lanes { position: relative; display: grid; grid-template-columns: repeat(var(--lanes), minmax(min(calc(100vw - 7.5rem), 18rem), 1fr)); column-gap: 2.5rem;
+           max-height: 75vh; overflow: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: 0.75rem; @apply rounded-lg border border-line px-3; }
+  .lane-head { position: sticky; top: 0; z-index: 3; scroll-snap-align: start; @apply min-w-0 bg-surface pt-3 pb-2; box-shadow: 0 1px 0 var(--line); }
+  .lane-day { grid-column: 1 / -1; @apply mt-2 border-b border-line py-1.5 text-xs font-semibold text-muted; }
+  .lane-day > span { position: sticky; left: 0; }
+  .lane-empty { grid-column: 1 / -1; @apply py-5 text-muted; }
+  .lane-cell { position: relative; z-index: 2; @apply min-w-0; }
+  .lane-row { @apply -mx-2 flex flex-wrap items-baseline justify-between gap-x-2 rounded-md px-2 py-2 text-sm; transition: background-color 100ms ease-out; }
+  .lane-row.flow-active { background: var(--accent-soft); }
+  .lane-name { @apply min-w-0 font-medium break-words; }
+  a.lane-name { color: inherit; }
+  .lane-note { @apply basis-full text-xs text-muted; }
+  .lane-row[data-flow] .lane-note { @apply text-accent-text; }
+  /* Drawn by flows.ts; decoration only, the rows say where the money went. */
+  .flows { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; overflow: visible; transition: opacity 150ms ease-out; }
+  .flows.is-off { opacity: 0; }
+  .flows path { fill: none; stroke: var(--accent); stroke-width: 1.75; stroke-linecap: round; opacity: 0.85; transition: stroke-width 100ms ease-out, opacity 100ms ease-out; }
+  .flows path.is-pending, .flows path.is-stub { stroke-dasharray: 4 4; }
+  .flows path.is-stub { opacity: 0.6; }
+  .flows path.flow-active { stroke-width: 3; opacity: 1; }
+  .flows .flow-head { fill: var(--accent); stroke: none; opacity: 1; }
+  .flows .flow-away { fill: var(--surface); stroke: var(--accent); stroke-width: 1.5; }
+  @media (prefers-contrast: more) { .flows path { stroke: var(--ink); opacity: 1; } .flows .flow-head { fill: var(--ink); } .flows .flow-away { stroke: var(--ink); } }
   .skip-link { @apply sr-only; }
   .skip-link:focus { @apply not-sr-only fixed top-2 left-2 z-50 rounded bg-surface p-3; }
 }

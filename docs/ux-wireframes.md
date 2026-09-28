@@ -207,7 +207,7 @@ Accounts · 3 of 14 ▾   [x] Checking ••0000 [x] Savings ••1111 [x] Car
 - Side by side → scroll sideways through the lanes. Hover or focus a transfer to light up the other side.
 - Show money moving: turn the lines off or on. The choice is remembered on this device.
 
-**Text carries the meaning:** every paired row also says where the money went ("→ Savings ••1111", "← Checking ••0000, Oct 2", "→ elsewhere"). Screen readers and a failed script lose nothing.
+**Text carries the meaning:** every paired row also says where the money went ("To Savings ••1111", "From Checking ••0000, Oct 2", "To elsewhere"). A line to elsewhere is a short stub ending in a small circle, so it never looks aimed at the next lane. Screen readers and a failed script lose nothing.
 
 **Phone:** each lane is about 85% of the screen wide, so the next one peeks in. Lanes snap as you scroll, and the page itself never scrolls sideways.
 

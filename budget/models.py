@@ -94,6 +94,8 @@ class Transaction(models.Model):
     classification = models.CharField(max_length=10, choices=CLASSIFICATIONS, default="expense")
     pending = models.BooleanField(default=False)
     description = models.CharField(max_length=200, blank=True)
+    # Which way the bank moved the money (amounts are always positive); pairs transfers between accounts.
+    money_in = models.BooleanField(default=False)
     # Set for CSV rows: their date, amount and description are the bank's and stay read-only.
     import_batch = models.ForeignKey("ImportBatch", on_delete=models.CASCADE, null=True, editable=False, related_name="transactions")
     source_row = models.PositiveIntegerField(null=True, editable=False)

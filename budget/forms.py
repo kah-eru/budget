@@ -60,6 +60,17 @@ class TransactionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.initial["amount"] = Decimal(self.instance.amount_cents) / 100
+        if not self.instance.from_bank:  # a bank row's direction is the bank's
+            self.fields["classification"].choices = [("expense", "Expense"), ("refund", "Refund"), ("income", "Income"),
+                                                     ("transfer", "Transfer out or card payment"), ("transfer_in", "Transfer in")]
+            if self.instance.classification == "transfer" and self.instance.money_in:
+                self.initial["classification"] = "transfer_in"
+
+    def clean_classification(self):
+        kind = self.cleaned_data["classification"]
+        if not self.instance.from_bank:
+            self.instance.money_in = kind in ("income", "refund", "transfer_in")
+        return "transfer" if kind == "transfer_in" else kind
 
     def save(self, commit=True):
         self.instance.amount_cents = int(self.cleaned_data["amount"] * 100)
@@ -229,18 +240,22 @@ class AnnotationForm(forms.ModelForm):
 
 class TransactionFilterForm(forms.Form):
     q = forms.CharField(label="Search", max_length=100, required=False, widget=forms.TextInput(attrs={"type": "search", "placeholder": "Name or description"}))
-    account = forms.ModelChoiceField(queryset=Account.objects.none(), required=False, empty_label="All accounts")
+    # None ticked means every visible account. The boxes sit above the Filters panel and join its form by the form attribute.
+    account = forms.ModelMultipleChoiceField(queryset=Account.objects.none(), required=False, label="Accounts",
+                                             widget=forms.CheckboxSelectMultiple(attrs={"form": "timeline-filters"}))
     person = forms.ModelChoiceField(queryset=User.objects.none(), required=False, empty_label="Everyone")
     category = forms.ChoiceField(required=False)
     start = forms.DateField(label="From", required=False, widget=forms.DateInput(attrs={"type": "date"}))
     end = forms.DateField(label="To", required=False, widget=forms.DateInput(attrs={"type": "date"}))
+    view = forms.ChoiceField(choices=[("together", "Together"), ("lanes", "Side by side")], required=False, widget=forms.HiddenInput)
 
     def __init__(self, *args, accounts, workspace, **kwargs):
         super().__init__(*args, **kwargs)
         self.workspace = workspace
         self.fields["category"].choices = [("", "All categories"), ("none", "Uncategorized"),
                                            *((str(c.pk), f"{c.name} (archived)" if c.archived else c.name) for c in workspace.categories.order_by("archived", "name"))]
-        self.fields["account"].queryset = accounts.order_by("name", "pk")
+        self.fields["account"].queryset = accounts.select_related("owner").order_by("name", "pk")
+        self.fields["account"].label_from_instance = lambda a: a.name if workspace.is_personal else f"{a.name} ({a.owner.username})"
         self.fields["person"].queryset = User.objects.filter(pk__in=accounts.values("owner_id")).order_by("username")
         self.fields["person"].label_from_instance = lambda u: u.username
 
@@ -267,7 +282,7 @@ class TransactionFilterForm(forms.Form):
         if data["q"]:
             rows = rows.filter(Q(description__icontains=data["q"]) | Q(ann_name__icontains=data["q"]))
         if data["account"]:
-            rows = rows.filter(account=data["account"])
+            rows = rows.filter(account__in=data["account"])
         if data["person"]:
             rows = rows.filter(account__owner=data["person"])
         if data["category"]:

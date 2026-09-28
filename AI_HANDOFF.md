@@ -2,9 +2,22 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
-Latest request (2026-09-28): AI insights must use only an API key each user enters (no app or shared key); plus an account view on the Timeline: account tick boxes (none = total) and a Together / Side by side switch, where Side by side shows one dated list per account with toggleable lines for money moving between them, scrolling sideways.
-- Brainstorming (architectural). User chose: account view first, then AI insights; on the Timeline page; lines only between the user's own accounts (transfers/card payments), with 'elsewhere' stubs.
-- Design proposed in chat (new `Transaction.money_in`, `budget/flows.py` pairing within 5 days, SVG lines over server-rendered lanes). Waiting for the user's approval, then a short spec, then a plan. No code changed yet.
+Latest request (2026-09-28): AI insights must use only an API key each user enters, and update the docs. Also a per-account view: account tick boxes (none = total) and a second layout with one dated list per account, toggleable lines for money moving between them, scrolling sideways.
+- Decisions (brainstorming, plan approved): account view first, then AI insights; on the Timeline page; lines only between the user's own accounts (transfers and card payments), with an 'elsewhere' stub.
+- **Docs:** the AI key rule is recorded in the spec (credentials row plus data rules), plan milestone 6 and the README scope: no app, operator, pooled or fallback key; no key means no AI. Wireframe in UX 3b; rules in the spec section "Requested — 2026-09-28".
+- **Built:**
+  - `Transaction.money_in` (migration 0021 with a backfill)
+  - account tick boxes on the Timeline
+  - **Side by side** (`?view=lanes`): `budget/flows.py` pairs transfers (same amount, opposite direction, another visible account, at most 5 days apart); `components/lanes.html`; `assets/flows.ts` draws the SVG lines, with a toggle remembered on the device
+  - manual Type now has Transfer out and Transfer in
+- Details: [development guide](docs/development.md#timeline-by-account-tick-boxes-and-side-by-side--september-28).
+- **Verification:**
+  - 213 Django tests OK; flows, Timeline and import tests 27/27 on Neon PostgreSQL
+  - 11/11 Chrome checks, including the new `lanes.spec.ts`; screenshots reviewed
+  - Fixed along the way: a doubled mask on synced account names; `imports.spec.ts` searches for its own row
+  - Real sandbox rows: 121 transfers and 0 pairs, as expected, because sandbox accounts have no matching counterpart rows
+- Committed locally; **not pushed**. Pushing runs migration 0021 on Render.
+- Next: AI insights (6) with the user's own key only. Brainstorm first; the provider choice is the user's, since their key must match it.
 
 Latest request (2026-09-28): "push. don't need reports. i like goals, make them optional, add recurring bills, and net worth." Pushed first (`bb77a20`). The user chose goals off until turned on, 3-day bill reminders, and net worth from synced balances plus manual items. Wireframes first (UX 6b), then three local commits:
 - **Net worth:** Plaid cached balances each sync, plus manual items (home, loan); groups count only shared accounts.

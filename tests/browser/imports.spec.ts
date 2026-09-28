@@ -53,7 +53,9 @@ test("a bank CSV is previewed, imported, shown and undone", async ({ page }) => 
   await page.goBack();
 
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
+  await page.goto(page.url() + "?q=" + encodeURIComponent("Coffee " + suffix));  // the shared test user has many rows this month
   await expect(page.locator("main")).toContainText("Coffee " + suffix);
+  await page.goBack();
   await page.goBack();
   await page.getByRole("button", { name: /^Undo the import of card\.csv/ }).click();
   await expect(page.locator("body")).toContainText("Removed the 2 transactions imported from card.csv.");

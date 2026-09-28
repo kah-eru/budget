@@ -197,7 +197,7 @@ Permission rules from the rest of this document apply to every addition: workspa
 
 ### Requested — 2026-09-28: Timeline by account
 
-The user asked for a per-account view: see every account's transactions together, or tick which accounts to include. A second layout lists each account side by side, with money moving between them drawn as lines that can be turned off. Wireframe: UX section 3b.
+Status: built 2026-09-28 (development guide "Timeline by account"). The user asked for a per-account view: see every account's transactions together, or tick which accounts to include. A second layout lists each account side by side, with money moving between them drawn as lines that can be turned off. Wireframe: UX section 3b.
 - **Accounts:** the Timeline's account filter becomes tick boxes; none ticked means all visible accounts. Totals, the chart, the list and CSV export follow the ticks.
 - **Direction:** each transaction stores the direction the bank reported (`money_in`), because amounts are always positive.
   - Plaid: from the sign of the amount.

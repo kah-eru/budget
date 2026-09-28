@@ -4,7 +4,7 @@ A private budgeting app for partners and friends who choose to share finances. S
 
 Status (2026-09-28): a working preview with synthetic data only, deployed to Render; not a real-data-ready release. Built by milestone:
 - **Milestone 1, foundation:** sign-in, private manual accounts, groups, explicit sharing, invitations with mailbox verification (group and standalone), password recovery, membership notices and member removal, a Settings page (username/email/password changes with email notices or confirmation; System/Light/Dark theme).
-- **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, and Timeline CSV export.
+- **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, account tick boxes and a Side by side layout with toggleable lines for transfers between accounts, and Timeline CSV export.
 - **Milestone 3, bank sync (sandbox):** Plaid sandbox: connect a bank, choose accounts (private), Sync now, pending→posted kept, card payments as transfers, Plaid categories as a fallback; automatic sync by signed webhook, Reconnect when the bank needs a new sign-in, a warning when the same bank is connected twice.
 - **Milestone 4, categories and budgets:**
   - workspace categories (a standard set, an Overview breakdown, a Timeline filter)

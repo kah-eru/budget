@@ -28,6 +28,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
+from . import flows
 from . import imports
 from . import recurring
 from .goals import progress as goal_progress
@@ -691,11 +692,32 @@ def transaction_list(request, workspace_id):
         newest.pop(key, None)
     chosen = form.cleaned_data["category"]
     context["add_category"] = workspace.categories.filter(pk=int(chosen), archived=False).first() if chosen not in ("", "none") else None
+    layouts = {}
+    for name in ("together", "lanes"):
+        query = newest.copy()
+        query["view"] = name
+        layouts[name] = "?" + query.urlencode()
     context.update(rows=page, days=days, start=start, end=end, rev=rev, stale=stale, back=request.get_full_path(),
-                   newest_query="?" + newest.urlencode(), paged=bool(before) and not stale,
+                   newest_query="?" + newest.urlencode(), paged=bool(before) and not stale, layouts=layouts, layout=form.cleaned_data["view"],
                    totals={k: sum(d[k] for d in days) for k in ("posted_cents", "pending_cents", "income_cents")},
-                   filtered=any(request.GET.get(name) for name in form.fields))
+                   filtered=any(request.GET.get(name) for name in form.fields if name != "view"),
+                   searched=any(request.GET.get(name) for name in form.fields if name not in ("view", "account")))
+    if form.cleaned_data["view"] == "lanes":
+        context.update(lane_context(request.user, workspace, form, filtered_rows, start, end))
     return render(request, "budget/transactions.html", context)
+
+
+def lane_context(user, workspace, form, filtered_rows, start, end):
+    """Side by side: one lane per ticked account (or per account with rows), newest day first, never a partial day."""
+    rows = list(filtered_rows.filter(posted_on__range=(start, end)).select_related("account__owner").order_by("-posted_on", "-pk")[:flows.LANE_LIMIT + 1])
+    capped = len(rows) > flows.LANE_LIMIT
+    if capped:
+        oldest = rows[flows.LANE_LIMIT - 1].posted_on
+        rows = [r for r in rows[:flows.LANE_LIMIT] if r.posted_on != oldest] or rows[:flows.LANE_LIMIT]
+    accounts = list(form.cleaned_data["account"]) or sorted({r.account for r in rows}, key=lambda a: (a.name, a.pk))
+    # Partners may sit a few days outside the range; only visible transfers are candidates.
+    candidates = visible_transactions(user, workspace).filter(effective="transfer", posted_on__range=(start - flows.WINDOW, end + flows.WINDOW)).select_related("account")
+    return {"lanes": accounts, "bands": flows.lanes(rows, accounts, candidates), "capped": capped}
 
 
 def csv_cell(value):

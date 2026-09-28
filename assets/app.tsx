@@ -29,6 +29,10 @@ if (pushSection) import("./push").then(({ setup }) => setup(pushSection)).catch(
 const plaidLink = document.querySelector<HTMLElement>("[data-plaid-link]");
 if (plaidLink) import("./plaid-link").then(({ setup }) => setup(plaidLink)).catch(() => {});
 
+// Money lines load only on the Timeline's Side by side layout.
+const lanes = document.querySelector<HTMLElement>("[data-lanes]");
+if (lanes) import("./flows").then(({ setup }) => setup(lanes)).catch(() => {});
+
 // Theme choice for this device. base.html applies the saved value before paint; without JS the picker stays hidden.
 const picker = document.querySelector<HTMLFieldSetElement>("[data-theme-picker]");
 if (picker) {
