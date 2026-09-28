@@ -20,15 +20,16 @@
   </ul>
 </section>
 {% if worth.uncounted %}
-<section aria-labelledby="uncounted-title" class="card">
-  <h2 id="uncounted-title" class="mb-1 text-2xl font-medium">Not counted</h2>
+<details class="card">
+  <summary class="cursor-pointer text-lg font-medium">Not counted ({{ worth.uncounted|length }})</summary>
+  <p class="mt-1 text-sm text-muted">Accounts without a value, or set to Not counted.</p>
   <ul class="divide-y divide-line">
     {% for a in worth.uncounted %}
     <li class="flex min-h-14 items-center justify-between gap-3 py-3"><span class="min-w-0 break-words font-medium">{{ a.name }}{% if not workspace.is_personal %} <span class="text-sm text-muted">· {{ a.owner.username }}</span>{% endif %}</span>
       {% if a.owner_id == user.pk %}<a class="chip bg-accent-soft" href="{% url 'account_edit' workspace.pk a.pk %}" aria-label="Set a value for {{ a.name }}">Set value</a>{% endif %}</li>
     {% endfor %}
   </ul>
-</section>
+</details>
 {% endif %}
 <div class="flex flex-wrap gap-3"><a class="primary" href="{% url 'account_create' %}?kind=asset">Add something you own</a><a class="secondary" href="{% url 'account_create' %}?kind=liability">Add something you owe</a></div>
 {% endblock %}

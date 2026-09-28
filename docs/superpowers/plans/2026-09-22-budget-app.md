@@ -251,11 +251,11 @@ Create files only when their milestone needs them. Framework-required package fi
 
 **Deliverable:** Category reports, goals, confirmed recurring bills with a cash-flow forecast, and a read-only net-worth view. May be sequenced before milestones 6–7 at the user's direction; milestone 8's release gates still apply.
 
-- [ ] Draft low-fidelity wireframes and user flows for Reports, Goals, Bills & recurring, and Net worth before building (see UX wireframes).
-- [ ] Reports: category donut/pie and monthly trend with Bklit, colors from theme tokens plus labels, and table equivalents. Test that totals equal `reporting.spending()` for the same filters and that private accounts stay out of group reports.
-- [ ] Recurring: detect candidate series (same merchant, ±10% amount, regular interval, ≥3 occurrences). User confirms or dismisses; manual entries allowed. Forecast labeled as an estimate, never counted as spending until posted. Test detection edge cases (skipped month, amount drift, weekly vs monthly).
-- [ ] Goals: savings or debt-payoff targets with an optional date. Progress from a linked balance or manual contributions; required monthly amount computed deterministically. Workspace-scoped; group goals use only shared accounts.
-- [ ] Net worth: assets − liabilities from account balances, holdings and manual assets. Read-only, with no advice. Check Plaid Balance/Investments/Liabilities availability and cost first; any cost needs the user's approval. Manual values are the fallback.
+- [x] (2026-09-28; UX section 6b, without Reports) Draft low-fidelity wireframes and user flows for Reports, Goals, Bills & recurring, and Net worth before building (see UX wireframes).
+- [ ] (Dropped by the user 2026-09-28: "don't need reports") Reports: category donut/pie and monthly trend with Bklit, colors from theme tokens plus labels, and table equivalents. Test that totals equal `reporting.spending()` for the same filters and that private accounts stay out of group reports.
+- [x] (2026-09-28, plus 3-day bill reminders and a daily task) Recurring: detect candidate series (same merchant, ±10% amount, regular interval, ≥3 occurrences). User confirms or dismisses; manual entries allowed. Forecast labeled as an estimate, never counted as spending until posted. Test detection edge cases (skipped month, amount drift, weekly vs monthly).
+- [x] (2026-09-28; off until each person turns them on) Goals: savings or debt-payoff targets with an optional date. Progress from a linked balance or manual contributions; required monthly amount computed deterministically. Workspace-scoped; group goals use only shared accounts.
+- [x] (2026-09-28; cached Plaid balances + manual items, no holdings detail) Net worth: assets − liabilities from account balances, holdings and manual assets. Read-only, with no advice. Check Plaid Balance/Investments/Liabilities availability and cost first; any cost needs the user's approval. Manual values are the fallback.
 
 ## Milestone 8: scalability and concurrency release gate
 

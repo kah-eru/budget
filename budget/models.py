@@ -9,6 +9,7 @@ class User(AbstractUser):
     verified_email = models.EmailField(blank=True, editable=False)
     email_last_sent_at = models.DateTimeField(null=True, editable=False)
     email_alerts = models.BooleanField(default=False)  # opt-in; only sent to a verified address
+    goals_enabled = models.BooleanField(default=False)  # goals appear nowhere until this person turns them on
 
     class Meta(AbstractUser.Meta):
         constraints = [models.UniqueConstraint(Lower("email"), condition=~Q(email=""), name="unique_nonempty_email")]
@@ -295,3 +296,21 @@ class BillReminder(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["recurring", "recipient", "due_on"], name="bill_reminder_once")]
+
+
+class Goal(models.Model):
+    # Save up to a target, or pay a debt down. Progress comes from a linked account's balance, else the amount typed in.
+    KINDS = [("savings", "Save up"), ("debt", "Pay off a debt")]
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="goals")
+    name = models.CharField(max_length=80)
+    kind = models.CharField(max_length=7, choices=KINDS, default="savings")
+    target_cents = models.BigIntegerField()
+    target_date = models.DateField(null=True, blank=True)
+    account = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, related_name="goals")
+    manual_cents = models.BigIntegerField(default=0)  # saved or paid so far, when no account is linked
+    start_cents = models.BigIntegerField(null=True, editable=False)  # a linked debt's balance when the goal was set
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=Q(target_cents__gt=0), name="goal_target_positive"),
+                       models.CheckConstraint(condition=Q(manual_cents__gte=0), name="goal_manual_not_negative")]

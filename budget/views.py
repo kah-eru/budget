@@ -30,13 +30,14 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from . import imports
 from . import recurring
+from .goals import progress as goal_progress
 from . import plaid as bank
 from .account_mail import UNSUBSCRIBE_SALT, notify
 from .forms import (
-    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GroupForm, ImportMappingForm, ImportUploadForm, IncomeForm, RecurringForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
+    AccountForm, AnnotationForm, BudgetForm, CategoryForm, EmailChangeForm, GoalForm, GroupForm, ImportMappingForm, ImportUploadForm, IncomeForm, RecurringForm, RuleForm, SplitForm, SharingForm, TransactionFilterForm, TransactionForm, UsernameChangeForm,
 )
 from .invitations import claim_email_send
-from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Goal, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, disposable, daily, monthly, net_worth, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
@@ -262,6 +263,54 @@ def email_alerts(request):
         User.objects.filter(pk=request.user.pk).update(email_alerts=on)
         messages.success(request, "Email alerts are on." if on else "Email alerts are off.")
     return redirect("settings")
+
+
+@login_required
+@require_POST
+def goals_toggle(request):
+    on = request.POST.get("on") == "1"
+    User.objects.filter(pk=request.user.pk).update(goals_enabled=on)
+    messages.success(request, "Goals are on. Find them under Budgets." if on else "Goals are off. They're kept, just hidden.")
+    return redirect("settings")
+
+
+def goals_workspace(request, workspace_id):
+    if not request.user.goals_enabled:
+        raise Http404  # goals appear nowhere until this person turns them on
+    return get_workspace(request.user, workspace_id)
+
+
+@login_required
+def goal_list(request, workspace_id):
+    workspace = goals_workspace(request, workspace_id)
+    today = timezone.localdate()
+    return render(request, "budget/goals.html", {**page_context(request.user, workspace),
+                  "goals": [goal_progress(g, request.user, today) for g in workspace.goals.select_related("account", "workspace").order_by("name", "pk")]})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def goal_edit(request, workspace_id, goal_id=None):
+    workspace = goals_workspace(request, workspace_id)
+    goal = get_object_or_404(workspace.goals, pk=goal_id) if goal_id else Goal(workspace=workspace)
+    form = GoalForm(request.POST if request.method == "POST" else None, instance=goal, accounts=visible_accounts(request.user, workspace))
+    back = reverse("goals", args=[workspace.pk])
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Goal saved.")
+        return redirect(back)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": f"Edit {goal.name}" if goal_id else "Add a goal",
+                  "action": "Save goal", "cancel_url": back, "help": "A plan to track, not advice. Everyone in this workspace can see it.",
+                  "delete_url": reverse("goal_delete", args=[workspace.pk, goal.pk]) if goal_id else None}, status=400 if request.method == "POST" else 200)
+
+
+@login_required
+@require_POST
+def goal_delete(request, workspace_id, goal_id):
+    workspace = goals_workspace(request, workspace_id)
+    get_object_or_404(workspace.goals, pk=goal_id).delete()
+    messages.success(request, "Goal removed.")
+    return redirect("goals", workspace.pk)
 
 
 @csrf_exempt  # mail apps' one-click unsubscribe (RFC 8058) posts without a CSRF token; the signed link is the proof
@@ -816,7 +865,9 @@ def budget_list(request, workspace_id):
     today = timezone.localdate()
     return render(request, "budget/budgets.html", {**page_context(request.user, workspace),
                   "budgets": budget_progress(request.user, workspace, budgets, today), "plan": disposable(request.user, workspace, today),
-                  "upcoming": recurring.forecast(workspace, today)["items"][:3]})
+                  "upcoming": recurring.forecast(workspace, today)["items"][:3],
+                  "goals": [goal_progress(g, request.user, today) for g in workspace.goals.select_related("account", "workspace").order_by("name", "pk")[:3]]
+                  if request.user.goals_enabled else None})
 
 
 @login_required

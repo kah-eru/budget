@@ -117,6 +117,13 @@ class ScheduleTests(TestCase):
         recurring.remind(self.group, date(2026, 9, 28))
         self.assertFalse(BillReminder.objects.exists())
 
+    def test_typed_names_are_kept_whole(self):
+        self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
+        url = f"/workspaces/{self.group.pk}/bills/new/"
+        for name in ("Car payment 1", "Car payment 2"):
+            self.assertEqual(self.client.post(url, {"name": name, "kind": "bill", "amount": "300", "interval": "monthly", "anchor_on": "2026-10-05", "remind": "on"}).status_code, 302)
+        self.assertEqual(self.client.post(url, {"name": "rent", "kind": "bill", "amount": "1", "interval": "monthly", "anchor_on": "2026-10-05"}).status_code, 400)
+
     def test_budgets_page_shows_the_next_bill(self):
         self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
         with mock.patch("django.utils.timezone.localdate", return_value=TODAY):

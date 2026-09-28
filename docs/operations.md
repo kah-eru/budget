@@ -63,6 +63,16 @@ Until this is set, every email (invitations, password resets, email alerts) is w
 
 Email links use Render's own URL automatically; set `SITE_URL` only for a custom domain.
 
+## Daily task: bill reminders and catch-up sync (optional, free)
+
+Bill reminders also appear when someone opens Overview or Alerts, and after bank syncs. The daily task adds a nudge even on quiet days.
+1. Make a long random value in your own terminal: `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
+2. In Render → budget service → Environment, add `TASKS_TOKEN` with that value.
+3. In GitHub → the repository → Settings → Secrets and variables → Actions, add `TASKS_TOKEN` (the same value) and `SITE_URL` (for example `https://budget-4aek.onrender.com`).
+4. GitHub → Actions → Daily tasks → Run workflow to try it. It then runs once a day and takes a few free Actions minutes a month.
+
+Never paste the value into chat or commit it.
+
 ## Updating
 
 Fast-forward `main` to `feat/project-foundation` and push both; CI runs; Render deploys `main` when CI passes. If Render → budget → Settings still shows branch `feat/project-foundation`, change it to `main` there (the two stay identical, so either deploys the same code). A failed CI run leaves the previous version online. Roll back from Render → Deploys → an earlier deploy.

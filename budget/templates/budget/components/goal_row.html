@@ -1,0 +1,6 @@
+{% load money %}<li><a class="row-link category-row -mx-2 block rounded-lg px-2 py-3" href="{% url 'goal_edit' workspace.pk p.goal.pk %}">
+  <span class="flex items-baseline justify-between gap-3"><span class="min-w-0 break-words font-semibold">{{ p.goal.name }}</span><span class="shrink-0 text-sm text-muted">{{ p.percent }}%</span></span>
+  <span class="category-bar" aria-hidden="true"><span style="width: {{ p.percent }}%"></span></span>
+  <span class="block text-sm text-muted">{{ p.done_cents|dollars }} of {{ p.goal.target_cents|dollars }}{% if p.goal.kind == 'debt' %} paid{% endif %}{% if p.goal.target_date %} · by {{ p.goal.target_date|date:"M Y" }}{% endif %}{% if p.linked %} · from {{ p.linked.name }}{% endif %}</span>
+  {% if not p.remaining_cents %}<span class="block text-sm font-medium text-accent-text">Reached</span>{% elif p.overdue %}<span class="block text-sm text-muted">The date has passed; {{ p.remaining_cents|dollars }} to go</span>{% elif p.monthly_cents %}<span class="block text-sm text-muted">About {{ p.monthly_cents|dollars }}/month to get there</span>{% endif %}
+</a></li>

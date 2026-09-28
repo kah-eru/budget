@@ -462,4 +462,58 @@ Verification:
 - **Not verified:** real webhook delivery. Plaid can only reach the public HTTPS site, so the first real check is after the owner adds the Plaid keys in Render and connects a bank there.
 - Deferred: 6-hour catch-up sync (needs a scheduler, a cost decision), retry/backoff, and handling of `PENDING_EXPIRATION`.
 
-Continue: milestone 9 (reports, goals, recurring, net worth; wireframes first), or the owner's live Plaid setup. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
+## Planning tools: net worth, recurring bills, goals — September 28
+
+Why: the user said "don't need reports. i like goals, make them optional, add recurring bills, and net worth." They chose:
+- goals off until turned on in Settings
+- bill reminders 3 days before
+- net worth from synced balances plus manual items
+
+Wireframes came first (UX doc section 6b). Three commits, one per slice.
+
+**Net worth** (migration 0018; `reporting.net_worth`; `plaid.record_balances`; views `net_worth_page`, `account_edit`):
+- Each account keeps a last known balance and whether it counts as owned, owed or not at all.
+- **Plaid:** every sync records the cached `/accounts/get` balances (no extra Plaid product). Credit and loan accounts count as owed. The first balance sets the kind; after that the owner's choice sticks. A balance failure never fails a sync.
+- **Manual:** a home, a car or a loan is an account with a typed value (Add something you own / owe, or Edit on the account). A synced balance can't be typed over.
+- Net worth = own − owe over the accounts visible in the workspace, so a group counts only shared accounts. It shows as an Overview card and a page labeled an estimate, not advice. "Not counted" is collapsed.
+- Real sandbox: all 14 test accounts got balances, 8 owned and 6 owed.
+
+**Recurring bills** (migration 0019: `Recurring`, `BillReminder`; `budget/recurring.py`; views `bills`, `bill_edit`, `bill_delete`, `daily_tasks`; `.github/workflows/daily.yml`):
+- **Found in your transactions:**
+  - Series in visible posted spending or income, grouped by the bank name without store numbers, at least 3 times.
+  - A weekly, monthly or yearly gap, where a skipped period still counts.
+  - Every amount within 10% of the usual one, and still going (the last one within 2 periods).
+  - **Confirm** or **Not recurring**. The server recomputes the series, so posted amounts are never trusted. A dismissed series isn't suggested again.
+- Or add one by hand. A typed name is kept whole, so "Car payment 1" and "Car payment 2" stay separate. The browser test caught the first version merging them.
+- Due dates step from one known date, and month ends clamp (Jan 31 → Feb 28 → Mar 31).
+- **Next 30 days (estimate):** bills, income and "left after bills". It never counts as spending. The Budgets page shows the next three.
+- **Reminders:**
+  - From 3 days before each due date, once per person, bill and date, for everyone in the workspace.
+  - In the app: Alerts → "Bill due Oct 1: Rent", shown in the unread count.
+  - Push and email say only "A bill is due soon", and email follows the person's email-alert setting.
+  - Checked on Overview and Alerts, after every bank sync, and by the daily task.
+- **Daily task:** `POST /tasks/daily/` with `Authorization: Bearer $TASKS_TOKEN` (404 when unset or wrong). It runs reminders plus a **catch-up bank sync** for connections quiet for 6 hours.
+  - A scheduled GitHub Action calls it once a day and skips itself until the secrets exist. It's free.
+- Real sandbox data: the Bills page found SparkFun, McDonald's, Starbucks and others as monthly series.
+
+**Goals** (migration 0020: `User.goals_enabled`, `Goal`; `budget/goals.py`; views `goals_toggle`, `goal_list`, `goal_edit`, `goal_delete`):
+- Off by default, per person: Settings → Goals → Turn on. When off, every goal page is 404 and no goal UI shows; turning off deletes nothing.
+- **Save up** or **Pay off a debt**, with a target, an optional date and an optional linked account.
+  - Savings follow the account's balance.
+  - A debt follows how much its balance dropped since the goal was set.
+  - Without a link, the typed "saved or paid so far" counts.
+  - A linked account that stops being visible in the workspace falls back to the typed amount; a group can't link a private account.
+- The monthly amount needed is `ceil(remaining / months left)`. A passed date asks for the rest now and says so.
+- Budgets shows up to three goals; the Goals page shows all of them.
+
+Verification:
+- 203 Django tests OK on SQLite (4 PG-only skipped), including new `test_net_worth.py` (5), `test_recurring.py` (10) and `test_goals.py` (4).
+- New modules plus concurrency 22/22 on Neon PostgreSQL. `check` and migration drift clean.
+- 10/10 Chrome checks. New `planning.spec.ts`: a manual home in net worth, a bill in the forecast and in Alerts, goals turned on, added, shown at 25% on Budgets, then turned off again. Light and dark 360 px screenshots reviewed.
+
+Owner actions for the daily task (optional, free):
+- Pick a long random value.
+- Add it as `TASKS_TOKEN` in Render.
+- In GitHub → Settings → Secrets → Actions, add `TASKS_TOKEN` (same value) and `SITE_URL` (the site's https address).
+
+Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

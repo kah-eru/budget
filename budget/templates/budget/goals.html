@@ -1,0 +1,10 @@
+{% extends 'budget/base.html' %}
+{% block content %}
+<a class="chip -ml-3 mb-2 font-semibold" href="{% url 'budgets' workspace.pk %}" aria-label="Back to budgets"><span aria-hidden="true" class="mr-1 text-xl leading-none">‹</span>Budgets</a>
+<section aria-labelledby="goals-title" class="card">
+  <h1 id="goals-title" class="mb-1 text-3xl">Goals</h1>
+  <p class="mb-2 text-muted">Save up for something or pay a debt down. {% if not workspace.is_personal %}Everyone in {{ workspace.name }} sees these goals. {% endif %}A plan to track, not advice.</p>
+  <ul>{% for p in goals %}{% include 'budget/components/goal_row.html' %}{% empty %}<li class="py-4 text-muted">No goals yet. An emergency fund, a trip, or paying off a card are good first ones.</li>{% endfor %}</ul>
+  <a class="primary mt-3" href="{% url 'goal_create' workspace.pk %}">Add a goal</a>
+</section>
+{% endblock %}

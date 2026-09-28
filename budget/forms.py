@@ -11,7 +11,7 @@ from django.utils.formats import date_format
 
 from . import imports
 from .invitations import claim_email_send
-from .models import Account, Budget, Category, Recurring, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
+from .models import Account, Budget, Category, Goal, Recurring, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .rules import normalize, suggest_keyword
 
 
@@ -66,6 +66,42 @@ class TransactionForm(forms.ModelForm):
         return super().save(commit)
 
 
+class GoalForm(forms.ModelForm):
+    target = forms.DecimalField(label="Target (USD)", min_value=Decimal("0.01"), max_digits=14, decimal_places=2,
+                                help_text="For a debt, how much you want to pay off.")
+    manual = forms.DecimalField(label="Saved or paid so far (USD)", required=False, min_value=Decimal("0"), max_digits=14, decimal_places=2,
+                                help_text="Used when no account is linked. Update it as you go.")
+
+    class Meta:
+        model = Goal
+        fields = ["name", "kind", "target", "target_date", "account", "manual"]
+        labels = {"kind": "Type", "target_date": "By (optional)", "account": "Track with an account (optional)"}
+        widgets = {"target_date": forms.DateInput(attrs={"type": "date"})}
+
+    def __init__(self, *args, accounts, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only accounts this workspace can see and that carry a balance; a group never sees a private account.
+        self.fields["account"].queryset = accounts.exclude(balance_kind="").exclude(balance_cents=None).order_by("name")
+        self.fields["account"].help_text = "A savings goal follows what you own in it; a debt goal follows what you still owe."
+        if self.instance.pk:
+            self.initial.update(target=Decimal(self.instance.target_cents) / 100, manual=Decimal(self.instance.manual_cents) / 100)
+
+    def clean(self):
+        data = super().clean()
+        account = data.get("account")
+        if account and account.balance_kind != ("asset" if data.get("kind") == "savings" else "liability"):
+            self.add_error("account", "Pick something you own for savings, or something you owe for a debt.")
+        return data
+
+    def save(self, commit=True):
+        goal = self.instance
+        if goal.kind == "debt" and goal.account and (goal.start_cents is None or "account" in self.changed_data):
+            goal.start_cents = goal.account.balance_cents
+        goal.target_cents = int(self.cleaned_data["target"] * 100)
+        goal.manual_cents = int((self.cleaned_data.get("manual") or 0) * 100)
+        return super().save(commit)
+
+
 class RecurringForm(forms.ModelForm):
     amount = forms.DecimalField(label="Usual amount (USD)", min_value=Decimal("0.01"), max_digits=12, decimal_places=2)
 
@@ -82,9 +118,9 @@ class RecurringForm(forms.ModelForm):
             self.initial["amount"] = Decimal(self.instance.amount_cents) / 100
 
     def clean_name(self):
-        from .recurring import key
         name = self.cleaned_data["name"].strip()
-        self.pattern = key(name)[0]
+        # A typed name is kept whole ("Rent 2" isn't "Rent"); an edit keeps the match it already has.
+        self.pattern = self.instance.pattern if self.instance.pk else normalize(name)
         taken = self.workspace.recurring.filter(pattern=self.pattern, status="confirmed").exclude(pk=self.instance.pk)
         if taken.exists():
             raise forms.ValidationError("That bill or income is already listed.")

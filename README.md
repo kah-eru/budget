@@ -16,9 +16,10 @@ Status (2026-09-28): a working preview with synthetic data only, deployed to Ren
   - in-app over-budget alerts, once per person, budget and period
   - phone push, off until the owner sets the two push keys
   - opt-in email alerts with one-click unsubscribe, off by default; written to the server log until the owner sets up an email provider
+- **Milestone 9, planning tools:** net worth (synced balances plus manual items), recurring bills and income with a 30-day forecast and 3-day bill reminders, optional goals (off until turned on). Reports were dropped by the user.
 - **Also:** installable to a phone home screen, tab pages prefetched, chart without flashes.
 
-Not started: AI insights (6), statements (7), the release/load gate (8), and the planning tools (9: reports, goals, recurring, net worth). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
+Not started: AI insights (6), statements (7), the release/load gate (8). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
 
 `main` holds the app (merged 2026-09-28) and Render deploys it. Day-to-day work happens in the worktree `C:\Users\bmauricio\Documents\budget\.worktrees\project-foundation` on `feat/project-foundation`, which `main` is fast-forwarded to on each push; run application commands there.
 

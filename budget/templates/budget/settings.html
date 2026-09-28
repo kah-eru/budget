@@ -50,6 +50,14 @@
   {% endfor %}
 </section>
 {% endif %}
+<section aria-labelledby="goals-set-title" class="card">
+  <h2 id="goals-set-title" class="mb-2 text-sm font-semibold text-accent-text">Goals</h2>
+  <form method="post" action="{% url 'goals_toggle' %}">{% csrf_token %}
+    <p class="font-medium">Goals · {% if user.goals_enabled %}On{% else %}Off{% endif %}</p>
+    <p class="text-sm text-muted">Savings and debt payoff goals, under Budgets. Off hides them everywhere for you; nothing is deleted.</p>
+    {% if user.goals_enabled %}<button class="secondary mt-3" type="submit" name="on" value="0">Turn off goals</button>{% else %}<button class="primary mt-3" type="submit" name="on" value="1">Turn on goals</button>{% endif %}
+  </form>
+</section>
 <section aria-labelledby="data-title" class="card">
   <h2 id="data-title" class="text-sm font-semibold text-accent-text">Your data</h2>
   {% if personal %}<a class="stat-row chevron" href="{% url 'transaction_export' personal.pk %}" download><span class="min-w-0 flex-1"><span class="block font-medium">Export transactions (CSV)</span><span class="block text-sm text-muted">This month, all your accounts. For another range or a group, use Export on its Timeline.</span></span></a>{% endif %}

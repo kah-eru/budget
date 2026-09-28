@@ -2,6 +2,21 @@
 
 Updated: 2026-09-28. Read current docs and inspect Git before resuming.
 
+Latest request (2026-09-28): "push. don't need reports. i like goals, make them optional, add recurring bills, and net worth." Pushed first (`bb77a20`). The user chose goals off until turned on, 3-day bill reminders, and net worth from synced balances plus manual items. Wireframes first (UX 6b), then three local commits:
+- **Net worth:** Plaid cached balances each sync, plus manual items (home, loan); groups count only shared accounts.
+- **Recurring:**
+  - detected series to confirm or dismiss, or add your own
+  - a 30-day forecast (an estimate, never spending)
+  - reminders 3 days before, once per person/bill/date, generic push/email
+  - `POST /tasks/daily/` with a bearer token, called by a free GitHub Action; it also runs a 6-hour catch-up bank sync
+- **Goals:** a per-person Settings switch (default off, 404 when off); savings or debt with a linked balance or manual amount, plus the monthly amount needed.
+- Found by the browser test and fixed: typed bill names were shortened like bank names ("Rent 2" → "Rent").
+- Details: [development guide](docs/development.md#planning-tools-net-worth-recurring-bills-goals--september-28).
+- Verification: 203 Django tests OK; 22/22 on Neon PostgreSQL; 10/10 Chrome checks; screenshots reviewed. Real sandbox: balances on all 14 accounts; the Bills page found monthly series in sandbox data.
+- **Owner actions (optional, free):** `TASKS_TOKEN` in Render, plus `TASKS_TOKEN` and `SITE_URL` as GitHub Actions secrets ([operations guide](docs/operations.md#daily-task-bill-reminders-and-catch-up-sync-optional-free)).
+- Committed locally; **not pushed**, waiting for "push". It runs migrations 0018-0020 and adds the Daily tasks workflow.
+- Next: the user picks among AI insights (6), statements (7) and the release gate (8).
+
 Latest request (2026-09-28): "do it" (Plaid slice 2). Built:
 - signed-webhook automatic sync: ES256 JWT, 5-minute freshness, body hash; handled inside the request
 - one sync at a time per connection, with `needs_sync` so an update arriving mid-sync isn't lost
