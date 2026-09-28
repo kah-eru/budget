@@ -428,6 +428,10 @@ Verification:
   - A resync added 0 with no duplicates. The sandbox Item was then removed.
   - Found and fixed: "history ready" now waits for `HISTORICAL_UPDATE_COMPLETE`. Plaid sends about 30 days first, so the page no longer claims the full history early.
   - Sandbox labels the Gusto payroll deposit a transfer (Plaid's category); change its type if it should count as income.
-- **Plaid Link in a browser:** the link token and Plaid's window load, and sandbox sign-in (user_good) works. Automated Chrome stalls on Plaid's final account-consent Continue: no request leaves the window. So the last step (Continue → the app's exchange → Choose accounts) is left for the owner to click through by hand.
+- **Plaid Link in a browser:** the link token and Plaid's window load, and sandbox sign-in (user_good) works. Automated Chrome stalls on Plaid's final account-consent Continue: no request leaves the window. So the owner clicked through by hand, and it worked end to end: "Synced: 390 transactions added or updated". Checked in the local test database:
+  - 14 accounts imported, 390 rows, 390 distinct Plaid IDs, 0 same-day/amount/name repeats
+  - two years of history (2024-09-30 to 2026-09-26)
+  - 245 expenses, 24 refunds, 121 transfers; connection ok, history ready
+  - Link asks for 730 days, which is why this is more than the 48 from the API-created sandbox Item.
 
 Continue: the real sandbox run once the keys are in, then slice 2 (webhooks with signature checks, reconnect, duplicate-connection warning), then milestone 9. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

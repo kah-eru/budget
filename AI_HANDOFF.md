@@ -13,7 +13,7 @@ Latest request (2026-09-28): "ok i think i created a free plaid sandbox account"
 - Details: [development guide](docs/development.md#plaid-sandbox-slice-1--september-28).
 - Verification: 175 Django tests OK; 28/28 on Neon PostgreSQL; 9/9 Chrome checks.
 - Real sandbox run done: 48 transactions synced, types and categories right, resync with no duplicates. Fixed history-ready timing.
-- **Owner check:** click through Connect a bank by hand. Automated Chrome stalls inside Plaid's own consent screen.
+- Owner clicked through Connect a bank by hand (automated Chrome stalls inside Plaid's consent screen): "Synced: 390 transactions". Checked: 390 unique rows, 2 years of history, no repeats.
 - **Done by the owner:**
   - Plaid sandbox client_id and secret are in the ignored worktree `.local/plaid.env`. That file exists; a local `PLAID_TOKEN_KEY` is already generated there. Then the real sandbox run happens.
   - For the live site, add `PLAID_CLIENT_ID`, `PLAID_SECRET` and `PLAID_TOKEN_KEY` in Render ([operations guide](docs/operations.md#bank-sync-with-plaid-optional-sandbox-is-free)).
