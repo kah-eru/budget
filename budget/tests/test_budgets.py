@@ -2,9 +2,11 @@ from datetime import date
 from urllib.parse import quote
 
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 
-from budget.models import Account, AccountShare, Budget, Category, Membership, Rule, Transaction, TransactionAnnotation, Workspace
+from budget.models import Account, AccountShare, Budget, BudgetAlert, Category, Membership, Rule, Transaction, TransactionAnnotation, Workspace
 from budget.reporting import budget_progress
 
 MAY = date(2026, 5, 1)
@@ -60,6 +62,29 @@ class BudgetTests(TestCase):
         self.spend(450, description="Starbucks", day=date(2025, 12, 31))
         p = self.progress(budget)
         self.assertEqual((p["spent_cents"], p["start"], p["end"]), (1000, date(2026, 1, 1), date(2026, 12, 31)))
+
+    def test_name_budgets_share_one_scan_per_period(self):
+        cafe = Budget.objects.create(workspace=self.group, name_match="cafe", limit_cents=1000)
+        again = Budget.objects.create(workspace=self.group, name_match="  CAFE ", limit_cents=500)
+        bakery = Budget.objects.create(workspace=self.group, name_match="bakery", limit_cents=1000)
+        self.spend(700, description="Cafe Luna")
+        self.spend(200, description="Cafe Luna", classification="refund")
+        self.spend(300, description="Corner Bakery", pending=True)
+        with self.assertNumQueries(3):  # the access lookups plus one scan for all three
+            found = budget_progress(self.bob, self.group, [cafe, again, bakery], MAY)
+        self.assertEqual([(p["spent_cents"], p["pending_cents"], p["over"]) for p in found], [(500, 0, False), (500, 0, False), (0, 300, False)])
+
+    def test_the_alerts_page_checks_each_workspace_and_period_once(self):
+        budgets = [Budget.objects.create(workspace=self.group, name_match=f"shop {n}", limit_cents=100) for n in range(6)]
+        self.login(self.bob)
+        BudgetAlert.objects.create(budget=budgets[0], recipient=self.bob, period_start=MAY)
+        with CaptureQueriesContext(connection) as few:
+            self.client.get("/alerts/")
+        for budget in budgets[1:]:
+            BudgetAlert.objects.create(budget=budget, recipient=self.bob, period_start=MAY)
+        with self.assertNumQueries(len(few)):  # six alerts cost the same as one
+            page = self.client.get("/alerts/")
+        self.assertContains(page, "shop 5")
 
     def test_overview_shows_progress_and_form_validates_target_and_amount(self):
         self.login(self.bob)

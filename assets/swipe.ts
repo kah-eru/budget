@@ -102,8 +102,9 @@ function track(start: TouchEvent, moving: HTMLElement, target: Target, own: bool
         // Storage blocked: the next page just appears.
       }
       if (reduced.matches) return link.click();
-      moving.animate({ transform: [from, `translateX(${-direction * width}px)`], opacity: [1, 0] }, { duration: 180, easing: EASE, fill: "forwards" })
-        .finished.then(() => link.click());
+      // Load the next page right away; the slide-out plays while it arrives.
+      moving.animate({ transform: [from, `translateX(${-direction * width}px)`], opacity: [1, 0] }, { duration: 180, easing: EASE, fill: "forwards" });
+      link.click();
     } else {
       moving.animate({ transform: [from, "translateX(0px)"] }, { duration: 300, easing: EASE });
       moving.style.transform = "";
@@ -130,7 +131,7 @@ export function setup() {
     if (event.persisted) document.getAnimations().forEach((animation) => animation.cancel());
   });
   if (entered && main && !reduced.matches) {
-    main.animate({ transform: [`translateX(${entered === "left" ? 40 : -40}px)`, "translateX(0px)"], opacity: [0, 1] }, { duration: 350, easing: EASE });
+    main.animate({ transform: [`translateX(${entered === "left" ? 40 : -40}px)`, "translateX(0px)"], opacity: [0, 1] }, { duration: 250, easing: EASE });
   }
 
   // Charts: capture runs before the chart's own touch handlers, so a swipe away from the line never shows the tooltip.

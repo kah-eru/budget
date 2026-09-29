@@ -129,25 +129,37 @@ def budget_progress(user, workspace, budgets, day, span=None):
     estimate, remaining (negative when over) and whether posted spending is strictly above the limit.
     span: a whole year for the Overview's Year view, where a monthly budget counts 12 times its limit."""
     rows = visible_transactions(user, workspace)
-    result, per_period = [], {}
+    budgets = list(budgets)
+    periods = []
     for budget in budgets:
         start, end = period_bounds(budget.period, day)
         limit = budget.limit_cents
         if span and budget.period == "month":
             (start, end), limit = span, limit * 12
-        in_period = rows.filter(posted_on__range=(start, end))
-        if budget.category_id:
+        periods.append((start, end, limit))
+    per_period, by_name = {}, {}
+    for (start, end, _), budget in zip(periods, budgets):
+        if budget.category_id and (start, end) not in per_period:
             # Category totals once per period, shared by every category budget in it (splits count per line).
-            if (start, end) not in per_period:
-                per_period[start, end] = category_totals(rows, workspace, start, end)
+            per_period[start, end] = category_totals(rows, workspace, start, end)
+        elif not budget.category_id:
+            by_name.setdefault((start, end), set()).add(normalize(budget.name_match))
+    for (start, end), patterns in by_name.items():
+        # One scan per period for every name budget in it; name matches count whole transactions, splits do not apply.
+        found = {p: dict(ZERO) for p in patterns}
+        scan = rows.filter(posted_on__range=(start, end), effective__in=("expense", "refund")).values_list("description", "amount_cents", "pending", "effective")
+        for description, cents, pending, effective in scan:
+            text = normalize(description)
+            for pattern in patterns:
+                if pattern in text:
+                    found[pattern]["pending_cents" if pending else "posted_cents"] += cents if effective == "expense" else -cents
+        by_name[start, end] = found
+    result = []
+    for (start, end, limit), budget in zip(periods, budgets):
+        if budget.category_id:
             totals = per_period[start, end].get(budget.category_id, ZERO)
         else:
-            # ponytail: one scan per name budget; name matches count whole transactions, splits do not apply.
-            pattern, totals = normalize(budget.name_match), dict(ZERO)
-            for row in in_period.filter(effective__in=("expense", "refund")).only("description", "amount_cents", "pending", "classification"):
-                if pattern in normalize(row.description):
-                    sign = 1 if row.effective == "expense" else -1
-                    totals["pending_cents" if row.pending else "posted_cents"] += sign * row.amount_cents
+            totals = by_name[start, end][normalize(budget.name_match)]
         spent = totals["posted_cents"]
         result.append({"budget": budget, "start": start, "end": end, "limit_cents": limit, "spent_cents": spent, "pending_cents": totals["pending_cents"],
                        "remaining_cents": limit - spent, "over": spent > limit,
@@ -192,6 +204,13 @@ def savings(user, workspace, start, end):
             "balance_cents": sum(a.balance_cents for a in known), "unknown": len(accounts) - len(known)}
 
 
+def saved_net(user, workspace, start, end):
+    """savings()["net_cents"] alone, in one query: the previous period's comparison needs nothing else."""
+    t = Transaction.objects.filter(account__in=visible_accounts(user, workspace).filter(is_savings=True), pending=False,
+                                   posted_on__range=(start, end)).aggregate(**_flows())
+    return t["i"] - t["o"]
+
+
 def net_worth(user, workspace):
     """What's owned minus what's owed, from last known balances. A group sees only accounts shared with it."""
     accounts = list(visible_accounts(user, workspace).select_related("owner").order_by("name", "pk"))
@@ -199,7 +218,7 @@ def net_worth(user, workspace):
     assets = [a for a in counted if a.balance_kind == "asset"]
     debts = [a for a in counted if a.balance_kind == "liability"]
     own, owe = sum(a.balance_cents for a in assets), sum(a.balance_cents for a in debts)
-    return {"assets": assets, "debts": debts, "uncounted": [a for a in accounts if a not in counted],
+    return {"assets": assets, "debts": debts, "uncounted": [a for a in accounts if not (a.balance_kind and a.balance_cents is not None)],
             "own_cents": own, "owe_cents": owe, "net_cents": own - owe}
 
 

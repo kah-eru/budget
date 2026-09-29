@@ -11,6 +11,11 @@ Status 2026-09-28: the Render service is live and deploys `main` after CI passes
 
 Free-plan facts checked 2026-09-25 on [Render's free-tier docs](https://render.com/docs/free): the service sleeps after 15 idle minutes and takes about a minute to wake; 750 instance hours per month; no shell; filesystem is wiped on each restart/deploy (nothing in the app stores files yet).
 
+Cold start (owner's choice; nothing set up or paid): the sleep is the app's biggest delay. These are free options:
+- An uptime pinger (for example UptimeRobot's free plan) calling `https://<site>/health/` every 5–10 minutes keeps the one service awake. 750 free hours cover a whole month.
+- `/health/` doesn't touch the database, so Neon still scales to zero and wakes on the first real query in about a second.
+- Otherwise, a paid instance.
+
 ## One-time setup (owner)
 
 Progress 2026-09-25: role `budget_site` created by the owner in Neon; database `budget_site` (owned by that role, same project/host) created and migrated (0001-0005) from the worktree. Its credentials live only in ignored `.local/neon-site.env`, loaded with `. .local/neon-site-env.sh`. Note: Neon console roles belong to `neon_superuser`, so this role can technically reach `budgetdb` too; separation is by database, not a hard permission boundary. Render service created by the owner: https://budget-4aek.onrender.com (an earlier duplicate was deleted). First user created by the owner with `createsuperuser`; the owner signed in on the live site 2026-09-25. The first deploy failed on `password authentication failed for user 'budget_site'` because the Render `PGPASSWORD` value was wrong; re-entering the exact value fixed it. (IPv6 "Network is unreachable" lines in that log are harmless; the IPv4 attempts carry the real error.) The owner chose not to rotate the `budget_site` password after it appeared in chat.

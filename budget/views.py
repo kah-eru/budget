@@ -40,7 +40,7 @@ from .forms import (
 from .invitations import claim_email_send
 from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Goal, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, budget_progress, by_category, by_year, disposable, daily, first_day, net_worth, period_bounds, saved_daily, savings, spending, visible_transactions
+from .reporting import _shape, _sums, annotated, budget_progress, by_category, by_year, disposable, daily, first_day, net_worth, period_bounds, saved_daily, saved_net, savings, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from . import push
 from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize, suggest_keyword
@@ -82,15 +82,21 @@ def visible_alerts(user, workspaces):
 
 @login_required
 def alerts(request):
-    for workspace in visible_workspaces(request.user):
-        recurring.remind(workspace)  # bills due in the next three days, even before the daily task runs
     context = page_context(request.user)
+    reminding = set(Recurring.objects.filter(workspace__in=context["workspaces"], status="confirmed", kind="bill", remind=True).values_list("workspace_id", flat=True))
+    for workspace in context["workspaces"]:
+        if workspace.pk in reminding:
+            recurring.remind(workspace)  # bills due in the next three days, even before the daily task runs
     reminders = list(visible_reminders(request.user, context["workspaces"]).select_related("recurring__workspace").order_by("-due_on", "-pk")[:30])
     BillReminder.objects.filter(pk__in=[r.pk for r in reminders if r.read_at is None]).update(read_at=timezone.now())
     rows = list(visible_alerts(request.user, context["workspaces"]).select_related("budget__category", "budget__workspace").order_by("-created_at", "-pk")[:50])
+    groups = {}
     for alert in rows:
-        # Amounts are recomputed from what this user can see now, never stored in the alert.
-        alert.progress = budget_progress(request.user, alert.budget.workspace, [alert.budget], alert.period_start)[0]
+        groups.setdefault((alert.budget.workspace, alert.period_start), []).append(alert)
+    for (workspace, day), group in groups.items():
+        # Amounts are recomputed from what this user can see now, never stored in the alert; one pass per workspace and period.
+        for alert, progress in zip(group, budget_progress(request.user, workspace, [a.budget for a in group], day)):
+            alert.progress = progress
     BudgetAlert.objects.filter(pk__in=[a.pk for a in rows if a.read_at is None]).update(read_at=timezone.now())
     return render(request, "budget/alerts.html", {**context, "alerts": rows, "reminders": reminders, "unread_alerts": 0})
 
@@ -603,7 +609,7 @@ def workspace_detail(request, workspace_id):
     context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
     context["worth"] = net_worth(request.user, workspace)
     saved = savings(request.user, workspace, start, end)
-    saved.update(change_cents=None if kind == "all" else saved["net_cents"] - savings(request.user, workspace, *prev_range)["net_cents"],
+    saved.update(change_cents=None if kind == "all" else saved["net_cents"] - saved_net(request.user, workspace, *prev_range),
                  timeline=savings_timeline(workspace, saved, context["range_params"]))
     context.update(saved=saved, savings_series=until_today(saved["days"] if kind == "month" else saved["months"]))
     return render(request, "budget/workspace.html", context)
@@ -625,7 +631,7 @@ def savings_page(request, workspace_id):
     return render(request, "budget/savings.html", {
         **page_context(request.user, workspace), **context, "saved": saved, "series": series, "markers": chart_markers(kind, series),
         "timeline": savings_timeline(workspace, saved, context["range_params"]),
-        "change_cents": None if kind == "all" else saved["net_cents"] - savings(request.user, workspace, *context["prev_range"])["net_cents"]})
+        "change_cents": None if kind == "all" else saved["net_cents"] - saved_net(request.user, workspace, *context["prev_range"])})
 
 
 @login_required

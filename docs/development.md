@@ -706,7 +706,7 @@ User choices: calendar month and year; a people icon for Manage sharing in group
 - Screenshots reviewed: phone light and dark, the open tip, desktop Lifetime.
 - **Found:** the reused `.local/browser.sqlite3` keeps every run's data (116 budgets under `browser-check`), and `budget_progress` runs one query per name-match budget, so the Overview takes 1–3 s there.
   - `transactions.spec.ts` now allows 60 s and waits for the URL after saving.
-  - Load-gate item: batch the name-match budgets.
+  - Load-gate item: batch the name-match budgets (done 2026-09-29, see "Snappier").
 
 ## One range bar, a smaller total and a Chart | Budgets icon — September 29
 
@@ -911,5 +911,49 @@ User choices: keep the starter categories with nothing sorted into them; delete 
 - 36/36 of the categorize, categories, budgets and Plaid tests on Neon.
 - 14/14 Chrome checks. `categories.spec.ts` covers the account labels, the chips, saving and deleting a category.
 - On the reused preview database, the first rule saved with "apply to existing" cleared 245 old bank-guessed categories. That is expected, so the browser check no longer expects exactly 0.
+
+## Snappier — September 29
+
+Why: the user said the app felt a little slow and asked me to look at every possibility.
+
+Measured with Django's test client on a copy of the preview database (SQLite, this PC; the second of two loads). Render's free instance has a fraction of a CPU, so its times are several times longer. Query counts are exact; times are noisy.
+
+| Page | Before | After |
+|---|---|---|
+| Overview | 120–290 ms, 31 queries | ~95 ms, 28 queries |
+| Budget tab | 240–340 ms, 95 queries | ~80 ms, 20 queries |
+| Alerts | 520–540 ms, 244 queries | ~55 ms, 14 queries |
+| Timeline | 160–250 ms, 15 queries | unchanged (see below) |
+
+**Changes:**
+- **Pages are gzipped:** `GZipMiddleware` sits right after WhiteNoise, so only HTML is compressed (static files already were).
+  - The Overview goes from 184 KB to about 10 KB over the network.
+  - Django pads gzip output against BREACH, and CSRF tokens are masked per request.
+- **Name budgets share one scan per period** (the load-gate item). `budget_progress()` collects each period's name patterns and matches them in one pass. Category budgets already shared `category_totals()`. Tested: three name budgets cost the access lookups plus one scan.
+- **Alerts:**
+  - One `budget_progress()` call per workspace and period instead of one per alert.
+  - `recurring.remind()` runs only for workspaces that have bills with reminders. The preview user sits in 114 test-run groups.
+  - Tested: six alerts cost the same number of queries as one.
+- **Previous-period savings:** the Overview and Savings pages use `saved_net()`, one aggregate, instead of a whole `savings()` call.
+- **`net_worth()`:** its "uncounted" list compared model instances in a loop (O(n²)); it now tests each account's fields.
+- **Neon connections:** `CONN_MAX_AGE` goes from 60 to 600 s, with health checks still on, so an idle minute no longer costs a new TLS handshake.
+- **Motion:**
+  - The chart draws in over 350 ms, down from 600.
+  - A page reached by a swipe enters over 250 ms, down from 350.
+  - A page swipe now starts loading the next page at once; before, it waited for the 180 ms slide-out.
+
+**Looked at and left alone:**
+- **Timeline:** its time goes to rendering one Django form widget per account in Filters. The preview has 408 test accounts, while a real person has a handful.
+- **Chart code:** 160 KB gzipped (React, Motion, visx). It is cached forever after the first visit, and replacing it would mean rewriting the Bklit charts.
+- **Fonts and images:** fonts were already A/B tested, and the only images are the home-screen icons.
+- **`no-store`:** it stays for privacy on shared phones, even though it means Back reloads from the server.
+- **Eager tab prefetch:** kept; revisit at the load gate.
+- **The biggest delay is still the free plan's cold start.** A free option is in the [operations guide](operations.md).
+
+**Verification:**
+- 228 Django tests OK
+- 46/46 of the budgets, reporting, savings and notifications tests on Neon
+- `npm.cmd run build`; 14/14 Chrome checks on a restarted preview server
+- `curl` with `Accept-Encoding: gzip` returns `Content-Encoding: gzip` and `Vary: Accept-Encoding`
 
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

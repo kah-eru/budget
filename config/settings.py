@@ -19,6 +19,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # serves collected static files; skips the no-store middleware
+    "django.middleware.gzip.GZipMiddleware",  # pages only (WhiteNoise answers static files above); Django pads it against BREACH
     "budget.middleware.PrivateResponseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -51,7 +52,7 @@ else:
         "PASSWORD": os.environ.get("PGPASSWORD", ""),
         "HOST": os.environ.get("PGHOST", "127.0.0.1"),
         "PORT": os.environ.get("PGPORT", "5432"),
-        "CONN_MAX_AGE": 60,
+        "CONN_MAX_AGE": 600,  # reuse the TLS connection to Neon between requests; health checks catch dropped ones
         "CONN_HEALTH_CHECKS": True,
         "OPTIONS": {"connect_timeout": 5},
     }}

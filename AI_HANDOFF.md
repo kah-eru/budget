@@ -6,14 +6,31 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-29 at the owner's request. `main` and `feat/project-foundation` are at `b6f0167` on GitHub, and Render deploys `main` (migration 0023 applies on deploy). CI passed on both branches. This push: the Budget tab with category pages, Settings in the header pill, categories you fill yourself (full picker, move confirm, word rules, delete) and a docs refresh.
-- **Last checks** (2026-09-29): 226 Django tests OK on SQLite; categorize/categories/budgets/Plaid 36/36 on Neon PostgreSQL; 14/14 Chrome checks; screenshots reviewed.
+- **Last checks** (2026-09-29): 228 Django tests OK on SQLite; budgets/reporting/savings/notifications 46/46 on Neon PostgreSQL; 14/14 Chrome checks.
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
   - `TASKS_TOKEN` in Render, plus the GitHub secrets `TASKS_TOKEN` and `SITE_URL`
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
-- **Next:** AI insights (brainstorm first; the provider is the user's choice). Load-gate item: batch the name-match budgets in `budget_progress`.
+- **Next:** AI insights (brainstorm first; the provider is the user's choice). The rest of the load gate (8).
+
+Latest request (2026-09-29): the app feels a little slow; look at every way to make it snappier. Plan approved.
+- **Built:**
+  - gzipped pages (`GZipMiddleware`)
+  - name budgets batched per period in `budget_progress` (the load-gate item)
+  - Alerts grouped per workspace and period, with reminders only where bills remind
+  - `saved_net()` for the previous period
+  - an O(n²) fix in `net_worth`
+  - `CONN_MAX_AGE` 600
+  - shorter chart and swipe motion; a swipe loads the next page at once
+  - Before/after table: [development guide](docs/development.md#snappier--september-29).
+- **Measured:** Budget tab 95 → 20 queries; Alerts 244 → 14; Overview 31 → 28, and 184 KB → about 10 KB over the network.
+- **Verification:** 228 Django tests OK; 46/46 on Neon; 14/14 Chrome checks; gzip header confirmed.
+- **Owner's choice:** the free cold-start pinger is in the [operations guide](docs/operations.md). Nothing was set up.
+- Committed locally, **not pushed**. The preview server was restarted with it.
+
+## Log (newest first)
 
 Latest request (2026-09-29): verify the category and limit logic against the user's flow: empty categories after import; create, rename, delete and set a limit; pick from all transactions of all accounts, clearly labelled; ask before moving from another category; "every transaction with this name" checked by default; choose keywords so future transactions sort automatically.
 - **Verification found gaps:** bank-guessed categories, no delete, a search-only picker without account labels, silent moves, and no keyword picker. Plan approved and built.
@@ -24,8 +41,6 @@ Latest request (2026-09-29): verify the category and limit logic against the use
   - Details: [development guide](docs/development.md#categories-you-fill-yourself--september-29).
 - **Verification:** 226 Django tests OK; 36/36 on Neon; 14/14 Chrome checks; screenshots reviewed.
 - Pushed 2026-09-29 at the owner's request with the Budget tab commits: `main` and `feat/project-foundation` at `b6f0167`; CI passed on both. Render applies migration 0023 on deploy. The local preview server was restarted.
-
-## Log (newest first)
 
 Latest request (2026-09-29): a separate Budget page with every spending category (create a category, set a limit, choose what goes in it); Settings in the top-right pill with + and the bell; Overview in the middle of the bottom bar. Plan approved.
 - **User choices:** Timeline · Overview · Budget; the Overview's budget pieces move to the tab; rows open a category page; the plan, Goals and Bills sit below.

@@ -26,7 +26,7 @@ export function mount(el: HTMLElement, days: Day[], labels = { total: "Running t
   const data = days.map((d) => ({ date: new Date(d.day + "T00:00:00"), total: d.cumulative_cents / 100, day: d.posted_cents / 100 }));
   createRoot(el).render(
     <MotionConfig reducedMotion="user">
-      <AreaChart data={data} aspectRatio="2.8 / 1" style={{ maxHeight: "13rem" }} animationDuration={reduced ? 0 : 600} margin={{ top: 12, right: 4, bottom: 4, left: 4 }}>
+      <AreaChart data={data} aspectRatio="2.8 / 1" style={{ maxHeight: "13rem" }} animationDuration={reduced ? 0 : 350} margin={{ top: 12, right: 4, bottom: 4, left: 4 }}>
         {/* No axes: the number above is the headline, the tooltip gives the date, and faint lines mark the time. */}
         <TimeMarkers dates={markers.map((day) => new Date(day + "T00:00:00"))} />
         <Area dataKey="total" fill="var(--chart-1)" stroke="var(--chart-1)" fillOpacity={0.08} strokeWidth={2.5} />
