@@ -15,7 +15,8 @@ from django.core import signing
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import DatabaseError, IntegrityError, connection, transaction
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, Q, Sum
+from django.db.models.functions import Coalesce
 from django.http import Http404, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
@@ -40,7 +41,7 @@ from .forms import (
 from .invitations import claim_email_send
 from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Goal, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _shape, _sums, annotated, budget_progress, by_category, by_year, disposable, daily, first_day, net_worth, period_bounds, saved_daily, saved_net, savings, spending, visible_transactions
+from .reporting import _flows, _shape, _sums, annotated, budget_progress, by_category, by_year, disposable, daily, first_day, net_worth, period_bounds, saved_daily, saved_net, savings, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from . import push
 from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize, suggest_keyword
@@ -513,7 +514,8 @@ def period(value, today):
 
 
 def labelled(rows, workspace):
-    """Classification labels plus this workspace's split lines (row.splits, empty when not split)."""
+    """Classification labels plus this workspace's split lines (row.splits, empty when not split), and row.money_in:
+    income and refunds come in, expenses go out, and a transfer goes the way the bank says."""
     labels = dict(Transaction.CLASSIFICATIONS)
     lines = {}
     for line in SplitLine.objects.filter(workspace=workspace, transaction__in=[r.pk for r in rows]).select_related("category").order_by("pk"):
@@ -521,6 +523,7 @@ def labelled(rows, workspace):
     for row in rows:
         row.effective_label = labels[row.effective]
         row.splits = lines.get(row.pk, [])
+        row.money_in = row.money_in if row.effective == "transfer" else row.effective in ("income", "refund")
     return rows
 
 
@@ -769,6 +772,18 @@ def timeline_scope(request, workspace):
     return accounts, rows
 
 
+def day_net(rows, page, saving):
+    """{day: net cents} for the days on this page, whole days even when the page cuts one: money in minus money out,
+    posted only. Spending leaves transfers out (moving money isn't spending); savings counts them by the bank's direction."""
+    if not page:
+        return {}
+    days = rows.filter(pending=False, posted_on__range=(page[-1].posted_on, page[0].posted_on)).values("posted_on").order_by()
+    if saving:
+        return {r["posted_on"]: r["i"] - r["o"] for r in days.annotate(**_flows())}
+    total = lambda *kinds: Coalesce(Sum("amount_cents", filter=Q(effective__in=kinds)), 0)
+    return {r["posted_on"]: r["i"] - r["o"] for r in days.annotate(i=total("income", "refund"), o=total("expense"))}
+
+
 @login_required
 def transaction_list(request, workspace_id):
     workspace = get_workspace(request.user, workspace_id)
@@ -796,6 +811,13 @@ def transaction_list(request, workspace_id):
         except ValueError:
             raise Http404
         rows = rows.filter(Q(posted_on__lt=day) | Q(posted_on=day, pk__lt=pk))
+    # The day picker: the list starts at that day, or the nearest earlier one.
+    try:
+        jump = date.fromisoformat(request.GET.get("day", ""))
+    except ValueError:
+        jump = None
+    if jump:
+        rows = rows.filter(posted_on__lte=jump)
     # ponytail: keyset over all visible accounts; add a (posted_on, id) index if the load gate shows it matters.
     page = labelled(list(rows.order_by("-posted_on", "-pk")[:PAGE_SIZE + 1]), workspace)
     if len(page) > PAGE_SIZE:
@@ -803,8 +825,11 @@ def transaction_list(request, workspace_id):
         params = request.GET.copy()
         params["before"], params["rev"] = f"{last.posted_on:%Y-%m-%d}_{last.pk}", rev
         context["next_query"] = "?" + params.urlencode()
+    nets = day_net(filtered_rows, page, saving)
+    for row in page:
+        row.day_net = nets.get(row.posted_on, 0)
     newest = request.GET.copy()
-    for key in ("before", "rev"):
+    for key in ("before", "rev", "day"):
         newest.pop(key, None)
     chosen = form.cleaned_data["category"]
     context["add_category"] = workspace.categories.filter(pk=int(chosen), archived=False).first() if chosen not in ("", "none") else None
@@ -841,7 +866,7 @@ def transaction_list(request, workspace_id):
     context.update(rows=page, days=days, chart_days=chart_days, markers=chart_markers(kind, chart_days), start=start,
                    tab_query={"overview": {"month": f"?period={start:%Y-%m}", "year": f"?period={start.year}", "all": "?period=all"}.get(kind, ""),
                               "timeline": "?" + newest.urlencode()}, end=end, rev=rev, stale=stale, back=request.get_full_path(),
-                   newest_query="?" + newest.urlencode(), paged=bool(before) and not stale, layouts=layouts, layout=form.cleaned_data["view"],
+                   newest_query="?" + newest.urlencode(), paged=bool(jump) or bool(before) and not stale, jump_params=list(newest.lists()), jump=jump, layouts=layouts, layout=form.cleaned_data["view"],
                    range_nav=nav, by_month=by_month, clear_query="?" + clear.urlencode() if clear else "",
                    totals={k: sum(d[k] for d in days) for k in (("in_cents", "out_cents", "posted_cents") if saving else ("posted_cents", "pending_cents", "income_cents"))},
                    filtered=any(request.GET.get(name) for name in form.fields if name not in ("view", "start", "end", "span")))

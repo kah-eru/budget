@@ -45,6 +45,22 @@ class TimelineTests(TestCase):
         self.assertContains(page, "$85.00")
         self.assertNotContains(page, "Private")
 
+    def test_rows_are_signed_each_day_has_its_net_and_the_day_picker_starts_there(self):
+        Transaction.objects.create(account=self.shared, amount_cents=5000, classification="income", posted_on=date(2026, 5, 3), description="Pay")
+        Transaction.objects.create(account=self.shared, amount_cents=700, classification="transfer", money_in=True, posted_on=date(2026, 5, 3), description="From savings")
+        page = self.get(start="2026-05-01", end="2026-05-03")
+        signs = {r.description: (r.money_in, r.day_net) for r in page.context["rows"]}
+        # Money in: income, refunds and a transfer the bank marks as in. A day's net leaves out pending and transfers.
+        self.assertEqual(signs, {"Pay": (True, 6500), "From savings": (True, 6500), "Refund": (True, 6500), "Pending": (False, 0), "Day one": (False, -10000)})
+        self.assertContains(page, "+$65.00")
+        self.assertContains(page, "−$100.00")
+        self.assertContains(page, 'id="day-2026-05-02"')
+        jumped = self.get(start="2026-05-01", end="2026-05-03", day="2026-05-02")
+        self.assertEqual([r.description for r in jumped.context["rows"]], ["Pending", "Day one"])
+        self.assertTrue(jumped.context["paged"])
+        self.assertNotIn("day=", jumped.context["newest_query"])
+        self.assertEqual(len(self.get(start="2026-05-01", end="2026-05-03", day="nonsense").context["rows"]), 5)
+
     def test_default_range_and_two_year_cap(self):
         today = timezone.localdate()
         page = self.get()

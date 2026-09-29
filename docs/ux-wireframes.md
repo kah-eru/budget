@@ -289,11 +289,33 @@ Rule journey: create from purchase -> choose exact merchant/description contains
 
 ## 3b. Timeline by account (2026-09-28)
 
+Update (user, 2026-09-29, sixth pass): **day lines, signs and Go to.** User choices: jump to the day, and signs on every row and each day's total.
+- **Day lines:** a firm line with the day and its net (`Tue 9/29/26 ........ −$126.00`) comes before each day's rows in the Timeline list.
+  - The net is money in minus money out, posted only.
+  - Spending leaves transfers out; Savings counts them by the bank's direction.
+  - It covers the whole day, even when paging cuts it.
+- **Signs:** every row shows `+` for money in (income, refunds, transfers the bank marks as in) and `−` for money out. This applies on the Timeline, account and category pages.
+- **Go to [date]:** a date field beside the Transactions heading.
+  - If that day (or the nearest earlier one) is on this page, it scrolls there and briefly tints the day line.
+  - Otherwise the list loads starting at that day, and "Start from newest" goes back.
+  - Without JavaScript, a Go button submits it.
+
+```text
+Transactions               Go to [mm/dd/yyyy]
+Newest first.
+Mon 1/12/26                          +$421.50
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1/12/26  Touchstone Climbing        −$78.50 ▾
+1/12/26  United Airlines           +$500.00 ▾
+Sun 1/11/26                           −$16.33
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
 Update (user, 2026-09-29, fifth pass): **one-line transaction rows** everywhere (the Timeline, account pages, category pages).
 - **Closed:** the date as `9/29/26`, where it went, the amount and a small ▾. The amount is muted while pending.
 - **Tap to open:** the details drop down below the row and push the rest down: Category (or the split), Type and Pending, Account, Original name and note. A pencil icon opens the edit page.
 - **One at a time:** opening another row closes the one that was open (native `<details name>`); tap again to close.
-- **No day headers:** the Timeline list no longer has its day header rows, since each row has its date. Day totals are in the Daily totals table.
+- **No day headers:** the Timeline list no longer has its day header rows, since each row has its date. Day totals are in the Daily totals table. (Superseded by the sixth pass: day lines with a signed net.)
 - **Edit pages** have a `‹ Back` chip at the top, going to the same place as Cancel.
 
 ```text

@@ -4,7 +4,7 @@
     <summary class="txn-summary">
       <span class="txn-date">{{ row.posted_on|date:'n/j/y' }}</span>
       <span class="min-w-0 flex-1 truncate font-medium">{{ name }}</span>
-      <span class="amount font-medium{% if row.pending %} text-muted{% endif %}">{% if row.effective == 'refund' %}−{% endif %}{{ row.amount_cents|dollars }}</span>
+      <span class="amount font-medium{% if row.pending %} text-muted{% endif %}">{% if row.money_in %}+{% else %}−{% endif %}{{ row.amount_cents|dollars }}</span>
       <span aria-hidden="true" class="txn-caret">▾</span>
     </summary>
     <div class="txn-details">

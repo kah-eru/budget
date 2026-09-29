@@ -1013,4 +1013,29 @@ Why: the user asked to shrink the transaction listings: show only the amount, wh
 - 14/14 Chrome checks: the five steps that click Edit open the row first
 - 360 px screenshots reviewed: closed rows (about 45 px each, from about 76), an open row in light and dark, only one row open after opening another, and the edit page's Back chip; no sideways scroll
 
+## Day lines, signs and Go to — September 29
+
+Why: the user asked for a visible line between days in the transaction list, a day picker, and visible + or − on the totals. User choices: jump to the day; signs on every row and each day's total.
+
+**Changes:**
+- **Signs:** `labelled()` sets `row.money_in`.
+  - Income and refunds come in and expenses go out; a transfer follows the bank's `money_in`.
+  - `transaction_row.html` shows `+` or `−`.
+  - The new `|signed` filter (`money.py`) formats a signed total with a true minus.
+- **Day lines:**
+  - `day_net()` is one grouped query over the days on the page, covering whole days even when paging cuts one.
+  - It gives money in minus money out, posted only. Spending leaves transfers out; Savings uses the bank's direction (`_flows`).
+  - The Timeline puts a `.day-line` (`id="day-YYYY-MM-DD"`, `data-day`) before each day's rows.
+- **Go to:**
+  - A GET form beside the heading: the current query as hidden inputs, `day`, and `action="#results-title"`.
+  - The view reads `?day=` and starts the list at that day or the nearest earlier one (`paged`, so "Start from newest" shows). `day` is dropped from the tab and range links.
+  - In `app.tsx`, a change scrolls to the day line when that day is on the page, and submits otherwise.
+  - The Go button shows only without JavaScript (`.no-js-only`).
+
+**Verification:**
+- 230 Django tests OK. New: signs, day nets that leave out pending and transfers, the jump, and a bad `day`.
+- The Timeline, savings and flows tests pass on Neon (22/22).
+- 14/14 Chrome checks: `transactions.spec` checks the day line, the minus, and that Go to scrolls without leaving the page.
+- 360 px screenshots reviewed: day lines with nets and a jump that loaded older days.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

@@ -95,6 +95,22 @@ if (filtersButton && filtersPanel) {
   });
 }
 
+// Timeline "Go to" a day: scroll to it when that day is on this page (or the nearest earlier one), else load the list from it.
+document.querySelectorAll<HTMLFormElement>("[data-day-picker]").forEach((form) => {
+  const input = form.querySelector<HTMLInputElement>('input[name="day"]');
+  input?.addEventListener("change", () => {
+    const day = input.value;
+    const lines = [...document.querySelectorAll<HTMLElement>("[data-day]")];
+    if (!day || !lines.length) return;
+    const newest = lines[0].dataset.day!, oldest = lines[lines.length - 1].dataset.day!;
+    const onPage = (day <= newest || !("paged" in form.dataset)) && (day >= oldest || !("more" in form.dataset));
+    const target = lines.find((line) => line.dataset.day! <= day) ?? lines[lines.length - 1];
+    if (!onPage) return form.requestSubmit();
+    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    if (!reduced) target.animate({ backgroundColor: [getComputedStyle(document.documentElement).getPropertyValue("--accent-soft"), "transparent"] }, { duration: 900, easing: "ease-out" });
+  });
+});
+
 // Select all / Clear all for the Timeline's account tick boxes.
 document.querySelectorAll<HTMLElement>("[data-accounts]").forEach((set) => {
   const button = set.querySelector<HTMLButtonElement>("[data-select-all]");

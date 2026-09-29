@@ -15,6 +15,17 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). The rest of the load gate (8).
 
+Latest request (2026-09-29): a visible line between days in the transaction list, a day picker, and + or − on the totals. User choices: jump to the day; signs on every row and each day's total.
+- **Built:**
+  - `row.money_in` in `labelled()` and `|signed`
+  - `day_net()` and the `.day-line` before each day
+  - Go to [date] (`?day=`, with a JavaScript scroll when the day is on the page)
+  - Details: [development guide](docs/development.md#day-lines-signs-and-go-to--september-29).
+- **Verification:** 230 Django tests OK; 22/22 Timeline, savings and flows tests on Neon; 14/14 Chrome checks; screenshots reviewed.
+- Committed locally; five commits are **not pushed**. The preview server was restarted.
+
+## Log (newest first)
+
 Latest request (2026-09-29): smaller transaction listings: only the amount, where it went and the date (0/0/00); the details open on tap and push the rest down, one at a time; Edit as an icon; a way back from the edit page.
 - **Built:**
   - `transaction_row.html` as `<details name="transactions">`: one line closed, the details and a pencil icon when open
@@ -23,8 +34,6 @@ Latest request (2026-09-29): smaller transaction listings: only the amount, wher
   - Details: [development guide](docs/development.md#one-line-transaction-rows--september-29).
 - **Verification:** 229 Django tests OK; 14/14 Chrome checks; 360 px screenshots reviewed.
 - Committed locally; four commits are **not pushed** (speed-up, compact Timeline, icons under the chart, one-line rows). The preview server was restarted.
-
-## Log (newest first)
 
 Latest request (2026-09-29): compact the Timeline: remove the text above the graph, move the ⋯ menu to Settings, and make Graph | List and Filters small icon-only toggles.
 - **Built:**

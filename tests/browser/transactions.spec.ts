@@ -33,6 +33,14 @@ test("search transactions, edit from a filtered list and return to it; year view
   const filtered = page.url();
   await expect(page.locator("main")).toContainText("Coffee " + suffix);
   await expect(page.locator("main")).not.toContainText("Hardware " + suffix);
+  // Each day starts with a line carrying its signed net; money out rows show a minus.
+  await expect(page.locator(".day-line").first()).toBeVisible();
+  await expect(page.locator("summary", { hasText: "Coffee " + suffix }).first()).toContainText("−$");
+  // "Go to" a day on this page scrolls there without leaving the page.
+  const day = await page.locator("[data-day]").first().getAttribute("data-day");
+  await page.locator("#jump-day").fill(day!);
+  await expect(page).toHaveURL(filtered);
+  await expect(page.locator(`#day-${day}`)).toBeInViewport();
   const chart = page.getByRole("img", { name: /^Running posted spending/ });
   // The skeleton holds the chart's space, so mounting must not change the page height below it.
   await expect(chart.locator("svg:not(.chart-skeleton)").first()).toBeVisible();

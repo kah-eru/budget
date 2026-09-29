@@ -64,11 +64,21 @@
 {% if no_savings or not days or layout == 'lanes' %}<div class="mb-3">{% include "budget/components/period_nav.html" %}{% include "budget/components/timeline_tools.html" %}</div>{% endif %}
 {% if layout == 'lanes' %}{% include 'budget/components/lanes.html' %}{% else %}
 <section aria-labelledby="results-title" class="card">
-  <h2 id="results-title" class="mb-1 text-xl font-semibold">{% if filtered %}Matching transactions{% else %}Transactions{% endif %}</h2>
-  <p class="mb-3 text-sm text-muted">Newest first.</p>
+  <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+    <div><h2 id="results-title" class="text-xl font-semibold">{% if filtered %}Matching transactions{% else %}Transactions{% endif %}</h2>
+    <p class="text-sm text-muted">Newest first.</p></div>
+    {# Jump to a day: with JavaScript it scrolls there when that day is on this page; otherwise the list starts at it. #}
+    <form method="get" action="#results-title" class="flex items-center gap-2" data-day-picker{% if next_query %} data-more{% endif %}{% if paged %} data-paged{% endif %}>
+      {% for key, values in jump_params %}{% for value in values %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endfor %}
+      <label for="jump-day" class="text-sm text-muted">Go to</label>
+      <input id="jump-day" class="day-input" type="date" name="day" min="{{ start|date:'Y-m-d' }}" max="{{ end|date:'Y-m-d' }}" value="{{ jump|date:'Y-m-d' }}">
+      <button class="secondary no-js-only" type="submit">Go</button>
+    </form>
+  </div>
   {% if stale %}<p role="status" class="mb-3 rounded-lg border border-line-strong p-3 text-sm">This list changed since you loaded it, so it starts again from the newest transaction.</p>{% endif %}
   <ul class="divide-y divide-line">
     {% for row in rows %}
+    {% ifchanged row.posted_on %}<li class="day-line{% if forloop.first %} is-first{% endif %}" id="day-{{ row.posted_on|date:'Y-m-d' }}" data-day="{{ row.posted_on|date:'Y-m-d' }}"><span>{{ row.posted_on|date:'D n/j/y' }}</span><span class="amount" title="Money in minus money out, posted{% if not saving %}, without transfers{% endif %}">{{ row.day_net|signed }}</span></li>{% endifchanged %}
     {% include 'budget/components/transaction_row.html' with show_account=True %}
     {% empty %}<li class="py-5 text-muted">{% if filtered %}No transactions match these filters.{% elif form.errors %}Fix the filters above to see transactions.{% else %}No transactions in this range.{% endif %}</li>
     {% endfor %}
