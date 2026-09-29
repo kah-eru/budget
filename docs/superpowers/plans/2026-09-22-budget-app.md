@@ -12,7 +12,11 @@
 
 **UX reference:** [Low-fidelity wireframes and user flows](../../ux-wireframes.md).
 
-**Status:** Implementation started 2026-09-23 at the user's request, inline in the requested isolated worktree. Milestone 1 is partial; milestones 2-8 remain unstarted. Proposed files below are created only as needed. Current setup/evidence: [development guide](../../development.md).
+**Status (2026-09-29):**
+- Built: milestones 1–5 and 9, on a synthetic-data preview.
+- Not started: 6 (AI insights), 7 (statements) and 8 (the release and load gate).
+- The per-milestone status is in the [README](../../../README.md).
+- Implementation started 2026-09-23 at the user's request, in the isolated worktree. Proposed files below are created only as needed. Current setup/evidence: [development guide](../../development.md).
 
 ### Current execution checkpoint
 

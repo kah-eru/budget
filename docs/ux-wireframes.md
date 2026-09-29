@@ -141,7 +141,7 @@ Update (user, 2026-09-29, second pass):
 - **Range bar:** a smaller `← 1M 1Y Lifetime →` bar (about 26 px tall), centered right above the chart on the Overview, the Timeline and the Savings page.
 - **Labels under the chart:**
   - left: the start of the period (`9/26`, `2026`, or the first record's date for Lifetime)
-  - right: today (`9/29/26`) when the period includes today, or a small `This month ›` / `This year ›` link back
+  - right: today (`9/29/26`) when the period includes today, or a small `This month ›` / `This year ›` link back (now plain "Today", third pass)
 - **Current period:** the chart for the current month or year ends at today.
 
 ```text
@@ -210,7 +210,7 @@ Journey: select workspace/period -> see posted spend and budget status -> tap ca
 Sync my accounts only refreshes connections owned by the current user, even in a group. Show each connection's state and allow retry/reconnect from Accounts. Other members' shared data shows its own freshness; membership does not grant control of their connections. Empty budgets offer Create a budget. Always label money as posted/pending rather than blending the two.
 
 **Compact Overview (user, 2026-09-28):**
-- A small **Chart | Budgets** switch on the top card replaces the separate Budgets card.
+- A small **Chart | Budgets** switch on the top card replaces the separate Budgets card. (Since 2026-09-29 it's one icon on the total's line; see §2.)
 - The Year view counts monthly budgets × 12.
 - The choice is remembered on this device. Without JavaScript the budget list shows.
 

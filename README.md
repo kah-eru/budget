@@ -2,7 +2,7 @@
 
 A private budgeting app for partners and friends who choose to share finances. Start with a small deployment, with collaboration and scalable code/data access designed into the first release.
 
-Status (2026-09-28): a working preview with synthetic data only, deployed to Render; not a real-data-ready release. Built by milestone:
+Status (2026-09-29): a working preview with synthetic data only, deployed to Render; not a real-data-ready release. Built by milestone:
 - **Milestone 1, foundation:** sign-in, private manual accounts, groups, explicit sharing, invitations with mailbox verification (group and standalone), password recovery, membership notices and member removal, a Settings page (username/email/password changes with email notices or confirmation; System/Light/Dark theme).
 - **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, compact controls (a ⋯ menu with CSV export; Filters with account tick boxes and Select all), and a **Graph | List** switch where List shows one dated column per account with toggleable lines for transfers between them.
 - **Milestone 3, bank sync (sandbox):** Plaid sandbox: connect a bank, choose accounts (private), Sync now, pending→posted kept, card payments as transfers, Plaid categories as a fallback; automatic sync by signed webhook, Reconnect when the bank needs a new sign-in, a warning when the same bank is connected twice.
@@ -13,13 +13,17 @@ Status (2026-09-28): a working preview with synthetic data only, deployed to Ren
   - split transactions, by hand or by a 70/30-style rule
   - monthly/yearly budgets by category or name, in three types (fixed bill, yearly/irregular cost, flexible) with a disposable income estimate
   - an Overview **Chart | Budgets** icon: each budget's spent, left or over for the month or year (monthly budgets count 12 times in a year)
-  - **1M | 1Y | Lifetime** on the Overview, the Timeline and the Savings page (calendar month and year; Lifetime goes by month past two years)
+  - **1M | 1Y | Lifetime** on the Overview, the Timeline and the Savings page:
+    - calendar month and year; Lifetime goes by month past two years
+    - a small bar centered over the chart
+    - date labels under it (the period start, and today or "Today" to go back), with faint time markers
+    - the Overview and Timeline tabs keep the chosen range
 - **Milestone 5, notifications:**
   - in-app over-budget alerts, once per person, budget and period
   - phone push, off until the owner sets the two push keys
   - opt-in email alerts with one-click unsubscribe, off by default; written to the server log until the owner sets up an email provider
 - **Milestone 9, planning tools:** net worth (synced balances plus manual items); savings (a header **Spending | Savings** switch that turns both Overview and Timeline to savings accounts, plus a Savings page; savings accounts marked from the bank type or by a switch; money in/out and net saved per month or year, with a chart); recurring bills and income with a 30-day forecast and 3-day bill reminders, optional goals (off until turned on). Reports were dropped by the user.
-- **Also:** installable to a phone home screen, tab pages prefetched, charts without flashes, and made-up demo data for the local preview (`tests/browser/seed_demo.py`).
+- **Also:** phone swipes (on the chart, away from its line, for the next or previous month or year; elsewhere between Overview, Timeline and Settings), installable to a phone home screen, tab pages prefetched, charts without flashes, and made-up demo data for the local preview (`tests/browser/seed_demo.py`).
 
 Not started: AI insights (6), statements (7), the release/load gate (8). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
 

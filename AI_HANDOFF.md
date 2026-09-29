@@ -22,6 +22,11 @@ Latest request (2026-09-29, third pass): "Today" as plain text in place of the T
   - Details: [development guide](docs/development.md#swipes-time-markers-and-tabs-that-keep-the-range--september-29).
 - **Verification:** 223 Django tests OK; 14/14 Chrome checks (new `swipes.spec.ts`); screenshots reviewed. Not tried on a real iPhone.
 - Committed locally on top of `b56d417`, **not pushed**. The preview server is running with it.
+- **Docs pass (2026-09-29, requested):**
+  - README: the status date, the range bar, the labels, the markers, tabs that keep the range, and the swipes
+  - wireframes: two older notes point to their replacements
+  - build plan: the status line was stale (it said milestones 2–8 hadn't started)
+  - The development guide's dated entries are left as history. No code changes.
 
 ## Log (newest first)
 
