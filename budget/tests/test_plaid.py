@@ -108,6 +108,15 @@ class PlaidTests(TestCase):
         self.assertEqual(row.annotations.get(workspace=self.group).display_name, "Lunch with Sam")
         self.assertTrue(row.split_lines.exists())
 
+    def test_a_posted_amount_that_differs_rescales_a_hand_split(self):
+        self.sync(page(added=[txn("p1", "50.00", pending=True)]))
+        pending = Transaction.objects.get()
+        dining, travel = (Category.objects.get(workspace=self.group, name=n) for n in ("Dining", "Travel"))
+        SplitLine.objects.create(transaction=pending, workspace=self.group, category=dining, amount_cents=3000)
+        SplitLine.objects.create(transaction=pending, workspace=self.group, category=travel, amount_cents=2000)
+        self.sync(page(added=[txn("t1", "60.00", pending_id="p1")], removed=["p1"], cursor="c2"))  # a tip was added
+        self.assertEqual(dict(SplitLine.objects.values_list("category__name", "amount_cents")), {"Dining": 3600, "Travel": 2400})
+
     def test_a_failure_on_page_two_changes_nothing(self):
         (status, _), _ = self.sync(page(added=[txn("t1", "4.50")], more=True), bank.PlaidError("INTERNAL_SERVER_ERROR"))
         self.assertEqual(status, "error")
@@ -167,14 +176,19 @@ class PlaidTests(TestCase):
     def test_synced_rows_are_read_only(self):
         self.sync(page(added=[txn("t1", "4.50")]))
         row = Transaction.objects.get()
-        self.client.post(f"/workspaces/{self.personal.pk}/accounts/{self.checking.pk}/transactions/{row.pk}/",
-                         {"posted_on": "2020-01-01", "amount": "999.00", "description": "X", "classification": "transfer"})
+        url = f"/workspaces/{self.personal.pk}/accounts/{self.checking.pk}/transactions/{row.pk}/"
+        response = self.client.post(url, {"posted_on": "2020-01-01", "amount": "999.00", "description": "X", "classification": "transfer"})
+        self.assertRedirects(response, url + "annotate/", fetch_redirect_response=False)  # the type is set per workspace there
         row.refresh_from_db()
-        self.assertEqual((row.amount_cents, row.classification), (450, "transfer"))
+        self.assertEqual((row.amount_cents, row.classification), (450, "expense"))
 
-    def test_disconnect_keeps_history_even_if_plaid_fails(self):
+    def test_disconnect_keeps_the_connection_until_plaid_confirms(self):
         self.sync(page(added=[txn("t1", "4.50")]))
         with mock.patch("budget.plaid.remove", side_effect=bank.PlaidError("INTERNAL_SERVER_ERROR")):
+            response = self.client.post(f"/banks/{self.connection.pk}/disconnect/", follow=True)
+        self.assertContains(response, "reach Plaid to disconnect")
+        self.assertTrue(BankConnection.objects.exists())  # the token stays, so a retry can still revoke it
+        with mock.patch("budget.plaid.remove", side_effect=bank.PlaidError("ITEM_NOT_FOUND")):  # already gone at Plaid
             self.assertEqual(self.client.post(f"/banks/{self.connection.pk}/disconnect/").status_code, 302)
         self.assertFalse(BankConnection.objects.exists())
         self.checking.refresh_from_db()

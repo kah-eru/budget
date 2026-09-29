@@ -151,7 +151,9 @@ class DailyTaskTests(TestCase):
         now = timezone.now()
         stale = BankConnection.objects.create(owner=self.alice, item_id="item-stale", access_token="x", last_synced_at=now - timedelta(hours=7))
         BankConnection.objects.create(owner=self.alice, item_id="item-fresh", access_token="x", last_synced_at=now - timedelta(hours=1))
+        hiccup = BankConnection.objects.create(owner=self.alice, item_id="item-hiccup", access_token="x", status="error", error_code="CONNECTION_FAILED")
+        BankConnection.objects.create(owner=self.alice, item_id="item-login", access_token="x", status="error", error_code="ITEM_LOGIN_REQUIRED")
         with mock.patch("budget.plaid.sync", return_value=("ok", 0)) as sync:
             self.assertEqual(self.run_daily("synthetic-task-token").status_code, 200)
-        self.assertEqual([c.args[0].pk for c in sync.call_args_list], [stale.pk])
+        self.assertEqual([c.args[0].pk for c in sync.call_args_list], [stale.pk, hiccup.pk])
         self.assertTrue(BillReminder.objects.filter(recipient=self.alice).exists())

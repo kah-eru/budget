@@ -37,6 +37,12 @@ COOLDOWN = timedelta(seconds=60)  # between Sync now presses
 # ponytail: syncs run inside the web request, claimed per connection; a crashed one frees after LEASE. Real leases come with worker jobs.
 LEASE = timedelta(minutes=5)
 MUTATION = "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION"
+# Worth trying again later without the owner; any HTTP_5xx is too. Everything else (like ITEM_LOGIN_REQUIRED) waits for them.
+RETRYABLE = ("CONNECTION_FAILED", "INTERNAL_SERVER_ERROR", "PLANNED_MAINTENANCE", "RATE_LIMIT_EXCEEDED", "INSTITUTION_DOWN",
+             "INSTITUTION_NOT_RESPONDING", "PRODUCT_NOT_READY", MUTATION)
+# Removal errors meaning Plaid access is already over, or the stored token can never be used again.
+ALREADY_GONE = ("ITEM_NOT_FOUND", "INVALID_ACCESS_TOKEN", "TOKEN_KEY_CHANGED")
+TIMEOUT = (5, 30)  # seconds to connect, then to read a response
 SAVINGS_SUBTYPES = {"savings", "money market", "cd"}
 TRANSFERS = ("TRANSFER_IN", "TRANSFER_OUT", "LOAN_PAYMENTS")  # card payments and moves between accounts are never spending
 UPDATED = ["account", "provider_id", "posted_on", "amount_cents", "classification", "pending", "description", "provider_category", "money_in"]
@@ -67,7 +73,7 @@ def _call(method, request):
     host = sdk.Environment.Production if settings.PLAID_ENV == "production" else sdk.Environment.Sandbox
     api = plaid_api.PlaidApi(sdk.ApiClient(sdk.Configuration(host=host, api_key={"clientId": settings.PLAID_CLIENT_ID, "secret": settings.PLAID_SECRET})))
     try:
-        return getattr(api, method)(request)
+        return getattr(api, method)(request, _request_timeout=TIMEOUT)
     except sdk.ApiException as error:
         try:
             code = json.loads(error.body or "{}").get("error_code")

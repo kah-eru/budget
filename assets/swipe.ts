@@ -81,11 +81,12 @@ function track(start: TouchEvent, moving: HTMLElement, target: Target, own: bool
     if (!reduced.matches) moving.style.transform = `translateX(${shown}px)`;
   };
 
-  const end = (event?: TouchEvent) => {
+  // A cancelled touch (a call, a system gesture) only springs back; it never changes the page.
+  const end = (event?: TouchEvent, cancelled = false) => {
     if (own) event?.stopPropagation();
     window.removeEventListener("touchmove", move, true);
     window.removeEventListener("touchend", end, true);
-    window.removeEventListener("touchcancel", end, true);
+    window.removeEventListener("touchcancel", cancel, true);
     if (!locked || dx === 0) return;
     const first = history[0];
     const last = history[history.length - 1];
@@ -93,7 +94,7 @@ function track(start: TouchEvent, moving: HTMLElement, target: Target, own: bool
     const direction = dx < 0 ? 1 : -1;
     const link = target(direction);
     // Commit on distance, or on a flick, but only when the flick still points the same way as the drag.
-    const commit = link && Math.sign(velocity || dx) === Math.sign(dx) && (Math.abs(dx) > width * 0.25 || Math.abs(velocity) > 0.4);
+    const commit = !cancelled && link && Math.sign(velocity || dx) === Math.sign(dx) && (Math.abs(dx) > width * 0.25 || Math.abs(velocity) > 0.4);
     const from = moving.style.transform || "translateX(0px)";
     if (commit) {
       try {
@@ -111,9 +112,10 @@ function track(start: TouchEvent, moving: HTMLElement, target: Target, own: bool
     }
   };
 
+  const cancel = (event: TouchEvent) => end(event, true);
   window.addEventListener("touchmove", move, { capture: true, passive: true });
   window.addEventListener("touchend", end, true);
-  window.addEventListener("touchcancel", end, true);
+  window.addEventListener("touchcancel", cancel, true);
 }
 
 export function setup() {
@@ -128,7 +130,10 @@ export function setup() {
   const main = document.getElementById("main");
   // Back to a page kept in the back-forward cache: undo the slide-out it left on.
   window.addEventListener("pageshow", (event) => {
-    if (event.persisted) document.getAnimations().forEach((animation) => animation.cancel());
+    if (!event.persisted) return;
+    document.getAnimations().forEach((animation) => animation.cancel());
+    // The drag's inline offset (the page, or a chart swiped to another period), left on when the page was cached.
+    [main, ...document.querySelectorAll<HTMLElement>("[data-spending-chart] svg")].forEach((el) => el?.style.removeProperty("transform"));
   });
   if (entered && main && !reduced.matches) {
     main.animate({ transform: [`translateX(${entered === "left" ? 40 : -40}px)`, "translateX(0px)"], opacity: [0, 1] }, { duration: 250, easing: EASE });

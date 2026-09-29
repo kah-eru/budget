@@ -41,7 +41,7 @@ from .forms import (
 from .invitations import claim_email_send
 from .models import Account, BankConnection, BillReminder, Budget, BudgetAlert, Category, Goal, Recurring, Membership, MembershipNotice, PushSubscription, Rule, SplitLine, Transaction, TransactionAnnotation, User, Workspace
 from .permissions import editable_accounts, get_workspace, visible_accounts, visible_workspaces
-from .reporting import _flows, _shape, _sums, annotated, budget_progress, by_category, by_year, disposable, daily, first_day, net_worth, period_bounds, saved_daily, saved_net, savings, spending, visible_transactions
+from .reporting import _flows, _shape, _sums, annotated, budget_progress, by_category, by_year, category_share, disposable, daily, first_day, net_worth, period_bounds, saved_daily, saved_net, savings, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from . import push
 from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize, suggest_keyword
@@ -261,11 +261,13 @@ def plaid_webhook(request):
 @require_POST
 def bank_disconnect(request, connection_id):
     connection = plaid_connection(request, connection_id)
-    try:
-        bank.remove(connection)  # stop Plaid access; if Plaid can't be reached, the local disconnect still happens
-    except bank.PlaidError:
-        pass
     name = connection.institution_name or "the bank"
+    try:
+        bank.remove(connection)  # stop Plaid access (and its billing) first
+    except bank.PlaidError as error:
+        if error.code not in bank.ALREADY_GONE:  # keep the token, so trying again can still revoke it
+            messages.error(request, f"Couldn't reach Plaid to disconnect {name}. Nothing changed; try again in a minute.")
+            return redirect("settings")
     connection.delete()  # accounts and history stay, as plain accounts
     messages.success(request, f"Disconnected {name}. Its accounts and history stay here; nothing syncs any more.")
     return redirect("settings")
@@ -377,7 +379,7 @@ def push_subscribe(request):
     endpoint, keys = body.get("endpoint"), body.get("keys") if isinstance(body.get("keys"), dict) else {}
     p256dh, auth = keys.get("p256dh"), keys.get("auth")
     fields_ok = all(isinstance(v, str) and 0 < len(v) <= limit for v, limit in ((endpoint, 500), (p256dh, 200), (auth, 100)))
-    if not fields_ok or not push.valid_endpoint(endpoint):
+    if not fields_ok or not push.valid_endpoint(endpoint) or not push.valid_keys(p256dh, auth):
         return HttpResponse("Not a supported push subscription.", status=400, content_type="text/plain")
     PushSubscription.objects.update_or_create(endpoint=endpoint, defaults={"user": request.user, "p256dh": p256dh, "auth": auth})
     return HttpResponse(status=204)
@@ -772,15 +774,15 @@ def timeline_scope(request, workspace):
     return accounts, rows
 
 
-def day_net(rows, page, saving):
+def day_net(rows, page, saving, amount="amount_cents"):
     """{day: net cents} for the days on this page, whole days even when the page cuts one: money in minus money out,
     posted only. Spending leaves transfers out (moving money isn't spending); savings counts them by the bank's direction."""
     if not page:
         return {}
     days = rows.filter(pending=False, posted_on__range=(page[-1].posted_on, page[0].posted_on)).values("posted_on").order_by()
     if saving:
-        return {r["posted_on"]: r["i"] - r["o"] for r in days.annotate(**_flows())}
-    total = lambda *kinds: Coalesce(Sum("amount_cents", filter=Q(effective__in=kinds)), 0)
+        return {r["posted_on"]: r["i"] - r["o"] for r in days.annotate(**_flows(amount))}
+    total = lambda *kinds: Coalesce(Sum(amount, filter=Q(effective__in=kinds)), 0)
     return {r["posted_on"]: r["i"] - r["o"] for r in days.annotate(i=total("income", "refund"), o=total("expense"))}
 
 
@@ -796,9 +798,12 @@ def transaction_list(request, workspace_id):
         return render(request, "budget/transactions.html", context, status=400)
     start, end = form.cleaned_data["start"], form.cleaned_data["end"]
     filtered_rows = form.apply(visible)
+    amount, category = "amount_cents", form.cleaned_data["category"]
+    if category and category != "none":  # a split row counts only its share in this category, as on the Budget tab
+        filtered_rows, amount = category_share(filtered_rows, workspace, int(category)), "share"
     series = saved_daily if saving else daily
     by_month = (end - start).days > form.MAX_DAYS  # only Lifetime goes past two years; it charts by month
-    days = series(filtered_rows, start, end, by_month=by_month)
+    days = series(filtered_rows, start, end, by_month=by_month, amount=amount)
     rows = filtered_rows.filter(posted_on__range=(start, end)).select_related("account__owner")
     # A cursor from before a data or sharing change could skip or repeat rows, so restart from newest.
     rev = f"{workspace.data_revision}-{workspace.permission_revision}"
@@ -825,7 +830,7 @@ def transaction_list(request, workspace_id):
         params = request.GET.copy()
         params["before"], params["rev"] = f"{last.posted_on:%Y-%m-%d}_{last.pk}", rev
         context["next_query"] = "?" + params.urlencode()
-    nets = day_net(filtered_rows, page, saving)
+    nets = day_net(filtered_rows, page, saving, amount)
     for row in page:
         row.day_net = nets.get(row.posted_on, 0)
     newest = request.GET.copy()
@@ -897,9 +902,10 @@ def csv_cell(value):
 
 @login_required
 def transaction_export(request, workspace_id):
-    """The Timeline's rows as CSV: same filters and range cap, no paging."""
+    """Every visible transaction in the range as CSV (Settings → Your data), with the Timeline's filters and range cap.
+    The Spending | Savings switch doesn't narrow it; that is a display choice."""
     workspace = get_workspace(request.user, workspace_id)
-    accounts, visible = timeline_scope(request, workspace)
+    accounts, visible = visible_accounts(request.user, workspace), visible_transactions(request.user, workspace)
     form = TransactionFilterForm(request.GET, accounts=accounts, workspace=workspace)
     if not form.is_valid():
         return HttpResponse(" ".join(e for errors in form.errors.values() for e in errors), status=400, content_type="text/plain")
@@ -909,13 +915,13 @@ def transaction_export(request, workspace_id):
     response = HttpResponse(content_type="text/csv; charset=utf-8", headers={
         "Content-Disposition": f'attachment; filename="budget-{start:%Y-%m-%d}-{end:%Y-%m-%d}.csv"', "Cache-Control": "no-store"})
     writer = csv.writer(response)
-    writer.writerow(["Date", "Account", "Owner", "Name", "Original description", "Category", "Classification", "Status", "Amount (USD)", "Note"])
+    writer.writerow(["Date", "Account", "Owner", "Name", "Original description", "Category", "Classification", "Status", "Amount (USD; negative is money out)", "Note"])
     for row in rows:
         category = ("Split: " + "; ".join(f"{line.category.name} {line.amount_cents // 100}.{line.amount_cents % 100:02d}" for line in row.splits)
                     if row.splits else row.ann_category or "")
         names = [row.account.name, row.account.owner.username, row.ann_name or row.description, row.description, category, row.effective_label]
         writer.writerow([f"{row.posted_on:%Y-%m-%d}", *map(csv_cell, names), "Pending" if row.pending else "Posted",
-                         f"{row.amount_cents // 100}.{row.amount_cents % 100:02d}", csv_cell(row.ann_note or "")])
+                         f"{'' if row.money_in else '-'}{row.amount_cents // 100}.{row.amount_cents % 100:02d}", csv_cell(row.ann_note or "")])
     return response
 
 
@@ -925,8 +931,10 @@ def transaction_edit(request, workspace_id, account_id, transaction_id=None):
     workspace = get_workspace(request.user, workspace_id)
     account = get_object_or_404(editable_accounts(request.user, workspace), pk=account_id)
     row = get_object_or_404(Transaction, account=account, pk=transaction_id) if transaction_id else Transaction(account=account)
+    if row.provider_id:  # synced rows belong to sync, which would overwrite a type set here; set it per workspace instead
+        return redirect("annotation_edit", workspace.pk, account.pk, row.pk)
     form = TransactionForm(request.POST if request.method == "POST" else None, instance=row)
-    if row.from_bank:  # the bank's date, amount and description stay as imported
+    if row.from_bank:  # an imported file's date, amount and description stay as imported
         for name in ("posted_on", "amount", "description", "pending"):
             form.fields[name].disabled = True
     back = reverse("account_detail", args=[workspace.pk, account.pk])
@@ -939,7 +947,7 @@ def transaction_edit(request, workspace_id, account_id, transaction_id=None):
         messages.success(request, "Transaction saved.")
         return redirect(back)
     title = "Edit transaction" if transaction_id else f"Add a transaction to {account.name}"
-    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": title, "action": "Save transaction", "cancel_url": back, "help": "From your bank: the date, amount and description stay as the bank sent them. You can change the type." if row.from_bank else "Manual entry. Transfers and card payments never count as spending."}, status=400 if request.method == "POST" else 200)
+    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": title, "action": "Save transaction", "cancel_url": back, "help": "From your bank's file: the date, amount and description stay as imported. You can change the type." if row.from_bank else "Manual entry. Transfers and card payments never count as spending."}, status=400 if request.method == "POST" else 200)
 
 
 @login_required
@@ -970,7 +978,7 @@ def annotation_edit(request, workspace_id, account_id, transaction_id):
     where = "your personal view" if workspace.is_personal else workspace.name
     return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": row.description or "Transaction", "action": "Save changes", "cancel_url": back,
                   "help": f"{date_format(row.posted_on)} · {dollars(row.amount_cents)} original. Changes here apply to {where} only; the original entry stays as recorded.",
-                  "extra_url": reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit type" if row.from_bank else "Edit original entry",
+                  "extra_url": None if row.provider_id else reverse("transaction_edit", args=[workspace.pk, account.pk, row.pk]), "extra_label": "Edit type" if row.from_bank else "Edit original entry",
                   "split_url": reverse("transaction_split", args=[workspace.pk, account.pk, row.pk]) + (f"?next={quote(back)}" if request.GET.get("next") else "")}, status=400 if request.method == "POST" else 200)
 
 
@@ -1248,7 +1256,9 @@ def daily_tasks(request):
     synced = 0
     if bank.enabled():
         quiet = Q(last_synced_at=None) | Q(last_synced_at__lt=timezone.now() - timedelta(hours=6))
-        for connection in BankConnection.objects.filter(quiet, status="ok").order_by("pk"):
+        # Temporary failures get one more try a day; ones that need the owner (sign in again) wait for them.
+        retry = Q(status="error") & (Q(error_code__in=bank.RETRYABLE) | Q(error_code__startswith="HTTP_5"))
+        for connection in BankConnection.objects.filter(quiet & (Q(status="ok") | retry)).order_by("pk"):
             bank.sync(connection)
             synced += 1
     return JsonResponse({"ok": True, "synced": synced})

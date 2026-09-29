@@ -45,6 +45,11 @@ class TimelineTests(TestCase):
         self.assertContains(page, "$85.00")
         self.assertNotContains(page, "Private")
 
+    def test_prefetch_leaves_out_pages_that_change_something_when_opened(self):
+        rules = self.get().content.decode().split('<script type="speculationrules">')[1].split("</script>")[0]
+        for path in ("/alerts/*", "/banks/*", "/*export.csv*"):
+            self.assertIn(f'{{"not": {{"href_matches": "{path}"}}}}', rules)
+
     def test_rows_are_signed_each_day_has_its_net_and_the_day_picker_starts_there(self):
         Transaction.objects.create(account=self.shared, amount_cents=5000, classification="income", posted_on=date(2026, 5, 3), description="Pay")
         Transaction.objects.create(account=self.shared, amount_cents=700, classification="transfer", money_in=True, posted_on=date(2026, 5, 3), description="From savings")

@@ -1038,4 +1038,52 @@ Why: the user asked for a visible line between days in the transaction list, a d
 - 14/14 Chrome checks: `transactions.spec` checks the day line, the minus, and that Go to scrolls without leaving the page.
 - 360 px screenshots reviewed: day lines with nets and a jump that loaded older days.
 
+## Audit fixes — September 29
+
+Why: the user pasted an outside AI audit of `e9d3a15`. I checked each finding against the code, and the user said "do it". Each fix below has a regression test that failed first.
+
+**Money and data:**
+- **Split totals follow the amount** (`rules.rebalance`, called from `categorize()`):
+  - When a hand split no longer adds up to its transaction (a manual amount edit, or a pending charge posting with a tip), its lines are rescaled in proportion with `largest_remainder`, which now takes any whole-number weights.
+  - Example: $30/$20 on $50 becomes $36/$24 on $60.
+  - A line that rounds to nothing is removed, and a single line left is no longer a split. Rule splits already recomputed.
+- **Category filter totals** (`reporting.category_share`): with a category filter, the Timeline chart, totals and day nets sum `share`: a split row's lines in that category, or the whole amount for any other row. The Budget tab already worked this way. Rows still show their full amount.
+- **Bank-synced rows' type:**
+  - `transaction_edit` redirects synced rows (`provider_id`) to the per-workspace editor, whose Type sync never overwrites.
+  - Before, a type set on the row itself was lost at the next Plaid modification, and the whole-row save could write back a stale amount.
+  - Trade-off: the type is now set per workspace.
+  - Imported-file rows keep "Edit type", since nothing re-syncs them.
+- **CSV export:**
+  - It covers every visible account whatever the Spending | Savings switch says, with the filters and two-year cap as before.
+  - Amounts are signed: negative is money out, by the row's direction (so transfers keep their direction).
+
+**Bank connections:**
+- **Disconnect:** Plaid is asked to remove the item first. On failure, the connection and its encrypted token stay, and the message says "Couldn't reach Plaid… try again". It still disconnects locally when Plaid says access is already gone (`ALREADY_GONE`: item not found, invalid token, or a replaced `PLAID_TOKEN_KEY`).
+- **Daily catch-up:** it also retries connections whose last error is temporary (`RETRYABLE`, or any `HTTP_5…`). Ones that need the owner, such as signing in again, wait for them.
+- **Timeout:** every Plaid call has a 5 s connect and 30 s read timeout. A timeout counts as `CONNECTION_FAILED`.
+
+**Notifications:**
+- `push_subscribe` checks the key shapes: a 65-byte P-256 point and a 16-byte secret, both base64url.
+- `send_budget_alert` skips a device that fails in any other way.
+- `deliver()` logs failures instead of raising, because it runs after the change has committed and must never turn a saved change into an error.
+
+**Phone and browser:**
+- **Prefetch:** it leaves out `/alerts/` (opening Alerts marks them read) and `/banks/` (bank pages make Plaid link tokens).
+- **Swipe:**
+  - A `touchcancel` springs back and never changes pages.
+  - Back to a cached page clears the drag's inline offset on the page and the charts.
+- **Pinch zoom:** `#main` uses `touch-action: pan-y pinch-zoom`, so pinch zoom works again.
+
+**Deferred** (valid, but they need more than a fix):
+- push ownership on a shared browser after logout
+- durable, retried delivery (needs a worker)
+- PostgreSQL in CI
+- fresh browser fixtures per run
+
+**Verification:**
+- 236 Django tests OK (4 PostgreSQL-only tests skipped).
+- 91/91 on Neon: timeline, splits, reporting, budgets, Plaid, push, savings, settings.
+- `npm.cmd run build`; 14/14 Chrome checks on a restarted preview server.
+- Not tested in a browser: the swipe cancel and pinch zoom. The Chrome checks have no touch cancel.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

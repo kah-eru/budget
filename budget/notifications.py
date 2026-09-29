@@ -1,3 +1,4 @@
+import logging
 from functools import partial
 
 from django.db import transaction
@@ -8,6 +9,8 @@ from .models import BudgetAlert, Membership, Workspace
 from .account_mail import email_budget_alert
 from .push import send_budget_alert
 from .reporting import budget_progress
+
+log = logging.getLogger(__name__)
 
 
 def recipients(workspace):
@@ -39,8 +42,12 @@ def evaluate(workspace, *, silent=False, budgets=None, users=None):
 
 
 def deliver(user_ids, what="budget"):
-    send_budget_alert(user_ids, what)
-    email_budget_alert(user_ids, what)
+    # Runs after the change committed: a delivery failure is logged, never turned into an error for the saved change.
+    for send in (send_budget_alert, email_budget_alert):
+        try:
+            send(user_ids, what)
+        except Exception:
+            log.exception("Alert delivery failed")
 
 
 def baseline_member(workspace, user):

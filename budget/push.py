@@ -1,3 +1,5 @@
+import base64
+import binascii
 import json
 import logging
 from urllib.parse import urlsplit
@@ -27,6 +29,15 @@ def valid_endpoint(url):
     return parts.scheme == "https" and parts.port in (None, 443) and any(host == h or host.endswith("." + h) for h in PUSH_HOSTS)
 
 
+def valid_keys(p256dh, auth):
+    """A browser's encryption keys: an uncompressed P-256 point (65 bytes, 0x04 first) and a 16-byte secret, base64url."""
+    try:
+        point, secret = (base64.urlsafe_b64decode(v + "=" * (-len(v) % 4)) for v in (p256dh, auth))
+    except (binascii.Error, ValueError):
+        return False
+    return len(point) == 65 and point[0] == 4 and len(secret) == 16
+
+
 def send_budget_alert(user_ids, what="budget"):
     """One push per subscribed device of each user. Devices the push service reports gone (404/410) are removed.
     ponytail: sent inline after commit with a 5 s timeout per device; move to a worker queue when there is one."""
@@ -45,3 +56,5 @@ def send_budget_alert(user_ids, what="budget"):
                 log.warning("Push to a device failed with status %s", status)
         except RequestException:
             log.warning("Push to a device failed to connect")
+        except Exception:  # a bad stored key or VAPID setup: skip this device, never the others
+            log.warning("Push to a device failed", exc_info=True)

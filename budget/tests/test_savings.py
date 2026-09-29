@@ -82,7 +82,7 @@ class SavingsTests(TestCase):
         self.assertContains(overview, "No savings accounts yet")
         self.assertNotContains(overview, f"/workspaces/{self.personal.pk}/savings/")
 
-    def test_the_savings_mode_cookie_turns_the_timeline_and_export_to_savings_accounts(self):
+    def test_the_savings_mode_cookie_turns_the_timeline_to_savings_accounts(self):
         self.login(self.alice)
         url, sep = f"/workspaces/{self.personal.pk}/transactions/", {"start": "2026-09-01", "end": "2026-09-30"}
         spending_view = self.client.get(url, sep)
@@ -97,7 +97,7 @@ class SavingsTests(TestCase):
         self.assertEqual(response.context["totals"], {"in_cents": s["in_cents"], "out_cents": s["out_cents"], "posted_cents": s["net_cents"]})
         export = self.client.get(url + "export.csv", sep).content.decode()
         self.assertIn("From checking", export)
-        self.assertNotIn("To savings", export)
+        self.assertIn("To savings", export)  # the export covers every visible account whatever the switch says
         # One mode for both tabs: Overview renders it before paint.
         overview = self.client.get(f"/workspaces/{self.personal.pk}/")
         self.assertContains(overview, '<html lang="en" data-overview-mode="savings">')

@@ -1,3 +1,4 @@
+import base64
 import json
 from datetime import date
 from unittest import mock
@@ -11,6 +12,8 @@ from budget.notifications import evaluate
 TODAY = date(2026, 5, 20)
 KEYS = {"WEBPUSH_VAPID_PUBLIC_KEY": "synthetic-public", "WEBPUSH_VAPID_PRIVATE_KEY": "synthetic-private"}
 ENDPOINT = "https://fcm.googleapis.com/fcm/send/synthetic-device"
+b64 = lambda raw: base64.urlsafe_b64encode(raw).decode().rstrip("=")
+P256DH, AUTH = b64(b"\x04" + b"\x01" * 64), b64(b"\x02" * 16)  # synthetic, only the right shape
 
 
 @override_settings(**KEYS)
@@ -27,7 +30,7 @@ class PushTests(TestCase):
 
     def subscribe(self, user, endpoint=ENDPOINT, **extra):
         self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
-        body = {"endpoint": endpoint, "keys": {"p256dh": "synthetic-p256dh", "auth": "synthetic-auth"}, **extra}
+        body = {"endpoint": endpoint, "keys": {"p256dh": P256DH, "auth": AUTH}, **extra}
         return self.client.post("/push/subscribe/", json.dumps(body), content_type="application/json")
 
     def cross(self):
@@ -44,6 +47,8 @@ class PushTests(TestCase):
         self.assertEqual(self.subscribe(self.bob, endpoint="https://169.254.169.254/latest").status_code, 400)
         self.assertEqual(self.subscribe(self.bob, endpoint="https://evil.example/fcm.googleapis.com").status_code, 400)
         self.assertEqual(self.subscribe(self.bob, keys={}).status_code, 400)
+        self.assertEqual(self.subscribe(self.bob, keys={"p256dh": "synthetic-p256dh", "auth": AUTH}).status_code, 400)
+        self.assertEqual(self.subscribe(self.bob, keys={"p256dh": P256DH, "auth": b64(b"short")}).status_code, 400)
         self.client.force_login(self.alice, backend="django.contrib.auth.backends.ModelBackend")
         self.client.post("/push/unsubscribe/", json.dumps({"endpoint": ENDPOINT}), content_type="application/json")
         self.assertTrue(PushSubscription.objects.filter(user=self.bob).exists())  # not alice's to remove
@@ -74,6 +79,11 @@ class PushTests(TestCase):
         Budget.objects.all().delete()
         self.cross()
         self.assertFalse(PushSubscription.objects.exists())
+
+    def test_a_broken_device_never_breaks_the_change_that_crossed(self, _):
+        PushSubscription.objects.create(user=self.bob, endpoint=ENDPOINT, p256dh="not-a-key", auth="x")  # stored before keys were checked
+        self.cross()  # delivery runs on commit; it logs and carries on
+        self.assertTrue(PushSubscription.objects.exists())
 
     def test_service_worker_only_handles_push(self, _):
         response = self.client.get("/sw.js")

@@ -6,7 +6,7 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls (icons under the chart, one-line rows that open, day lines with signed nets, Go to a day, export in Settings), savings, and a measured speed-up. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-29 at the owner's request. `main` and `feat/project-foundation` are at `b6f0167` on GitHub, and Render deploys `main` (migration 0023 applies on deploy). CI passed on both branches. This push: the Budget tab with category pages, Settings in the header pill, categories you fill yourself (full picker, move confirm, word rules, delete) and a docs refresh.
-- **Last checks** (2026-09-29): 230 Django tests OK on SQLite; Timeline/savings/flows 22/22 and budgets/reporting/savings/notifications 46/46 on Neon PostgreSQL; 14/14 Chrome checks.
+- **Last checks** (2026-09-29): 236 Django tests OK on SQLite (4 PostgreSQL-only skipped); 91/91 affected tests on Neon PostgreSQL (audit fixes); 14/14 Chrome checks.
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,39 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). The rest of the load gate (8).
+
+Latest request (2026-09-29): fix the outside audit's confirmed findings ("do it"; plan approved).
+- **Fixed:**
+  - hand splits rescale when the amount changes
+  - category-filtered Timeline totals count only that category's share
+  - synced rows' type is set per workspace (redirect)
+  - the export ignores the Savings switch and signs its amounts
+  - disconnect keeps the token until Plaid confirms
+  - the daily task retries temporary errors; Plaid calls have a 5/30 s timeout
+  - push keys are checked, and delivery never breaks a saved change
+  - prefetch skips `/alerts/` and `/banks/`
+  - swipe cancel and the bfcache offset
+  - pinch zoom
+  - Details: [development guide](docs/development.md#audit-fixes--september-29).
+- **Trade-offs:**
+  - a bank-synced row's type is per workspace
+  - splits rescale in proportion ($30/$20 on $50 → $36/$24 on $60)
+  - CSV amounts: negative is money out
+  - imported-file rows keep "Edit type"
+- **Deferred:**
+  - push ownership on a shared browser
+  - durable delivery (needs a worker)
+  - PostgreSQL in CI
+  - fresh browser fixtures
+  - the owner's release items (email, backups, credential review, load gate)
+- **Verification:**
+  - 236 Django tests OK (4 skipped)
+  - 91/91 on Neon
+  - build; 14/14 Chrome checks
+  - swipe cancel and pinch zoom not tested in a browser
+- Committed locally, **not pushed**. `main` on GitHub is `e9d3a15`.
+
+## Log (newest first)
 
 Latest request (2026-09-29): update the docs.
 - The README (the milestone 2 Timeline summary, and the speed-up under Also) and the spec (a new "Requested — 2026-09-29 (later)" section covering today's speed and Timeline requests) now match the five local commits.
@@ -28,8 +61,22 @@ Latest request (2026-09-29): update the docs.
   - the sandbox item was removed and the test database dropped
   - Not covered: Plaid's signed delivery to `/banks/webhook/`, which needs the public Render URL and the Plaid keys set there.
 - **Pushed (user: "ok push and commit all"):** `main` and `feat/project-foundation` fast-forwarded from `bd0e9b1` to `dada702`, and CI passed on both. Render deploys `main`.
-
-## Log (newest first)
+- **Outside audit of `e9d3a15` (another AI, pasted by the user; checked against the code, no code changed):**
+  - Valid and cheap:
+    - bad push keys can 500 a committed save
+    - disconnect deletes the token even when Plaid removal fails
+    - the daily task skips `status="error"` connections, and there's no Plaid timeout
+    - the Settings export follows the Savings cookie, and its CSV amounts are unsigned
+    - moderate prefetch can hit `/alerts/` (which marks things read) and `/banks/`
+    - `touchcancel` can commit a swipe, and bfcache leaves an inline transform
+    - `touch-action: pan-y` blocks pinch zoom
+    - bank-row type edits in `transaction_edit` are overwritten by sync (the annotation already has a classification)
+  - Valid, moderate: hand splits aren't rebalanced when the amount changes (manual edit or pending→posted); category-filtered Timeline totals count the whole split row.
+  - Deferred:
+    - push device ownership on shared browsers
+    - durable notification delivery (needs a worker)
+    - Postgres in CI and fresh browser fixtures
+  - Awaiting the user's go-ahead to fix.
 
 Latest request (2026-09-29): a visible line between days in the transaction list, a day picker, and + or − on the totals. User choices: jump to the day; signs on every row and each day's total.
 - **Built:**

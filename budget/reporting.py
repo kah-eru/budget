@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from django.db.models import F, FilteredRelation, Min, Q, Sum
+from django.db.models import F, FilteredRelation, Min, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce, TruncMonth
 from django.utils import timezone
 
@@ -23,9 +23,9 @@ def visible_transactions(user, workspace):
     return annotated(Transaction.objects.filter(account__in=visible_accounts(user, workspace)), workspace)
 
 
-def _sums():
+def _sums(amount="amount_cents"):
     def total(q):
-        return Coalesce(Sum("amount_cents", filter=q), 0)
+        return Coalesce(Sum(amount, filter=q), 0)
 
     expense, refund, income = Q(effective="expense"), Q(effective="refund"), Q(effective="income")
     posted, pending = Q(pending=False), Q(pending=True)
@@ -61,10 +61,10 @@ def _grouped(rows, start, end, by_month, sums):
     return {r["step"]: r for r in rows.filter(posted_on__range=(start, end)).annotate(step=step).values("step").annotate(**sums).order_by()}
 
 
-def daily(rows, start, end, by_month=False):
+def daily(rows, start, end, by_month=False, amount="amount_cents"):
     """spending() per day of [start, end] (or per month) for already-filtered visible rows: one grouped query,
     zero-filled, plus the running posted total (refunds can make a day negative and pull the line down)."""
-    found = {k: _shape(r) for k, r in _grouped(rows, start, end, by_month, _sums()).items()}
+    found = {k: _shape(r) for k, r in _grouped(rows, start, end, by_month, _sums(amount)).items()}
     days, running = [], 0
     for day in _steps(start, end, by_month):
         totals = found.get(day, ZERO)
@@ -92,6 +92,14 @@ def first_day(user, workspace):
 
 def split_ids(workspace):
     return SplitLine.objects.filter(workspace=workspace).values("transaction_id")
+
+
+def category_share(rows, workspace, category_id):
+    """rows with `share`: what each counts toward this category here. A split row counts only its lines in the
+    category (the Budget tab's rule); any other row counts in full. Sum `share` instead of amount_cents."""
+    lines = (SplitLine.objects.filter(workspace=workspace, category_id=category_id, transaction=OuterRef("pk"))
+             .values("transaction").annotate(total=Sum("amount_cents")).values("total"))
+    return rows.annotate(share=Coalesce(Subquery(lines), F("amount_cents")))
 
 
 def category_totals(rows, workspace, start, end):
@@ -170,14 +178,14 @@ def budget_progress(user, workspace, budgets, day, span=None):
     return result
 
 
-def _flows():
-    return {"i": Coalesce(Sum("amount_cents", filter=Q(money_in=True)), 0), "o": Coalesce(Sum("amount_cents", filter=Q(money_in=False)), 0)}
+def _flows(amount="amount_cents"):
+    return {"i": Coalesce(Sum(amount, filter=Q(money_in=True)), 0), "o": Coalesce(Sum(amount, filter=Q(money_in=False)), 0)}
 
 
-def saved_daily(rows, start, end, by_month=False):
+def saved_daily(rows, start, end, by_month=False, amount="amount_cents"):
     """Net saved per day of [start, end] (or per month) for rows already limited to savings accounts: posted only, money
     in minus money out by the bank's direction, zero-filled, with the running net from `start`."""
-    found = _grouped(rows.filter(pending=False), start, end, by_month, _flows())
+    found = _grouped(rows.filter(pending=False), start, end, by_month, _flows(amount))
     days, running = [], 0
     for day in _steps(start, end, by_month):
         r = found.get(day, {"i": 0, "o": 0})

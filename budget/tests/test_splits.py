@@ -68,6 +68,18 @@ class SplitTests(TestCase):
         csv = self.client.get(f"{list_url}export.csv", {"start": "2026-05-01", "end": "2026-05-31"}).content.decode()
         self.assertIn("Split: Groceries 30.00; Shopping 20.00", csv)
 
+    def test_editing_the_amount_rescales_a_hand_split(self):
+        self.split(self.big, ("Groceries", "30.00"), ("Shopping", "20.00"))
+        self.client.post(f"/workspaces/{self.group.pk}/accounts/{self.card.pk}/transactions/{self.big.pk}/",
+                         {"posted_on": "2026-05-02", "amount": "75.00", "description": "SUPERSTORE", "classification": "expense"})
+        self.assertEqual(dict(SplitLine.objects.values_list("category__name", "amount_cents")), {"Groceries": 4500, "Shopping": 3000})
+        self.assertEqual(self.totals()["Groceries"], 4500)
+
+    def test_a_category_filter_totals_only_that_categorys_share(self):
+        self.split(self.big, ("Groceries", "30.00"), ("Shopping", "20.00"))
+        response = self.client.get(f"/workspaces/{self.group.pk}/transactions/", {"start": "2026-05-01", "end": "2026-05-31", "category": self.cat["Groceries"].pk})
+        self.assertEqual(response.context["totals"]["posted_cents"], 3000)
+
     def test_removing_a_split_restores_the_single_category(self):
         self.split(self.big, ("Groceries", "30.00"), ("Shopping", "20.00"))
         self.client.post(self.url(self.big), {"remove": "1"})

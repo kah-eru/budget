@@ -17,12 +17,12 @@
   <meta name="theme-color" content="#22181c" media="(prefers-color-scheme: dark)">
   {% if user.is_authenticated %}
   {# Chrome/Android: prefetch the tab pages as soon as a page loads and anything else on hover or touch, so switching feels instant. #}
-  {# GET pages here have no side effects; logout (POST) and downloads are excluded. Other browsers ignore this. #}
+  {# Left out: logout (POST), downloads, Alerts (opening it marks alerts read) and bank pages (they make Plaid link tokens). Other browsers ignore this. #}
   {# ponytail: eager tab prefetch costs up to 3 extra page requests per view; drop "eager" if the load gate says so. #}
   <script type="speculationrules">
   {"prefetch": [
     {"where": {"selector_matches": ".bottom-nav a"}, "eagerness": "eager"},
-    {"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/*export.csv*"}}, {"not": {"selector_matches": "[download]"}}]}, "eagerness": "moderate"}
+    {"where": {"and": [{"href_matches": "/*"}, {"not": {"href_matches": "/*export.csv*"}}, {"not": {"selector_matches": "[download]"}}, {"not": {"href_matches": "/alerts/*"}}, {"not": {"href_matches": "/banks/*"}}]}, "eagerness": "moderate"}
   ]}
   </script>
   {% endif %}
