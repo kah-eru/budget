@@ -46,6 +46,7 @@ test("a bank CSV is previewed, imported, shown and undone", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Imports" })).toBeVisible();
 
   // Imported rows keep the bank's amount: the original entry only offers the type.
+  await page.locator("summary", { hasText: "Coffee " + suffix }).first().click();  // rows open to show Edit
   await page.getByRole("link", { name: new RegExp("^Edit Coffee " + suffix) }).click();
   await page.getByRole("link", { name: "Edit type" }).click();
   await expect(page.getByLabel("Amount (USD)")).toBeDisabled();

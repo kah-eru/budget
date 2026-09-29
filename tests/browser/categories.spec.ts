@@ -19,6 +19,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByLabel("Amount (USD)").fill("62.10");
   await page.getByLabel("Description").fill("Market " + suffix);
   await page.getByRole("button", { name: "Save transaction" }).click();
+  await page.locator("summary", { hasText: "Market " + suffix }).first().click();  // rows open to show Edit
   await page.getByRole("link", { name: new RegExp("^Edit Market " + suffix) }).click();
   await page.getByLabel("Category", { exact: true }).selectOption({ label: "Groceries" });
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -147,6 +148,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
 
   await page.goto("/");
   await page.getByRole("link", { name: accountName }).click();
+  await page.locator("summary", { hasText: `Deli${tag} #1` }).first().click();  // rows open to show Edit
   await page.getByRole("link", { name: new RegExp(`^Edit Deli${tag} #1`) }).click();
   await page.getByLabel("Category", { exact: true }).selectOption({ label: "Entertainment" });
   await expect(page.getByLabel("Name contains")).toHaveValue(`Deli${tag}`);

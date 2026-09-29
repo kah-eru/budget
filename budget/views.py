@@ -803,10 +803,6 @@ def transaction_list(request, workspace_id):
         params = request.GET.copy()
         params["before"], params["rev"] = f"{last.posted_on:%Y-%m-%d}_{last.pk}", rev
         context["next_query"] = "?" + params.urlencode()
-    heads = series(filtered_rows, page[-1].posted_on, page[0].posted_on) if by_month and page else days
-    by_day = {d["day"]: d["posted_cents"] for d in heads}
-    for row in page:
-        row.day_posted = by_day[row.posted_on]
     newest = request.GET.copy()
     for key in ("before", "rev"):
         newest.pop(key, None)

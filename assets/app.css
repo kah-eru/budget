@@ -216,6 +216,22 @@
   .icon-pill.is-small .icon-pill-item svg { @apply size-4; }
   /* Timeline Filters: tinted while open; a dot while filters apply. */
   .filter-button { position: relative; }
+  /* Transaction rows: one line (date, name, amount); tap to open the details below it, one row at a time. */
+  .txn-summary { @apply flex min-h-11 cursor-pointer list-none items-center gap-3 py-1.5; transition: background-color 100ms ease-out; }
+  .txn-summary::-webkit-details-marker { display: none; }
+  .txn-summary:active { background-color: var(--pressed); }
+  .txn-date { @apply w-14 shrink-0 text-xs text-muted tabular-nums; }
+  .txn-caret { @apply text-xs text-muted; transition: transform 150ms ease-out; }
+  .txn[open] .txn-caret { transform: rotate(180deg); }
+  .txn-details { @apply mb-2 flex items-start gap-3 rounded-lg bg-sunken px-3 py-2 text-sm; animation: txn-open 150ms ease-out; }
+  .txn-details dl > div { @apply flex gap-2 py-0.5; }
+  .txn-details dt { @apply w-20 shrink-0 text-muted; }
+  .txn-details dd { @apply min-w-0 break-words; }
+  .icon-button { @apply inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-text; transition: transform 100ms ease-out; }
+  .icon-button svg { @apply size-4; }
+  .icon-button:active { transform: scale(0.95); }
+  @keyframes txn-open { from { opacity: 0; transform: translateY(-4px); } }
+  @media (prefers-reduced-motion: reduce) { .txn-details { animation: none; } .txn-caret { transition: none; } }
   .filter-button[aria-expanded="true"] { background-color: var(--accent-soft); }
   .filter-dot { @apply absolute right-1 top-1 size-1.5 rounded-full bg-accent; box-shadow: 0 0 0 2px var(--surface); }
   /* A hero note: inline from sm up; on phones an (i) button opens it as a popover (placed by app.tsx). */

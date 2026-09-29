@@ -994,4 +994,23 @@ Why: the user asked to compact the Timeline:
   - `ranges.spec` and `transactions.spec` check the URL and the chart label instead of the removed dates line
 - 360 px screenshots reviewed: graph (light and dark), Filters open, List, Settings export.
 
+## One-line transaction rows — September 29
+
+Why: the user asked to shrink the transaction listings: show only the amount, where it went and the date (as 0/0/00), open the details on tap and push the rest down, make Edit an icon, and add a way back from the edit page.
+
+**Changes:**
+- **`components/transaction_row.html`** (the Timeline, account and category pages):
+  - Each row is a `<details name="transactions">`.
+  - The summary shows the date (`n/j/y`), the name (truncated) and the amount (muted while pending), with a ▾ that turns over when open.
+  - The details list Category (or the split lines), Type (with Pending), Account (where it was shown before), Original name and note, plus a pencil `.icon-button` that keeps the accessible name "Edit {name} on {date}".
+  - The shared `name` makes opening one row close the other (Chrome 120+, Safari 17.2+; older browsers simply allow several open).
+- **Timeline:** the day header rows are gone, and so is the `day_posted` lookup (and its grouped query in year views). Day totals remain in the Daily totals table.
+- **`form.html`:** a `‹ Back` chip at the top whenever the page has a `cancel_url`, which includes the transaction edit page.
+- **CSS:** `.txn-*` and `.icon-button`. The details fade in over 150 ms, with no motion under reduced motion.
+
+**Verification:**
+- 229 Django tests OK
+- 14/14 Chrome checks: the five steps that click Edit open the row first
+- 360 px screenshots reviewed: closed rows (about 45 px each, from about 76), an open row in light and dark, only one row open after opening another, and the edit page's Back chip; no sideways scroll
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

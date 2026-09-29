@@ -1,5 +1,6 @@
 {% extends 'budget/base.html' %}
 {% block content %}
+{% if cancel_url %}<a class="chip -ml-3 mb-2 font-semibold" href="{{ cancel_url }}"><span aria-hidden="true" class="mr-1 text-xl leading-none">‹</span>Back</a>{% endif %}
 <section class="max-w-xl card">
   <h1 class="mb-2 text-3xl">{{ title }}</h1>
   <p class="mb-6 text-muted">{{ help }}</p>

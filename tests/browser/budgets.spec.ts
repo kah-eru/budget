@@ -74,6 +74,7 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   await page.getByLabel("Amount (USD)").fill("50.00");
   await page.getByLabel("Description").fill("Superstore " + suffix);
   await page.getByRole("button", { name: "Save transaction" }).click();
+  await page.locator("summary", { hasText: "Superstore " + suffix }).first().click();  // rows open to show Edit
   await page.getByRole("link", { name: new RegExp("^Edit Superstore " + suffix) }).click();
   await page.getByRole("link", { name: "Split across categories" }).click();
   await page.getByLabel("Line 1 category").selectOption({ label: "Groceries" });

@@ -15,6 +15,17 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). The rest of the load gate (8).
 
+Latest request (2026-09-29): smaller transaction listings: only the amount, where it went and the date (0/0/00); the details open on tap and push the rest down, one at a time; Edit as an icon; a way back from the edit page.
+- **Built:**
+  - `transaction_row.html` as `<details name="transactions">`: one line closed, the details and a pencil icon when open
+  - the Timeline's day header rows removed (day totals stay in the Daily totals table)
+  - a `‹ Back` chip on `form.html` pages with a `cancel_url`
+  - Details: [development guide](docs/development.md#one-line-transaction-rows--september-29).
+- **Verification:** 229 Django tests OK; 14/14 Chrome checks; 360 px screenshots reviewed.
+- Committed locally; four commits are **not pushed** (speed-up, compact Timeline, icons under the chart, one-line rows). The preview server was restarted.
+
+## Log (newest first)
+
 Latest request (2026-09-29): compact the Timeline: remove the text above the graph, move the ⋯ menu to Settings, and make Graph | List and Filters small icon-only toggles.
 - **Built:**
   - one icon row: a Graph | List pill and a Filters icon (tinted while open, a dot while filters apply)
@@ -26,8 +37,6 @@ Latest request (2026-09-29): compact the Timeline: remove the text above the gra
 - **Trade-off (flagged to the user):** export no longer follows the Timeline's search, person, category and account filters; it covers every visible transaction in the chosen dates.
 - **Verification:** 229 Django tests OK; 14/14 Chrome checks; 360 px screenshots reviewed.
 - Committed locally with the speed-up commit (plus the follow-up commit), **not pushed**. The preview server was restarted.
-
-## Log (newest first)
 
 Latest request (2026-09-29): the app feels a little slow; look at every way to make it snappier. Plan approved.
 - **Built:**

@@ -289,6 +289,22 @@ Rule journey: create from purchase -> choose exact merchant/description contains
 
 ## 3b. Timeline by account (2026-09-28)
 
+Update (user, 2026-09-29, fifth pass): **one-line transaction rows** everywhere (the Timeline, account pages, category pages).
+- **Closed:** the date as `9/29/26`, where it went, the amount and a small ▾. The amount is muted while pending.
+- **Tap to open:** the details drop down below the row and push the rest down: Category (or the split), Type and Pending, Account, Original name and note. A pencil icon opens the edit page.
+- **One at a time:** opening another row closes the one that was open (native `<details name>`); tap again to close.
+- **No day headers:** the Timeline list no longer has its day header rows, since each row has its date. Day totals are in the Daily totals table.
+- **Edit pages** have a `‹ Back` chip at the top, going to the same place as Cancel.
+
+```text
+9/29/26  Coffee Luna ................ $4.50 ▾
+9/29/26  Venmo ...................... $40.00 ▴
+┌ Category  Uncategorized                 (✎) ┐
+│ Type      Transfer or card payment          │
+└ Account   Checking (alice)                  ┘
+9/28/26  To savings ................ $250.00 ▾
+```
+
 Update (user, 2026-09-29, fourth pass): the three icons sit **directly under the chart**, between the date labels and Posted spending, and are smaller (32 px icons in a pill instead of 40 px). The Filters panel opens right below them. Without a chart (List, or no data), they sit under the range bar.
 
 ```text
