@@ -195,6 +195,19 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
+### Requested — 2026-09-29: categories you fill yourself (verified against the user's flow)
+Status: built 2026-09-29 (development guide "Categories you fill yourself"). User choices:
+- keep the starter categories, but nothing is sorted into them on import
+- delete uncategorizes
+- one move confirm on save
+- keywords match when a name has **all** the chosen words
+- **Empty start:** after the first import, categories are empty; the user decides what goes in each.
+- **Edit a category:** rename, delete, and add a limit.
+- **Pick transactions:** from a list of all transactions for all accounts, clearly labelled.
+  - If a transaction is already in another category, the app asks before moving it.
+  - An option for "this transaction only" or "every transaction with this name" is checked by default.
+- **Keywords:** choose the words from the name; future transactions with them are sorted automatically.
+
 ### Requested — 2026-09-29: a Budget tab, Settings in the header, Overview in the middle
 Status: built 2026-09-29 (development guide "Budget tab"). User choices:
 - the tabs are Timeline · Overview · Budget

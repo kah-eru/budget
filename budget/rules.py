@@ -1,6 +1,6 @@
 from django.db.models import Q
 
-from .models import Category, Rule, SplitLine, TransactionAnnotation, Workspace
+from .models import Rule, SplitLine, TransactionAnnotation, Workspace
 
 
 def normalize(text):
@@ -8,24 +8,28 @@ def normalize(text):
 
 
 def matches(rule, description):
+    """contains: the phrase appears; exact: the whole name; words: every chosen word appears, in any order."""
     text, pattern = normalize(description), normalize(rule.pattern)
+    if rule.kind == "words":
+        return all(word in text for word in pattern.split())
     return text == pattern if rule.kind == "exact" else pattern in text
 
 
-def suggest_keyword(description):
+def suggest_keyword(description, limit=3):
     """A starting keyword from a bank name: drop store numbers and codes (words starting with # or at least
-    half digits, so 7-ELEVEN stays), keep the first three words."""
+    half digits, so 7-ELEVEN stays), keep the first three words (or all of them with limit=None)."""
     words = [w for w in description.split() if not w.startswith("#") and sum(c.isdigit() for c in w) * 2 < len(w)]
-    return " ".join(words[:3])
+    return " ".join(words[:limit])
 
 
-def ensure_rule(workspace, keyword, category):
-    """A 'name contains' rule for keyword -> category, unless an enabled equivalent already exists."""
+def ensure_rule(workspace, keyword, category, kind="contains"):
+    """A rule for keyword -> category ('name contains', or 'name has all of' these words), unless an enabled
+    equivalent already exists."""
     keyword = " ".join(keyword.split())
-    for rule in Rule.objects.filter(workspace=workspace, category=category, kind="contains", enabled=True):
+    for rule in Rule.objects.filter(workspace=workspace, category=category, kind=kind, enabled=True):
         if normalize(rule.pattern) == normalize(keyword):
             return rule
-    return Rule.objects.create(workspace=workspace, kind="contains", pattern=keyword, category=category)
+    return Rule.objects.create(workspace=workspace, kind=kind, pattern=keyword, category=category)
 
 
 def largest_remainder(total, percents):
@@ -43,23 +47,13 @@ def drop_rule_splits(workspace, transaction_ids):
     SplitLine.objects.filter(workspace=workspace, transaction__in=transaction_ids, from_rule=True).delete()
 
 
-# Bank-synced rows carry Plaid's detailed category; the first matching prefix names a standard category.
-PLAID_CATEGORIES = [("FOOD_AND_DRINK_GROCERIES", "Groceries"), ("FOOD_AND_DRINK", "Dining"), ("GENERAL_MERCHANDISE", "Shopping"),
-                    ("TRANSPORTATION", "Transport"), ("TRAVEL", "Travel"), ("RENT_AND_UTILITIES_RENT", "Housing"),
-                    ("RENT_AND_UTILITIES", "Utilities"), ("MEDICAL", "Health"), ("ENTERTAINMENT", "Entertainment")]
-
-
-def bank_category(code):
-    return next((name for prefix, name in PLAID_CATEGORIES if code and code.startswith(prefix)), None)
-
-
 def categorize(transactions, workspace):
     """Set the rule category in this workspace's overlay for each transaction; manual choices are never changed.
+    Only the workspace's own rules sort: the bank's category guess is ignored, so imports start uncategorized.
     Rows no rule matches lose an earlier rule category. A rule with a split template also (re)writes the row's
     rule split lines; a hand-made split counts as a manual choice. Returns how many rows changed."""
     rules = list(Rule.objects.filter(workspace=workspace, enabled=True, category__archived=False)
                  .exclude(split_category__archived=True).order_by("priority", "pk"))
-    by_name = dict(Category.objects.filter(workspace=workspace, archived=False).values_list("name", "pk"))
     transactions = list(transactions)
     ids = [t.pk for t in transactions]
     existing = {a.transaction_id: a for a in TransactionAnnotation.objects.filter(workspace=workspace, transaction__in=ids)}
@@ -74,7 +68,7 @@ def categorize(transactions, workspace):
         if row.pk in hand_split or (annotation and annotation.category_source == "manual"):
             continue
         rule = next((r for r in rules if matches(r, row.description)), None)
-        category_id = rule.category_id if rule else by_name.get(bank_category(row.provider_category))
+        category_id = rule.category_id if rule else None
         wanted = []  # in template order, so the first category is listed first
         if rule and rule.split_category_id:
             amounts = largest_remainder(row.amount_cents, [100 - rule.split_percent, rule.split_percent])

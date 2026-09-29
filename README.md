@@ -5,11 +5,11 @@ A private budgeting app for partners and friends who choose to share finances. S
 Status (2026-09-29): a working preview with synthetic data only, deployed to Render; not a real-data-ready release. Built by milestone:
 - **Milestone 1, foundation:** sign-in, private manual accounts, groups, explicit sharing, invitations with mailbox verification (group and standalone), password recovery, membership notices and member removal, a Settings page (username/email/password changes with email notices or confirmation; System/Light/Dark theme).
 - **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, compact controls (a ⋯ menu with CSV export; Filters with account tick boxes and Select all), and a **Graph | List** switch where List shows one dated column per account with toggleable lines for transfers between them.
-- **Milestone 3, bank sync (sandbox):** Plaid sandbox: connect a bank, choose accounts (private), Sync now, pending→posted kept, card payments as transfers, Plaid categories as a fallback; automatic sync by signed webhook, Reconnect when the bank needs a new sign-in, a warning when the same bank is connected twice.
+- **Milestone 3, bank sync (sandbox):** Plaid sandbox: connect a bank, choose accounts (private), Sync now, pending→posted kept, card payments as transfers (the bank's own category guess isn't used: categories start empty); automatic sync by signed webhook, Reconnect when the bank needs a new sign-in, a warning when the same bank is connected twice.
 - **Milestone 4, categories and budgets:**
   - workspace categories (a standard set, an Overview breakdown, a Timeline filter)
   - rules with preview and opt-in backfill
-  - categorize by example (search, tick, keep the keyword as a rule)
+  - fill a category yourself: pick from every transaction of every account (labelled with its account and where it sits now), confirm moves out of other categories, and tap the words of the name that should send future transactions there
   - split transactions, by hand or by a 70/30-style rule
   - monthly/yearly budgets by category or name, in three types (fixed bill, yearly/irregular cost, flexible) with a disposable income estimate
   - a **Budget tab**: every category's spending against its limit for the month or year (monthly budgets count 12 times in a year), with a page per category for its limit, rules, adding transactions and recent rows; then name-based budgets, the monthly plan, goals and bills

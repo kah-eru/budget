@@ -136,7 +136,7 @@ class PlaidTests(TestCase):
             self.assertEqual(bank.sync(BankConnection.objects.get(pk=self.connection.pk))[0], "busy")
         self.assertFalse(Transaction.objects.filter(provider_id="t9").exists())
 
-    def test_types_and_plaid_categories_never_beat_rules_or_hand_choices(self):
+    def test_bank_types_count_but_only_rules_or_hand_choices_set_categories(self):
         Rule.objects.create(workspace=self.personal, pattern="corner", category=Category.objects.get(workspace=self.personal, name="Shopping"))
         self.sync(page(added=[
             txn("pay", "-500.00", name="Card payment", category="LOAN_PAYMENTS_CREDIT_CARD_PAYMENT"),
@@ -147,17 +147,19 @@ class PlaidTests(TestCase):
             txn("cafe", "4.50", name="Corner cafe", category="FOOD_AND_DRINK_COFFEE")]))
         kinds = dict(Transaction.objects.values_list("provider_id", "classification"))
         self.assertEqual(kinds, {"pay": "transfer", "move": "transfer", "wage": "income", "back": "refund", "food": "expense", "cafe": "expense"})
-        category = lambda pid, ws: TransactionAnnotation.objects.get(transaction__provider_id=pid, workspace=ws).category.name
-        self.assertEqual((category("food", self.group), category("cafe", self.group), category("cafe", self.personal)), ("Groceries", "Dining", "Shopping"))
-        food = TransactionAnnotation.objects.get(transaction__provider_id="food", workspace=self.group)
-        food.category, food.category_source = Category.objects.get(workspace=self.group, name="Health"), "manual"
-        food.save()
+        category = lambda pid, ws: getattr(TransactionAnnotation.objects.filter(transaction__provider_id=pid, workspace=ws).first(), "category", None)
+        # The bank's own category guess is ignored: imports start uncategorized until a rule or a person sorts them.
+        self.assertEqual((category("food", self.group), category("cafe", self.group), category("cafe", self.personal).name), (None, None, "Shopping"))
+        TransactionAnnotation.objects.create(transaction=Transaction.objects.get(provider_id="food"), workspace=self.group,
+                                             category=Category.objects.get(workspace=self.group, name="Health"), category_source="manual")
         self.sync(page(modified=[txn("food", "41.00", name="Grocer", category="FOOD_AND_DRINK_GROCERIES")], cursor="c2"))
-        self.assertEqual(category("food", self.group), "Health")
+        self.assertEqual(category("food", self.group).name, "Health")
 
     @mock.patch("django.utils.timezone.localdate", return_value=DAY)
     def test_a_sync_that_crosses_a_budget_alerts(self, _):
-        Budget.objects.create(workspace=self.group, category=Category.objects.get(workspace=self.group, name="Dining"), limit_cents=100)
+        dining = Category.objects.get(workspace=self.group, name="Dining")
+        Rule.objects.create(workspace=self.group, pattern="cafe", category=dining)
+        Budget.objects.create(workspace=self.group, category=dining, limit_cents=100)
         with self.captureOnCommitCallbacks(execute=True):
             self.sync(page(added=[txn("t1", "4.50")]))
         self.assertTrue(BudgetAlert.objects.filter(recipient=self.bob, silent=False).exists())

@@ -161,6 +161,11 @@
   /* Period chips under the chart. */
   .chip { @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-3 text-sm font-bold text-accent-text; }
   .chip[aria-current="page"], .segment[aria-current="page"] { @apply bg-accent text-on-accent; }
+  /* Category picker: where a transaction sits now, and the words of its name to match. */
+  .place { @apply mt-1 inline-block rounded-full bg-sunken px-2 py-0.5 text-xs font-semibold text-muted; }
+  .place-here { @apply bg-accent-soft text-accent-text; }
+  .place-other, .place-split { @apply bg-sunken text-ink; }
+  .word-chip { @apply inline-flex min-h-10 cursor-pointer items-center rounded-full border border-line-strong px-3.5 text-sm font-semibold text-accent-text has-[:checked]:border-accent has-[:checked]:bg-accent has-[:checked]:text-on-accent has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)]; transition: background-color 100ms ease-out; }
   .range-arrow { @apply inline-flex size-7 items-center justify-center rounded-full font-bold text-accent-text hover:bg-sunken; }
   .back-chip { @apply inline-flex min-h-7 items-center gap-1 rounded-full bg-accent-soft px-2.5 font-bold text-accent-text; }
   /* Segmented System / Light / Dark control; the radio stays focusable, the label shows focus. */

@@ -410,7 +410,7 @@ What it does:
   - Skipped: accounts that weren't imported, non-USD rows, zero amounts.
 - **Classification:** Plaid's positive amount is money out.
   - Plaid categories `TRANSFER_IN`, `TRANSFER_OUT` and `LOAN_PAYMENTS` are **transfers**, so card payments never count as spending. `INCOME` is income. Other money in is a refund.
-  - Plaid's detailed category maps to the standard categories (groceries, dining, shopping, transport, travel, housing, utilities, health, entertainment). It applies only where no rule matches, and hand choices always win.
+  - Plaid's detailed category maps to the standard categories (groceries, dining, shopping, transport, travel, housing, utilities, health, entertainment). It applies only where no rule matches, and hand choices always win. (Removed 2026-09-29: categories start empty; see "Categories you fill yourself".)
 - **After a sync:** rules run, data revisions bump, and budgets are evaluated, so alerts, push and email follow.
 - Synced rows are read-only like CSV rows: date, amount and description can't change, only the type.
 - **Disconnect** revokes the connection at Plaid when it can and keeps the accounts and history as plain accounts.
@@ -861,5 +861,55 @@ User choices:
 - 48/48 budgets, categories, reporting and savings tests on Neon.
 - 14/14 Chrome checks. The budgets, categories, planning and swipe specs now go through the tab.
 - Screenshots reviewed. The preview database has dozens of duplicate Housing budgets from past runs, which makes its category page long.
+
+## Categories you fill yourself — September 29
+
+Why: the user asked me to verify the category and limit logic against their flow, and several parts didn't match:
+- bank sync pre-sorted by the bank's category
+- no delete
+- "Add transactions" needed a search and didn't name accounts
+- silent moves
+- no keyword picker
+
+User choices: keep the starter categories with nothing sorted into them; delete uncategorizes; one move confirm on save; match on all chosen words.
+
+**Rules (`rules.py`):**
+- `categorize()` uses only the workspace's rules. `bank_category()` and `PLAID_CATEGORIES` are gone.
+- Plaid's transfer, income and refund classification is unchanged.
+- There's a new rule kind, `words` ("Name has all of"), with migration 0023: every word must appear, in any order.
+- `ensure_rule(..., kind=)` and `suggest_keyword(..., limit=None)`.
+
+**Picker (`category_add`):**
+- **Step 1:**
+  - It lists the newest 100 visible rows, and `?q=` narrows them the same way as before. `?uncategorized=on` shows only rows with no category and no split.
+  - Each row shows its account (and owner in a group), and `place()` gives here, other, split or none.
+  - A search ticks the matches that are free or already here; the full list starts unticked.
+- **Step 2** runs when "also" is on (checked by default) or a chosen row is in another category or a split:
+  - `name_words()` offers the ticked names' words as chips, with `suggest_keyword()` pre-checked.
+  - "Update preview" counts the other matches.
+  - Move / Leave radios cover the rows in other categories.
+- **Save:**
+  - The ticked rows, plus the word matches when "also" is on (minus the conflicts when you choose Leave), become manual here, and their split lines are removed.
+  - "Also" adds a `words` rule, so future imports land here.
+  - The posted ids are intersected with the visible rows.
+
+**Delete (`category_delete`, POST):**
+- It removes whole splits that used the category and clears annotations; both foreign keys are `RESTRICT`, so these come first.
+- Then it deletes the category, which cascades its budgets and rules, and re-runs `evaluate()`.
+- The UI is a `<details>` "Delete category…" at the bottom of the category page.
+
+**Not changed:** a transaction's own edit page keeps its "Also put other transactions with this name…" option, unchecked, as a `contains` rule.
+
+**Verification:**
+- 226 Django tests OK. New:
+  - the full list with account labels and places
+  - the move prompt, both Move and Leave
+  - the word chips, the rule and a later import landing in the category
+  - the `words` matcher
+  - delete: splits, rules, budgets, outsiders, and GET
+  - Plaid: no category without a rule, and a sync alert through a rule
+- 36/36 of the categorize, categories, budgets and Plaid tests on Neon.
+- 14/14 Chrome checks. `categories.spec.ts` covers the account labels, the chips, saving and deleting a category.
+- On the reused preview database, the first rule saved with "apply to existing" cleared 245 old bank-guessed categories. That is expected, so the browser check no longer expects exactly 0.
 
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

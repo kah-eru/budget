@@ -43,7 +43,7 @@ from .permissions import editable_accounts, get_workspace, visible_accounts, vis
 from .reporting import _shape, _sums, annotated, budget_progress, by_category, by_year, disposable, daily, first_day, net_worth, period_bounds, saved_daily, savings, spending, visible_transactions
 from .notifications import evaluate, evaluate_account
 from . import push
-from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize
+from .rules import categorize, categorize_everywhere, drop_rule_splits, ensure_rule, matches, normalize, suggest_keyword
 from .templatetags.money import dollars
 from .sharing import bump_account_data, remove_member, replace_shares
 
@@ -955,44 +955,102 @@ def category_list(request, workspace_id):
                   "categories": workspace.categories.order_by("archived", "name")}, status=400 if request.method == "POST" else 200)
 
 
-SEARCH_LIMIT = 100
+PICK_LIMIT = 100
+WORD_LIMIT = 24
+
+
+def place(row, category, split_ids):
+    """Where a transaction sits now, for this category's picker: here, another category, split, or nowhere."""
+    if row.pk in split_ids:
+        return "split"
+    if row.ann_category_id is None:
+        return "none"
+    return "here" if row.ann_category_id == category.pk else "other"
+
+
+def name_words(rows):
+    """The distinct words in these transactions' names, for the keyword picker; store numbers and codes are left out
+    the same way suggest_keyword() drops them."""
+    seen, words = set(), []
+    for row in rows:
+        for word in suggest_keyword(" ".join(row.description.split()), limit=None).split():
+            if word.casefold() not in seen:
+                seen.add(word.casefold())
+                words.append(word)
+    return words[:WORD_LIMIT]
 
 
 @login_required
 @require_http_methods(["GET", "POST"])
 def category_add(request, workspace_id, category_id):
-    """Search this workspace's transactions by keyword, tick the ones that belong, and optionally make the
-    keyword a rule so future matches land here too. Any member may do it: it only writes this overlay."""
+    """Choose which transactions count toward a category, from every account this workspace can see.
+    Step 1 lists them (newest first, a name search, or only uncategorized ones) with their account and where each sits
+    now. Step 2, only when needed, asks whether to move rows that sit in another category and, when "every transaction
+    with this name" is on, which words of the name to match. Saving sets the rows here by hand and keeps the words as a
+    rule, so future imports land here too. Any member may do it: it only writes this workspace's overlay."""
     workspace = get_workspace(request.user, workspace_id)
     category = get_object_or_404(workspace.categories, pk=category_id, archived=False)
     data = request.POST if request.method == "POST" else request.GET
     q = " ".join(data.get("q", "").split())[:100]
-    probe = Rule(kind="contains", pattern=q)
-    # Matches the original description, exactly as the rule will. ponytail: Python scan of visible rows, like rules.
-    rows = visible_transactions(request.user, workspace).annotate(ann_source=F("ann__category_source")).order_by("-posted_on", "-pk")
-    found = [row for row in rows if matches(probe, row.description)] if normalize(q) else []
+    only_open = data.get("uncategorized") == "on"
+    split_ids = set(SplitLine.objects.filter(workspace=workspace).values_list("transaction_id", flat=True))
+    rows = (visible_transactions(request.user, workspace).annotate(ann_category_id=F("ann__category_id"))
+            .select_related("account__owner").order_by("-posted_on", "-pk"))
+    listed = rows.filter(ann__category=None).exclude(pk__in=split_ids) if only_open else rows
+    # ponytail: name search and word matching scan visible rows in Python (casefold has no SQL equivalent), like rules.
+    found = [row for row in listed if matches(Rule(kind="contains", pattern=q), row.description)] if normalize(q) else None
+    context = {**page_context(request.user, workspace), "category": category, "q": q, "only_open": only_open}
+
+    def step_one(error=""):
+        shown = (found if found is not None else list(listed[:PICK_LIMIT]))[:PICK_LIMIT]
+        for row in shown:
+            row.place = place(row, category, split_ids)
+            # A search ticks its matches that are free or already here; the full list starts with nothing ticked.
+            row.ticked = found is not None and row.place in ("none", "here")
+        total = len(found) if found is not None else listed.count()
+        return render(request, "budget/category_add.html", {**context, "rows": shown, "total": total, "error": error}, status=400 if error else 200)
+
     if request.method == "POST":
-        chosen = set(request.POST.getlist("ids"))
-        picked = [row for row in found if str(row.pk) in chosen]
-        keyword = " ".join(request.POST.get("keyword", q).split())
-        make_rule = request.POST.get("make_rule") == "on" and bool(normalize(keyword))
+        chosen = {int(i) for i in request.POST.getlist("ids") if i.isdigit()}
+        picked = [row for row in rows if row.pk in chosen]  # only rows this workspace can see
+        also = request.POST.get("also") == "on"
+        words = request.POST.getlist("words") if "review" in request.POST else suggest_keyword(picked[0].description).split() if picked else []
+        keyword = " ".join(" ".join(words).split())
+        rule = Rule(kind="words", pattern=keyword)
+        matched = [row for row in rows if row.pk not in chosen and matches(rule, row.description)] if also and normalize(keyword) else []
+        targets = picked + matched
+        elsewhere = {row.pk for row in targets if place(row, category, split_ids) in ("other", "split")}
+        if not picked:
+            return step_one("Tick at least one transaction.")
+        error = "Choose at least one word from the name." if also and not normalize(keyword) else ""
+        if error or "save" not in request.POST and (also or elsewhere):
+            where = {}
+            for row in (row for row in targets if row.pk in elsewhere):
+                label = "a split" if row.pk in split_ids else row.ann_category
+                where[label] = where.get(label, 0) + 1
+            context.update(review=True, error=error, picked=picked, also=also, offered=name_words(picked), words={w.casefold() for w in words},
+                           matched=len(matched), elsewhere=len(elsewhere), where=sorted(where.items()))
+            return render(request, "budget/category_add.html", context, status=400 if error else 200)
+        skip = request.POST.get("move") == "skip"
+        final = [row for row in targets if not (skip and row.pk in elsewhere)]
+        ids = [row.pk for row in final]
         with transaction.atomic():
-            existing = {a.transaction_id: a for a in TransactionAnnotation.objects.filter(workspace=workspace, transaction__in=[r.pk for r in picked])}
-            for row in picked:
+            existing = {a.transaction_id: a for a in TransactionAnnotation.objects.filter(workspace=workspace, transaction__in=ids)}
+            for row in final:
                 annotation = existing.get(row.pk) or TransactionAnnotation(transaction=row, workspace=workspace)
                 annotation.category, annotation.category_source = category, "manual"
                 annotation.save()
-            drop_rule_splits(workspace, [r.pk for r in picked])
-            if make_rule:
-                ensure_rule(workspace, keyword, category)
+            # Moved here whole: a split (by hand or by a rule) no longer applies.
+            SplitLine.objects.filter(workspace=workspace, transaction__in=ids).delete()
+            if also:
+                ensure_rule(workspace, keyword, category, kind="words")
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
             evaluate(workspace)
-        messages.success(request, f"Added {len(picked)} to {category.name}." + (f" Future “{keyword}” purchases will go there too." if make_rule else ""))
+        left = len(targets) - len(final)
+        messages.success(request, f"Added {len(final)} to {category.name}." + (f" Future transactions with “{keyword}” go there too." if also else "")
+                         + (f" Left {left} where {'it was' if left == 1 else 'they were'}." if left else ""))
         return redirect("category_edit", workspace_id=workspace.pk, category_id=category.pk)
-    for row in found:
-        row.locked = row.ann_source == "manual" and bool(row.ann_category) and row.ann_category != category.name
-    return render(request, "budget/category_add.html", {**page_context(request.user, workspace), "category": category, "q": q,
-                  "rows": found[:SEARCH_LIMIT], "match_count": len(found)})
+    return step_one()
 
 
 @login_required
@@ -1023,6 +1081,23 @@ def category_edit(request, workspace_id, category_id):
                    rules=workspace.rules.filter(Q(category=category) | Q(split_category=category)).select_related("category", "split_category").order_by("priority", "pk"),
                    timeline=reverse("transactions", args=[workspace.pk]) + "?" + urlencode([*context["range_params"], ("category", category.pk)]))
     return render(request, "budget/category.html", context, status=400 if request.method == "POST" else 200)
+
+
+@login_required
+@require_POST
+def category_delete(request, workspace_id, category_id):
+    """Any member may delete a category, like renaming it: its transactions go back to Uncategorized (a split that used
+    it is undone whole), and its limits and rules are removed with it. Archive is the softer choice."""
+    workspace = get_workspace(request.user, workspace_id)
+    category = get_object_or_404(workspace.categories, pk=category_id)
+    with transaction.atomic():
+        SplitLine.objects.filter(workspace=workspace, transaction__in=list(category.split_lines.values_list("transaction_id", flat=True))).delete()
+        TransactionAnnotation.objects.filter(workspace=workspace, category=category).update(category=None, category_source="")
+        category.delete()  # budgets and rules (split templates too) go with it
+        Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
+        evaluate(workspace)
+    messages.success(request, f"Deleted {category.name}. Its transactions are uncategorized.")
+    return redirect("budgets", workspace_id=workspace.pk)
 
 
 def next_url(request, default):

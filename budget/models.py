@@ -167,7 +167,7 @@ class TransactionAnnotation(models.Model):
 
 class Rule(models.Model):
     # Matches the original description, never the edited display name. Lower priority runs first; ties by id.
-    KINDS = [("contains", "Name contains"), ("exact", "Name is exactly")]
+    KINDS = [("contains", "Name contains"), ("exact", "Name is exactly"), ("words", "Name has all of")]
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="rules")
     kind = models.CharField(max_length=8, choices=KINDS, default="contains")
     pattern = models.CharField(max_length=100)

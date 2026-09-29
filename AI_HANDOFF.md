@@ -6,7 +6,7 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-29 at the owner's request. `main` and `feat/project-foundation` are at `c3b34c4` on GitHub, and Render deploys `main`. CI passed on both branches. This push: the range bar over the chart, the smaller total, the Chart | Budgets icon, date labels and time markers, phone swipes, tabs that keep the range, and a docs refresh.
-- **Last checks** (2026-09-29): 224 Django tests OK on SQLite; budgets/categories/reporting/savings 48/48 on Neon PostgreSQL; 14/14 Chrome checks; screenshots reviewed.
+- **Last checks** (2026-09-29): 226 Django tests OK on SQLite; categorize/categories/budgets/Plaid 36/36 on Neon PostgreSQL; 14/14 Chrome checks; screenshots reviewed.
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,18 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). Load-gate item: batch the name-match budgets in `budget_progress`.
+
+Latest request (2026-09-29): verify the category and limit logic against the user's flow: empty categories after import; create, rename, delete and set a limit; pick from all transactions of all accounts, clearly labelled; ask before moving from another category; "every transaction with this name" checked by default; choose keywords so future transactions sort automatically.
+- **Verification found gaps:** bank-guessed categories, no delete, a search-only picker without account labels, silent moves, and no keyword picker. Plan approved and built.
+- **User choices:** keep the starter categories with nothing sorted; delete uncategorizes; one move confirm; match all chosen words.
+- **Built:**
+  - `categorize()` is rules only; the `words` rule kind (migration 0023)
+  - the two-step `category_add` picker with `place()` and `name_words()`; `category_delete`
+  - Details: [development guide](docs/development.md#categories-you-fill-yourself--september-29).
+- **Verification:** 226 Django tests OK; 36/36 on Neon; 14/14 Chrome checks; screenshots reviewed.
+- Committed locally, **not pushed**, together with the Budget tab commits. The preview server is running with it (migration 0023 applied locally).
+
+## Log (newest first)
 
 Latest request (2026-09-29): a separate Budget page with every spending category (create a category, set a limit, choose what goes in it); Settings in the top-right pill with + and the bell; Overview in the middle of the bottom bar. Plan approved.
 - **User choices:** Timeline · Overview · Budget; the Overview's budget pieces move to the tab; rows open a category page; the plan, Goals and Bills sit below.
@@ -26,8 +38,6 @@ Latest request (2026-09-29): a separate Budget page with every spending category
 - **Verification:** 224 Django tests OK; 48/48 on Neon; 14/14 Chrome checks; screenshots reviewed.
 - Committed locally, **not pushed**. The preview server is running with it.
 - **Docs pass (requested):** older notes in the wireframes and the spec about the Overview's budgets, By category, the Chart | Budgets switch and the old tab order now point to the Budget tab. No code changes.
-
-## Log (newest first)
 
 Latest request (2026-09-29, third pass): "Today" as plain text in place of the This month chip; phone swipes (on the chart, away from its line, for the period; elsewhere for the Overview, Timeline and Settings tabs); time markers on the chart; drop "View … timeline", so switching tabs keeps the period. Plan approved.
 - **User choice:** time lines (8/15/22, Apr/Jul/Oct, each Jan 1).

@@ -61,7 +61,8 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.screenshot({ path: ".local/rule-preview-phone.png", fullPage: true });
   await page.getByLabel("Also apply to existing transactions").check();
   await page.getByRole("button", { name: "Save rule" }).click();
-  await expect(page.locator("body")).toContainText("0 existing transactions updated");
+  // Any count: the reused preview database may still hold old bank-guessed categories, which the first apply clears.
+  await expect(page.locator("body")).toContainText(/Rule saved\. \d+ existing transactions? updated\./);
   await expect(page.getByRole("link", { name: new RegExp("Name contains “market " + suffix) })).toBeVisible();
 
   // A name-match budget below the April spend shows as over on the Budget tab.
@@ -123,6 +124,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByLabel("Search transaction names").fill(`bagels${tag}`);
   await page.getByRole("button", { name: "Search" }).click();
   await expect(page.getByRole("status")).toContainText("2 transactions contain");
+  await expect(page.locator("main")).toContainText(accountName);  // each row names its account
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
@@ -131,7 +133,17 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   }
   await page.emulateMedia({ colorScheme: "light" });
   await page.getByRole("button", { name: "Add ticked to Dining" }).click();
-  await expect(page.locator("body")).toContainText(`Added 2 to Dining. Future “bagels${tag}” purchases will go there too.`);
+  // "Every transaction with this name" is on by default, so the words come next, with the suggested one chosen.
+  await expect(page.getByRole("checkbox", { name: `Bagels${tag}` })).toBeChecked();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await page.screenshot({ path: `.local/category-words-${scheme}.png`, fullPage: true });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator("body")).toContainText(`Added 2 to Dining. Future transactions with “Bagels${tag}” go there too.`);
 
   await page.goto("/");
   await page.getByRole("link", { name: accountName }).click();
@@ -144,4 +156,12 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   const deli2 = page.locator("li", { hasText: `Deli${tag} #2` });
   await expect(deli2).toContainText("Entertainment");
   await expect(page.locator("li", { hasText: `Bagels${tag} #34` })).toContainText("Dining");
+
+  // Deleting a category sends its transactions back to Uncategorized and removes its rules.
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
+  await page.getByRole("region", { name: "Categories" }).getByRole("link", { name: new RegExp("^Pets " + suffix) }).click();
+  await page.getByText("Delete category").click();
+  await page.getByRole("button", { name: "Delete Pets " + suffix }).click();
+  await expect(page.locator("body")).toContainText(`Deleted Pets ${suffix}.`);
+  await expect(page.getByRole("region", { name: "Categories" })).not.toContainText("Pets " + suffix);
 });

@@ -73,6 +73,7 @@ urlpatterns = [
     path("workspaces/<int:workspace_id>/categories/", views.category_list, name="categories"),
     path("workspaces/<int:workspace_id>/categories/<int:category_id>/", views.category_edit, name="category_edit"),
     path("workspaces/<int:workspace_id>/categories/<int:category_id>/add/", views.category_add, name="category_add"),
+    path("workspaces/<int:workspace_id>/categories/<int:category_id>/delete/", views.category_delete, name="category_delete"),
     path("workspaces/<int:workspace_id>/budgets/", views.budget_list, name="budgets"),
     path("workspaces/<int:workspace_id>/budgets/new/", views.budget_edit, name="budget_create"),
     path("workspaces/<int:workspace_id>/budgets/income/", views.income_edit, name="income_edit"),

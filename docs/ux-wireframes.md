@@ -361,6 +361,28 @@ Sep 1 – Sep 28, 2026 · 2 of 14 accounts
 
 ## 4. Budget and alert: set a threshold and act on it
 
+Update (user, 2026-09-29, later): **categories you fill yourself.**
+- **Empty start:** imports put nothing in the categories. Only your picks and your word rules do; the bank's own guess isn't used.
+- **Add transactions:**
+  - **The list:** every transaction of every visible account, newest 100 first. You can search it or show only uncategorized ones.
+  - **Each row** shows its name, date, amount, account (and its owner in a group), and where it sits now: In Groceries, In Dining, Split or Uncategorized.
+  - **Below the list:** "Also every transaction with this name, now and in the future", checked by default, and **Add ticked**.
+- **Review:** it only appears when needed.
+  - **Word chips:** "Which words mean Dining?" shows the words of the ticked names as chips, with the suggested one chosen. Future transactions go here when their name has **all** the chosen words. "Update preview" counts the other matches.
+  - **Moving:** "Move 3 transactions here? 2 in Dining, 1 in a split" offers Move them / Leave them where they are.
+- **Delete category…:** at the bottom of the category page. Its transactions become Uncategorized, and its limits and rules are removed. Archive stays for hiding.
+
+```text
+Add to Dining                        (review)
+[search______] [Search]              Which words mean Dining?
+[ ] Uncategorized only               (STARBUCKS) (RESERVE)  ← tap to choose
+[x] Starbucks #12   May 2 · Card     2 more transactions have all these words.
+    Uncategorized            $4.50   Move 1 transaction here? 1 in Groceries
+[ ] Starbucks #88   May 4 · Card       (•) Move them  ( ) Leave them
+    In Groceries             $3.00   [Save]
+[x] Also every transaction with this name…   [Add ticked to Dining]
+```
+
 Update (user, 2026-09-29): budgets have their own **Budget tab**, and the Overview no longer shows budgets or By category.
 - **Categories:** every category, even without spending, shows its spend for the period. With a limit, it adds a bar and what's left or over, plus the fixed-bill or set-aside details. Without one, it says "No limit".
 - **Also on the tab:**
