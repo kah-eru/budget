@@ -34,7 +34,7 @@ Latest request (2026-09-29): "ok do 3": pages that change in place, with touch p
   - `npm.cmd run build`
   - Chrome: 15/15, with the new `navigation.spec.ts`; every spec now waits out Turbo's page swap (`tests/browser/turbo.ts`)
   - not tried on a real iPhone yet
-- **Pushed** (user: "commit and push so it shows online"): `main` and `feat/project-foundation`. Render deploys `main`.
+- **Pushed** (user: "commit and push so it shows online"): `main` and `feat/project-foundation` at `d9f0b03`; CI passed on both. Render deploys `main`.
 
 ## Log (newest first)
 
