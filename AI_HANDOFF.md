@@ -5,7 +5,7 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 ## Current snapshot (2026-09-29)
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
-- **Git:** pushed 2026-09-28 at the owner's request. `main` and `feat/project-foundation` are at `37ec393` on GitHub, and Render deploys `main` (migration 0022 applies on deploy). CI passed on both branches. The push covered: the compact UI, the Graph | List fixes, savings and the demo-data script, the header Spending | Savings switch, 1M | 1Y | Lifetime and the header pill.
+- **Git:** pushed 2026-09-29 at the owner's request. `main` and `feat/project-foundation` are at `c3b34c4` on GitHub, and Render deploys `main`. CI passed on both branches. This push: the range bar over the chart, the smaller total, the Chart | Budgets icon, date labels and time markers, phone swipes, tabs that keep the range, and a docs refresh.
 - **Last checks** (2026-09-29): 223 Django tests OK on SQLite; 14/14 Chrome checks; screenshots reviewed. Neon last run 2026-09-28 (48/48; no query changes since).
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
@@ -21,7 +21,7 @@ Latest request (2026-09-29, third pass): "Today" as plain text in place of the T
   - `tab_query` and `chart_markers()` in `views.py`; `TimeMarkers` in `spending-chart.tsx`; the new `assets/swipe.ts`
   - Details: [development guide](docs/development.md#swipes-time-markers-and-tabs-that-keep-the-range--september-29).
 - **Verification:** 223 Django tests OK; 14/14 Chrome checks (new `swipes.spec.ts`); screenshots reviewed. Not tried on a real iPhone.
-- Committed locally on top of `b56d417`, **not pushed**. The preview server is running with it.
+- Pushed 2026-09-29 at the owner's request: `main` and `feat/project-foundation` at `c3b34c4` (four commits: `e0ed622`, `b56d417`, `c30b08e`, `c3b34c4`); CI passed on both branches. Render deploys `main`; no migrations.
 - **Docs pass (2026-09-29, requested):**
   - README: the status date, the range bar, the labels, the markers, tabs that keep the range, and the swipes
   - wireframes: two older notes point to their replacements
