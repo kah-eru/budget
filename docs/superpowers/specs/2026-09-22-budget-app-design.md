@@ -195,6 +195,25 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
+### Requested — 2026-09-29 (later): a snappier app and a compact Timeline
+Status: built 2026-09-29. See the development guide sections "Snappier", "Compact Timeline", "One-line transaction rows" and "Day lines, signs and Go to".
+- **Speed:** "look for every possibility".
+  - Built: gzipped pages; name budgets and alerts batched; one aggregate for the previous period's savings; longer-lived database connections; shorter motion.
+  - Measured before and after locally.
+  - The free plan's cold start remains the owner's choice (a free pinger, or a paid instance).
+- **Timeline:**
+  - no text above the graph
+  - the ⋯ menu's Export moves to Settings (for any workspace and dates)
+  - Graph | List and Filters become small icons directly under the graph, above Posted spending
+- **Transaction rows:**
+  - one line (date as 0/0/00, where it went, the amount); the details drop down on tap, one at a time
+  - Edit is an icon; edit pages get a Back button
+- **Days:**
+  - a visible line between days, with the day's net
+  - + or − on every row and on each day's net
+  - a day picker that jumps to the day (user's choice), loading older rows when needed
+- **Proposed default** (not user-confirmed): the day net is money in minus money out, posted only, leaving transfers out in Spending.
+
 ### Requested — 2026-09-29: categories you fill yourself (verified against the user's flow)
 Status: built 2026-09-29 (development guide "Categories you fill yourself"). User choices:
 - keep the starter categories, but nothing is sorted into them on import

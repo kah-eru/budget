@@ -4,7 +4,11 @@ A private budgeting app for partners and friends who choose to share finances. S
 
 Status (2026-09-29): a working preview with synthetic data only, deployed to Render; not a real-data-ready release. Built by milestone:
 - **Milestone 1, foundation:** sign-in, private manual accounts, groups, explicit sharing, invitations with mailbox verification (group and standalone), password recovery, membership notices and member removal, a Settings page (username/email/password changes with email notices or confirmation; System/Light/Dark theme).
-- **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, compact controls (Graph | List and Filters as icons, with account tick boxes and Select all inside Filters; CSV export from Settings for any workspace and dates), and a **Graph | List** switch where List shows one dated column per account with toggleable lines for transfers between them.
+- **Milestone 2, transactions:** CSV import from a bank export (column mapping, preview, all-or-nothing, same file once, duplicate review, undo; imported amounts read-only), manual USD transactions, per-workspace names/notes, month/year summaries, a searchable Timeline with daily and running totals and a chart, and a **Graph | List** switch where List shows one dated column per account with toggleable lines for transfers between them. The Timeline is compact:
+  - Graph | List and Filters are small icons under the chart; the account tick boxes and Select all are inside Filters.
+  - One-line transaction rows (date, name, a signed amount) open to show their details and a pencil to edit, one at a time. Edit pages have a Back button.
+  - A line before each day shows that day's net with + or −, and "Go to" jumps to a day.
+  - CSV export is in Settings, for any workspace and dates.
 - **Milestone 3, bank sync (sandbox):** Plaid sandbox: connect a bank, choose accounts (private), Sync now, pending→posted kept, card payments as transfers (the bank's own category guess isn't used: categories start empty); automatic sync by signed webhook, Reconnect when the bank needs a new sign-in, a warning when the same bank is connected twice.
 - **Milestone 4, categories and budgets:**
   - workspace categories (a standard set, an Overview breakdown, a Timeline filter)
@@ -23,7 +27,7 @@ Status (2026-09-29): a working preview with synthetic data only, deployed to Ren
   - phone push, off until the owner sets the two push keys
   - opt-in email alerts with one-click unsubscribe, off by default; written to the server log until the owner sets up an email provider
 - **Milestone 9, planning tools:** net worth (synced balances plus manual items); savings (a header **Spending | Savings** switch that turns both Overview and Timeline to savings accounts, plus a Savings page; savings accounts marked from the bank type or by a switch; money in/out and net saved per month or year, with a chart); recurring bills and income with a 30-day forecast and 3-day bill reminders, optional goals (off until turned on). Reports were dropped by the user.
-- **Also:** phone swipes (on the chart, away from its line, for the next or previous month or year; elsewhere between the Timeline, Overview and Budget tabs; Settings is the gear in the header), installable to a phone home screen, tab pages prefetched, charts without flashes, and made-up demo data for the local preview (`tests/browser/seed_demo.py`).
+- **Also:** phone swipes (on the chart, away from its line, for the next or previous month or year; elsewhere between the Timeline, Overview and Budget tabs; Settings is the gear in the header), installable to a phone home screen, tab pages prefetched, charts without flashes, gzipped pages and batched budget and alert queries (measured before and after in the development guide), and made-up demo data for the local preview (`tests/browser/seed_demo.py`).
 
 Not started: AI insights (6), statements (7), the release/load gate (8). The full suite passes on SQLite, and the feature and concurrency tests pass on a hosted Neon PostgreSQL development database (synthetic data only).
 
