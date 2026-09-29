@@ -37,13 +37,13 @@ Update 2026-09-25 (budget types and splits): Add budget has a Type (Fixed bill /
 
 Update 2026-09-25 (categorize by example): Category → Add transactions has a search box, a ticked result list (hand-set rows unticked and labeled), a "Future transactions containing this go to <category>" option with an editable keyword, and "Add ticked to <category>". The transaction Edit page has "Also put other transactions with this name in this category" with a prefilled Name contains field. A filtered Timeline has an "Add transactions to <category>" chip.
 
-Update 2026-09-25 (budgets and alerts): Overview has a Budgets card above By category (spent of limit, bar, left/over) with Manage budgets (replaced 2026-09-28 by the top card's Chart | Budgets switch, section 2). The header has a bell that becomes an "N new alerts" pill; it opens Alerts, a list of over-budget events with current amounts.
+Update 2026-09-25 (budgets and alerts): Overview has a Budgets card above By category (spent of limit, bar, left/over) with Manage budgets (replaced 2026-09-28 by the top card's Chart | Budgets switch, section 2). The header has a bell that becomes an "N new alerts" pill; it opens Alerts, a list of over-budget events with current amounts. (Since 2026-09-29, budgets live on the Budget tab: §4.)
 
-Update 2026-09-25 (categories): Overview has a By category list (bar per category, tap to open the filtered Timeline) and a Manage categories link. Categories → Rules → Add rule has Preview matches and an Also apply to existing transactions option. The transaction Edit page has a Category field.
+Update 2026-09-25 (categories): Overview has a By category list (bar per category, tap to open the filtered Timeline) and a Manage categories link. Categories → Rules → Add rule has Preview matches and an Also apply to existing transactions option. The transaction Edit page has a Category field. (Since 2026-09-29, categories live on the Budget tab: §4.)
 
 Update 2026-09-25 (latest): More is now **Settings** (Your login: change username/email/password; Appearance: System/Light/Dark; Your data: CSV export; Add; Sign out), and the Timeline has an Export CSV chip.
 
-Implemented later on 2026-09-25: bottom navigation is Overview | Timeline | More (More became Settings; Budgets opens from Overview; Insights joins when built). More holds Your login (Change password, Email verification, Sign out) and Add (Add account, New group, Invite someone to Budget). The workspace switcher is a one-line disclosure (Workspace: name). Timeline = filters -> range totals -> Daily totals table (disclosure) -> day-grouped feed -> Older transactions / Start from newest; a changed list restarts with a status note. Standalone invite: More -> Invite someone to Budget -> email + confirmation -> recipient opens link -> Create your login -> setup email -> choose username/password -> sign in -> Finish -> own Personal workspace only.
+Implemented later on 2026-09-25: bottom navigation is Overview | Timeline | More (More became Settings; Budgets opens from Overview; Insights joins when built). More holds Your login (Change password, Email verification, Sign out) and Add (Add account, New group, Invite someone to Budget). The workspace switcher is a one-line disclosure (Workspace: name). Timeline = filters -> range totals -> Daily totals table (disclosure) -> day-grouped feed -> Older transactions / Start from newest; a changed list restarts with a status note. Standalone invite: More -> Invite someone to Budget -> email + confirmation -> recipient opens link -> Create your login -> setup email -> choose username/password -> sign in -> Finish -> own Personal workspace only. (Since 2026-09-29 the bottom bar is Timeline · Overview · Budget, and Settings is the gear in the header: see Navigation.)
 
 Implemented 2026-09-25 (night): Robinhood-style visual layout in the user's palette. Overview = workspace name -> big period spending number -> change vs previous month/year -> bare running-total chart -> ← Month Year → chips -> Posted/Pending/Income rows -> View timeline row -> accounts with a per-account spending pill. Timeline = ‹ back link -> title/range -> big number -> chart -> stat rows -> Daily totals table -> Filters (disclosure, open when active) -> day-grouped feed. Bottom nav has icons with labels. Light: white with Bubblegum Pink/Lavender Blush; dark (OS setting): Coffee Bean with Black Cherry.
 
@@ -165,7 +165,7 @@ $5,878.56 (i)                 (≡)
 Update (user, 2026-09-29, with a sketch):
 - **Range bar:** (superseded by the second pass above) the bar went in the first row under the header.
 - **Smaller total:** the total is smaller, so up to $999,999,999.00 fits on one line.
-- **Chart | Budgets:** one icon on the total's line, at the right. It shows the view it switches to.
+- **Chart | Budgets:** one icon on the total's line, at the right. It shows the view it switches to. (Removed later that day: budgets moved to the Budget tab, §4.)
 - **Chart height:** the chart is shorter, capped at 13rem.
 
 ```text
@@ -221,7 +221,7 @@ Journey: select workspace/period -> see posted spend and budget status -> tap ca
 Sync my accounts only refreshes connections owned by the current user, even in a group. Show each connection's state and allow retry/reconnect from Accounts. Other members' shared data shows its own freshness; membership does not grant control of their connections. Empty budgets offer Create a budget. Always label money as posted/pending rather than blending the two.
 
 **Compact Overview (user, 2026-09-28):**
-- A small **Chart | Budgets** switch on the top card replaces the separate Budgets card. (Since 2026-09-29 it's one icon on the total's line; see §2.)
+- A small **Chart | Budgets** switch on the top card replaces the separate Budgets card. (Since 2026-09-29 the switch is gone and budgets are on the Budget tab; see §4.)
 - The Year view counts monthly budgets × 12.
 - The choice is remembered on this device. Without JavaScript the budget list shows.
 
@@ -549,7 +549,7 @@ User choices:
   - the top card: net saved, the saved-so-far chart, Money in / Money out / Net saved, and a daily In / Out / Saved so far table
   - each day's header shows that day's net
   - search, dates and Graph | List still work
-- **Overview in Savings:** the By category card, which only covers spending, is hidden.
+- **Overview in Savings:** the By category card, which only covers spending, is hidden. (Since 2026-09-29 By category is on the Budget tab.)
 
 ```text
 Overview top card (Savings)

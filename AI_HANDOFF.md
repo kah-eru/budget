@@ -25,6 +25,7 @@ Latest request (2026-09-29): a separate Budget page with every spending category
 - **Fixed:** Chrome's own history swipe was taking some right swipes, so phones now set `overscroll-behavior-x: none`.
 - **Verification:** 224 Django tests OK; 48/48 on Neon; 14/14 Chrome checks; screenshots reviewed.
 - Committed locally, **not pushed**. The preview server is running with it.
+- **Docs pass (requested):** older notes in the wireframes and the spec about the Overview's budgets, By category, the Chart | Budgets switch and the old tab order now point to the Budget tab. No code changes.
 
 ## Log (newest first)
 

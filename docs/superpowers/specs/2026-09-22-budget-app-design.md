@@ -207,7 +207,7 @@ Status: built 2026-09-29 (development guide "Budget tab"). User choices:
 ### Requested — 2026-09-29 (third pass): Today, phone swipes, time markers, tabs keep the range
 Status: built 2026-09-29 (development guide "Swipes, time markers and tabs that keep the range"). User choice: time lines rather than amount lines.
 - **Today:** the "This month" chip becomes the plain text "Today", in the bottom-right label's place.
-- **Swipes on iPhone-sized screens:** on the chart (not the line) to change the month or year; anywhere else to switch between the Overview, Timeline and Settings tabs.
+- **Swipes on iPhone-sized screens:** on the chart (not the line) to change the month or year; anywhere else to switch between the Overview, Timeline and Settings tabs. (Since the Budget tab, the order is Timeline · Overview · Budget.)
 - **Markers:** quarter or halfway lines on the chart.
 - **"View … timeline" is gone:** switching tabs keeps the selected period.
 
@@ -223,7 +223,7 @@ Status: built 2026-09-29 (development guide "Range bar over the chart"). User ch
 
 Status: built 2026-09-29 (development guide "One range bar"). User choice: the range bar is the first row on both pages. Wireframes: UX §2 and §3b.
 - **Total:** smaller on the Overview and the Timeline, to fit up to $999,999,999.00.
-- **Chart | Budgets:** one icon on the total's line, at the right.
+- **Chart | Budgets:** one icon on the total's line, at the right. (Superseded the same day by the Budget tab.)
 - **Range bar:** 1M / 1Y / Lifetime is one shared component, in the same place on the Overview, the Timeline and the Savings page.
 - **Vertical space:** the chart and the range selector take less room.
 
@@ -240,7 +240,7 @@ Status: built 2026-09-28 (development guide "1M | 1Y | Lifetime"). User choices:
 Status: built 2026-09-28 (development guide "Savings page"). The user asked to see savings the way spending is shown. Wireframe: UX section 6c.
 - **One mode for the Overview and the Timeline** (the user's sketch, 2026-09-28):
   - a header **Spending | Savings** switch beside the workspace selector
-  - in Savings, the Timeline lists only savings accounts, with money in, money out and net saved, and the Overview hides By category
+  - in Savings, the Timeline lists only savings accounts, with money in, money out and net saved, and the Overview hides By category (By category has since moved to the Budget tab.)
   - the choice is a per-browser `mode` cookie, not an account setting
 - **Which accounts:** `Account.is_savings`. A bank's savings, money market or CD account is marked at import, or on its next sync for older accounts. The owner's Savings account switch always wins.
 - **Money in and out:** by the bank's direction, posted rows only.
