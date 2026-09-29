@@ -44,7 +44,7 @@ Latest request (2026-09-29): fix the outside audit's confirmed findings ("do it"
   - 91/91 on Neon
   - build; 14/14 Chrome checks
   - swipe cancel and pinch zoom not tested in a browser
-- Committed locally, **not pushed**. `main` on GitHub is `e9d3a15`.
+- **Pushed** (user: "push it"): `main` and `feat/project-foundation` at `43643bc`; CI passed on both. Render deploys `main`.
 
 ## Log (newest first)
 
