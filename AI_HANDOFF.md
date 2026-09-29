@@ -27,6 +27,7 @@ Latest request (2026-09-29): update the docs.
   - added one made-up $12.34 transaction, then ran the app's own `handle_webhook(SYNC_UPDATES_AVAILABLE)`; the second try found it (posted 2026-09-29, expense, 1234 cents)
   - the sandbox item was removed and the test database dropped
   - Not covered: Plaid's signed delivery to `/banks/webhook/`, which needs the public Render URL and the Plaid keys set there.
+- **Pushed (user: "ok push and commit all"):** `main` and `feat/project-foundation` fast-forwarded from `bd0e9b1` to `dada702`, and CI passed on both. Render deploys `main`.
 
 ## Log (newest first)
 
