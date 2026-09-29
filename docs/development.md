@@ -777,4 +777,53 @@ User choices:
   - `This month ›` returns to the current month
 - Screenshots reviewed: phone light and dark, desktop, and the Savings page.
 
+## Swipes, time markers and tabs that keep the range — September 29
+
+Why: the user asked for:
+- "Today" as plain text in place of the "This month" chip
+- phone swipes: on the chart, away from its line, for the period; elsewhere for the tabs
+- markers on the chart
+- dropping "View … timeline", because switching tabs should keep the period
+
+User choice: time lines.
+
+**Tabs:**
+- `tab_query` holds the query strings that `base.html` appends to the Overview and Timeline tabs.
+- `period_context()` sets them on the Overview and the Savings page.
+- On the Timeline: `?period=YYYY-MM`, `YYYY` or `all`, and none for a custom range; the Timeline tab keeps its own query.
+
+**Markers:**
+- `chart_markers(kind, series)` gives `{day, pct, label}` across the chart's x domain, from the series' first day to its last:
+  - a month: the 8th, 15th and 22nd
+  - a year: Apr, Jul and Oct
+  - Lifetime: each Jan 1
+  - Labels near the ends are dropped.
+- The slots carry `data-markers`. `spending-chart.tsx` draws `TimeMarkers` (dashed `var(--chart-grid)` lines, using `xScale`), and `chart_labels.html` places the labels at `calc(4px + pct·(100% − 8px))`.
+
+**Today:** `until_today()` leaves a period that hasn't started with its whole flat line, so a swipe into next month still shows a chart.
+
+**Swipes (`assets/swipe.ts`):**
+- It's loaded from `app.tsx` and is active below 640 px.
+- **Chart swipes** use a capture-phase `touchstart` on each chart slot, which runs before the chart's React handlers.
+  - A touch within 24 px of the line goes to the tooltip. The line is the longest stroked path with a transparent fill, sampled with `getPointAtLength` in screen coordinates.
+  - Otherwise the swipe owns the touch and follows the visible Period arrow.
+- **Page swipes** use a passive `touchstart` on the document, inside `main`.
+  - They skip charts, form controls, popovers, sideways-scrolling ancestors and the 20 px screen edges.
+  - They follow the next or previous `.nav-link`.
+- **Motion:**
+  - Both lock direction at 10 px, follow 1:1, rubber-band with no target, and commit past 25% of the width or on a flick (over 0.4 px/ms in the same direction).
+  - Committing slides out with WAAPI. Motion isn't imported in `app.js`, so the entry doesn't load twice.
+  - The next page enters from the side, via `sessionStorage.swipe`.
+  - Back-forward cache restores cancel the slide-out. Reduced motion just navigates.
+- `#main` has `touch-action: pan-y` on phones.
+
+**Verification:**
+- 223 Django tests OK. New: the marker days and pct, `Today`, the tab queries for a month, a year, Lifetime and a custom range, and the removed link.
+- 14/14 Chrome checks, with a new `swipes.spec.ts` that uses CDP touch events:
+  - a drag on the line keeps the page
+  - a swipe on the empty chart goes to the next month and back
+  - a swipe on the page goes to the Timeline and back, keeping the range
+  - Settings stays put
+- Screenshots reviewed.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

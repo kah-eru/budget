@@ -179,6 +179,8 @@
   .chevron::after { content: "›"; @apply ml-2 text-lg text-muted; }
   /* The chart's space is held before its code loads, so nothing below it moves. No JavaScript: no slot (the table has the numbers). */
   /* Shorter than the old 2.4:1, and capped so a wide screen doesn't get a tall chart. spending-chart.tsx matches it. */
+  /* Sideways drags on phones belong to assets/swipe.ts; vertical ones still scroll. */
+  @media (width < 40rem) { #main { touch-action: pan-y; } }
   .chart-slot { display: none; width: 100%; aspect-ratio: 2.8 / 1; max-height: 13rem; }
   :root.js .chart-slot { display: block; }
   /* The placeholder line appears only if the chart is slow (over 0.4 s), so a fast chart never shows a line before its draw-in. */

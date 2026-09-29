@@ -513,9 +513,31 @@ def short_date(day):
 
 
 def until_today(series):
-    """A chart series stops at today, so the current month or year ends at its bottom-right date label."""
+    """A chart series stops at today, so the current month or year ends at its bottom-right date label. A period still to
+    come keeps its flat line."""
     today = timezone.localdate()
-    return [d for d in series if d["day"] <= today]
+    return [d for d in series if d["day"] <= today] if series and series[0]["day"] <= today else series
+
+
+def chart_markers(kind, series):
+    """Faint time lines on the chart and their labels: the 8th, 15th and 22nd of a month, a year's quarters, each New Year
+    in Lifetime. pct is the place across the chart, whose x runs from the series' first day to its last."""
+    if len(series) < 2 or kind not in ("month", "year", "all"):
+        return []
+    first, last = series[0]["day"], series[-1]["day"]
+    if kind == "month":
+        days = [(first.replace(day=d), str(d)) for d in (8, 15, 22)]
+    elif kind == "year":
+        days = [(date(first.year, m, 1), date_format(date(first.year, m, 1), "M")) for m in (4, 7, 10)]
+    else:
+        # ponytail: one line per year; thin them out if Lifetime ever spans more than about eight years
+        days = [(date(y, 1, 1), str(y)) for y in range(first.year + 1, last.year + 1)]
+    markers = []
+    for day, label in days:
+        if first < day < last:
+            pct = round(100 * (day - first).days / (last - first).days, 2)
+            markers.append({"day": day.isoformat(), "pct": pct, "label": label if 12 <= pct <= 88 else ""})  # no label on the end dates
+    return markers
 
 
 def range_nav(kind, start, end, prev, next_, month, year, lifetime, this_period):
@@ -542,6 +564,7 @@ def period_context(user, workspace, value):
     if kind == "all":
         start, end = first_day(user, workspace), today
         return {"kind": kind, "start": start, "end": end, "label": "Lifetime", "prev_range": None, "range_params": [("span", "all")],
+                "tab_query": {"overview": "?period=all", "timeline": "?span=all"},
                 "range_nav": range_nav(kind, start, end, None, None, f"?period={today:%Y-%m}", f"?period={today.year}", "?period=all", None)}
     if kind == "year":
         label, prev, next_ = str(start.year), str(start.year - 1), str(start.year + 1)
@@ -551,6 +574,9 @@ def period_context(user, workspace, value):
     return {"kind": kind, "start": start, "end": end, "label": label, "prev": prev, "next": next_, "prev_range": (prev_start, prev_end),
             "prev_label": prev if kind == "year" else date_format(prev_start, "F"),
             "range_params": [("start", start.isoformat()), ("end", end.isoformat())],
+            # The Overview and Timeline tabs keep this range.
+            "tab_query": {"overview": "?period=" + (str(start.year) if kind == "year" else f"{start:%Y-%m}"),
+                          "timeline": f"?start={start.isoformat()}&end={end.isoformat()}"},
             "range_nav": range_nav(kind, start, end, f"?period={prev}", f"?period={next_}", f"?period={start:%Y-%m}", f"?period={start.year}",
                                    "?period=all", "?period=" + (str(today.year) if kind == "year" else f"{today:%Y-%m}"))}
 
@@ -566,6 +592,7 @@ def workspace_detail(request, workspace_id):
     context["month"] = spending(request.user, workspace, start, end)
     series = daily(visible_transactions(request.user, workspace), start, end, by_month=kind != "month")
     context["series"], context["table"] = until_today(series), {"year": series, "all": by_year(series)}.get(kind)
+    context["markers"] = chart_markers(kind, context["series"])
     context["range_query"] = urlencode(context["range_params"])
     context["change_cents"] = None if kind == "all" else context["month"]["posted_cents"] - spending(request.user, workspace, *prev_range)["posted_cents"]
     # One grouped query for each account's posted spending in the period (the row pill).
@@ -607,8 +634,9 @@ def savings_page(request, workspace_id):
     context = period_context(request.user, workspace, request.GET.get("period", ""))
     kind = context["kind"]
     saved = savings(request.user, workspace, context["start"], context["end"])
+    series = until_today(saved["days"] if kind == "month" else saved["months"])
     return render(request, "budget/savings.html", {
-        **page_context(request.user, workspace), **context, "saved": saved, "series": until_today(saved["days"] if kind == "month" else saved["months"]),
+        **page_context(request.user, workspace), **context, "saved": saved, "series": series, "markers": chart_markers(kind, series),
         "timeline": savings_timeline(workspace, saved, context["range_params"]),
         "change_cents": None if kind == "all" else saved["net_cents"] - savings(request.user, workspace, *context["prev_range"])["net_cents"]})
 
@@ -810,7 +838,10 @@ def transaction_list(request, workspace_id):
     for key in ("view", "start", "end", "span"):
         if request.GET.get(key):
             clear[key] = request.GET[key]
-    context.update(rows=page, days=days, chart_days=until_today(days), start=start, end=end, rev=rev, stale=stale, back=request.get_full_path(),
+    chart_days = until_today(days)
+    context.update(rows=page, days=days, chart_days=chart_days, markers=chart_markers(kind, chart_days), start=start,
+                   tab_query={"overview": {"month": f"?period={start:%Y-%m}", "year": f"?period={start.year}", "all": "?period=all"}.get(kind, ""),
+                              "timeline": "?" + newest.urlencode()}, end=end, rev=rev, stale=stale, back=request.get_full_path(),
                    newest_query="?" + newest.urlencode(), paged=bool(before) and not stale, layouts=layouts, layout=form.cleaned_data["view"],
                    range_nav=nav, by_month=by_month, clear_query="?" + clear.urlencode() if clear else "",
                    totals={k: sum(d[k] for d in days) for k in (("in_cents", "out_cents", "posted_cents") if saving else ("posted_cents", "pending_cents", "income_cents"))},

@@ -23,7 +23,9 @@ test("search transactions, edit from a filtered list and return to it; year view
     await page.getByRole("link", { name: /^Back to / }).click();
   }
   await page.goto(page.url() + "?period=2026-03");
-  await page.getByRole("link", { name: "View March 2026 timeline" }).click();
+  // The Timeline tab keeps the month chosen on Overview.
+  await page.getByRole("link", { name: "Timeline", exact: true }).click();
+  await expect(page.locator("main")).toContainText("Mar 1, 2026 – Mar 31, 2026");
   await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByLabel("Search").fill("coffee " + suffix);
   await page.getByRole("button", { name: "Apply filters" }).click();

@@ -1,5 +1,6 @@
-{# Under the chart: where the period starts, and today (or a way back to this month or year). From views.range_nav(). #}
-<div class="flex min-h-7 items-center justify-between text-xs text-muted tabular-nums">
+{# Under the chart: where the period starts, the time markers, and today (or "Today", back to this month or year). From views.range_nav() and views.chart_markers(). #}
+<div class="relative flex min-h-7 items-center justify-between text-xs text-muted tabular-nums">
   <span>{{ range_nav.left }}</span>
-  {% if range_nav.back %}<a class="back-chip" href="{{ range_nav.back.0 }}">{{ range_nav.back.1 }} <span aria-hidden="true">›</span></a>{% else %}<span>{{ range_nav.right }}</span>{% endif %}
+  {% for m in markers %}{% if m.label %}<span class="absolute -translate-x-1/2" style="left: calc(4px + {{ m.pct|stringformat:'s' }} * (100% - 8px) / 100)" aria-hidden="true">{{ m.label }}</span>{% endif %}{% endfor %}
+  {% if range_nav.back %}<a class="hover:underline" href="{{ range_nav.back.0 }}" aria-label="Today, back to {{ range_nav.back.1|lower }}">Today</a>{% else %}<span>{{ range_nav.right }}</span>{% endif %}
 </div>

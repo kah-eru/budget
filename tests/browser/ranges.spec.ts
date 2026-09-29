@@ -33,13 +33,13 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
     expect(chart!.y - (bar!.y + bar!.height)).toBeLessThan(12);
   };
   await centered();
-  // This month runs to today at the bottom right; another month offers a way back.
+  // This month runs to today at the bottom right; another month says "Today", which leads back.
   const labels = page.locator("[data-panel=chart] > div").last();
   await expect(labels).toContainText(/\d+\/\d+\/\d{2}/);
   await page.getByRole("link", { name: "Previous month" }).click();
-  await page.getByRole("link", { name: "This month" }).click();
+  await page.getByRole("link", { name: /^Today/ }).click();
   await expect(page.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: "This month" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Today/ })).toHaveCount(0);
 
   // On a phone the note waits behind (i) and closes on a tap elsewhere.
   const note = page.locator("#spending-note");
@@ -72,6 +72,9 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
   await page.setViewportSize({ width: 360, height: 800 });
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
   const range = page.getByRole("navigation", { name: "Period" });
+  // The Timeline tab keeps Overview's Lifetime.
+  await expect(range.getByRole("link", { name: "Lifetime" })).toHaveAttribute("aria-current", "page");
+  await range.getByRole("link", { name: "1M" }).click();
   await expect(range.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
   await centered();
   const shownRange = page.locator("h1 + div > p");
@@ -79,7 +82,7 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
   await range.getByRole("link", { name: "Previous month" }).click();
   await expect(shownRange).not.toHaveText(thisMonth!);
   await expect(range.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { name: "This month" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Today/ })).toBeVisible();
   // The List layout has no chart: the bar is centered above the list.
   await page.getByRole("link", { name: "List", exact: true }).click();
   const bar = await range.boundingBox();

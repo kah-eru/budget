@@ -195,6 +195,13 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
+### Requested — 2026-09-29 (third pass): Today, phone swipes, time markers, tabs keep the range
+Status: built 2026-09-29 (development guide "Swipes, time markers and tabs that keep the range"). User choice: time lines rather than amount lines.
+- **Today:** the "This month" chip becomes the plain text "Today", in the bottom-right label's place.
+- **Swipes on iPhone-sized screens:** on the chart (not the line) to change the month or year; anywhere else to switch between the Overview, Timeline and Settings tabs.
+- **Markers:** quarter or halfway lines on the chart.
+- **"View … timeline" is gone:** switching tabs keeps the selected period.
+
 ### Requested — 2026-09-29 (second pass): range bar over the chart, date labels
 Status: built 2026-09-29 (development guide "Range bar over the chart"). User choices:
 - the current month or year ends at today

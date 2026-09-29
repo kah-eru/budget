@@ -6,7 +6,7 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-28 at the owner's request. `main` and `feat/project-foundation` are at `37ec393` on GitHub, and Render deploys `main` (migration 0022 applies on deploy). CI passed on both branches. The push covered: the compact UI, the Graph | List fixes, savings and the demo-data script, the header Spending | Savings switch, 1M | 1Y | Lifetime and the header pill.
-- **Last checks** (2026-09-29): 223 Django tests OK on SQLite; 13/13 Chrome checks; screenshots reviewed. Neon last run 2026-09-28 (48/48; no query changes since).
+- **Last checks** (2026-09-29): 223 Django tests OK on SQLite; 14/14 Chrome checks; screenshots reviewed. Neon last run 2026-09-28 (48/48; no query changes since).
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,16 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). Load-gate item: batch the name-match budgets in `budget_progress`.
+
+Latest request (2026-09-29, third pass): "Today" as plain text in place of the This month chip; phone swipes (on the chart, away from its line, for the period; elsewhere for the Overview, Timeline and Settings tabs); time markers on the chart; drop "View … timeline", so switching tabs keeps the period. Plan approved.
+- **User choice:** time lines (8/15/22, Apr/Jul/Oct, each Jan 1).
+- **Built:**
+  - `tab_query` and `chart_markers()` in `views.py`; `TimeMarkers` in `spending-chart.tsx`; the new `assets/swipe.ts`
+  - Details: [development guide](docs/development.md#swipes-time-markers-and-tabs-that-keep-the-range--september-29).
+- **Verification:** 223 Django tests OK; 14/14 Chrome checks (new `swipes.spec.ts`); screenshots reviewed. Not tried on a real iPhone.
+- Committed locally on top of `b56d417`, **not pushed**. The preview server is running with it.
+
+## Log (newest first)
 
 Latest request (2026-09-29, second pass): center the 1M / 1Y / Lifetime bar right above the graph and make it shorter, on the Overview, the Timeline and the Savings page; add date labels under the graph (the period start on the left; today, or a small button back to this month or year, on the right). Plan approved.
 - **User choices:** the current period's chart ends at today; a year shows `2026`; Lifetime shows the first record's date; the List layout gets the bar centered above the list.
@@ -23,8 +33,6 @@ Latest request (2026-09-29, second pass): center the 1M / 1Y / Lifetime bar righ
   - Details: [development guide](docs/development.md#range-bar-over-the-chart-and-date-labels--september-29).
 - **Verification:** 223 Django tests OK; 13/13 Chrome checks; screenshots reviewed.
 - Committed locally on top of `e0ed622`, **not pushed**. The preview server is running with it.
-
-## Log (newest first)
 
 Latest request (2026-09-29, with a sketch): a smaller total (fits $999,999,999.00) on the Overview and the Timeline; Chart | Budgets as one icon on the total's line; 1M / 1Y / Lifetime in the same place on both pages, as one component; a shorter chart and range selector. Plan approved.
 - **User choice:** the range bar is the first row on both pages; it replaces the Timeline's Range chips.

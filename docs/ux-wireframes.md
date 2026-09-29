@@ -120,6 +120,23 @@ Bank connection opens Plaid's existing Link UI. Reuse that flow; do not design a
 
 ## 2. Overview: understand the period, then inspect
 
+Update (user, 2026-09-29, third pass):
+- **Today:** the way back to this month or year is plain text at the bottom right, "Today", in the same size and spot as the date.
+- **Time markers:** faint dashed lines with tiny labels: the 8th, 15th and 22nd of a month; Apr, Jul and Oct in a year; each Jan 1 in Lifetime.
+- **Phone swipes:**
+  - on the chart, away from its line: the next or previous month or year
+  - anywhere else: Overview ↔ Timeline ↔ Settings
+  - The content follows the finger and rubber-bands at the ends.
+  - Touching the line still scrubs the tooltip.
+- **No "View … timeline" row:** the Overview and Timeline tabs keep the chosen range.
+
+```text
+        ← [1M 1Y Lifetime] →
+  ┆      ┆      ┆      ╱─
+──┆──┘   ┆      ┆
+8/26  8     15    22       Today
+```
+
 Update (user, 2026-09-29, second pass):
 - **Range bar:** a smaller `← 1M 1Y Lifetime →` bar (about 26 px tall), centered right above the chart on the Overview, the Timeline and the Savings page.
 - **Labels under the chart:**

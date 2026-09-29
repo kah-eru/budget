@@ -23,7 +23,8 @@ const mountCharts = () => {
     if (mounted.has(chart) || !series || !chart.getClientRects().length) return;
     mounted.add(chart);
     import("./spending-chart")
-      .then(({ mount }) => mount(chart, JSON.parse(series.textContent || "[]"), { total: chart.dataset.totalLabel || "Running total", day: chart.dataset.dayLabel || "That day" }))
+      .then(({ mount }) => mount(chart, JSON.parse(series.textContent || "[]"), { total: chart.dataset.totalLabel || "Running total", day: chart.dataset.dayLabel || "That day" },
+        (chart.dataset.markers || "").split(" ").filter(Boolean)))
       .catch(() => chart.remove()); // the totals and the daily table stay
   });
 };
@@ -141,6 +142,8 @@ if (plaidLink) import("./plaid-link").then(({ setup }) => setup(plaidLink)).catc
 // Money lines load only on the Timeline's Side by side layout.
 const lanes = document.querySelector<HTMLElement>("[data-lanes]");
 if (lanes) import("./flows").then(({ setup }) => setup(lanes)).catch(() => {});
+// Phone swipes between periods and tabs; the module checks the width on each touch.
+import("./swipe").then(({ setup }) => setup()).catch(() => {});
 
 // Theme choice for this device. base.html applies the saved value before paint; without JS the picker stays hidden.
 const picker = document.querySelector<HTMLFieldSetElement>("[data-theme-picker]");

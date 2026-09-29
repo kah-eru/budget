@@ -9,7 +9,7 @@
   <p class="mt-2 text-sm font-semibold text-accent-text">{{ label }}: {% if saved.net_cents >= 0 %}+{{ saved.net_cents|dollars }} saved{% else %}{{ saved.net_cents|dollars|cut:'-' }} taken out{% endif %} ·
     {% if kind == 'all' %}since {{ start|date:'F Y' }}{% elif change_cents > 0 %}<span aria-hidden="true">↗</span> {{ change_cents|dollars }} more than {{ prev_label }}{% elif change_cents < 0 %}<span aria-hidden="true">↘</span> {{ change_cents|dollars|cut:'-' }} less than {{ prev_label }}{% else %}same as {{ prev_label }}{% endif %}</p>
   <div class="mt-3">{% include "budget/components/period_nav.html" %}</div>
-  <div data-spending-chart data-total-label="Saved so far" data-day-label="{% if kind == 'month' %}That day{% else %}That month{% endif %}" class="chart-slot mt-1 overflow-hidden" role="img" aria-label="Net saved so far, {{ label }}. The totals below have the same numbers.">{% include "budget/components/chart_skeleton.html" %}</div>
+  <div data-spending-chart data-markers="{% for m in markers %}{{ m.day }} {% endfor %}" data-total-label="Saved so far" data-day-label="{% if kind == 'month' %}That day{% else %}That month{% endif %}" class="chart-slot mt-1 overflow-hidden" role="img" aria-label="Net saved so far, {{ label }}. The totals below have the same numbers.">{% include "budget/components/chart_skeleton.html" %}</div>
   {{ series|json_script:'daily-series' }}
   {% include "budget/components/chart_labels.html" %}
   {% endif %}

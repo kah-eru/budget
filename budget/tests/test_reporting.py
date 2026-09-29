@@ -200,11 +200,25 @@ class YearlyTests(ReportingTests):
         past = self.client.get(overview, {"period": "2023-06"})
         self.assertEqual(past.context["series"][-1]["day"], date(2023, 6, 30))
         self.assertEqual((past.context["range_nav"]["left"], past.context["range_nav"]["back"]), ("6/23", (f"?period={today:%Y-%m}", "This month")))
-        self.assertContains(past, "This month")
+        self.assertContains(past, 'aria-label="Today, back to this month">Today</a>')
+        # Time markers: the 8th, 15th and 22nd across June; the tabs keep June; no separate "View … timeline" link.
+        self.assertEqual([(m["label"], m["pct"]) for m in past.context["markers"]], [("8", 24.14), ("15", 48.28), ("22", 72.41)])
+        self.assertContains(past, 'data-markers="2023-06-08 2023-06-15 2023-06-22 "')
+        self.assertContains(past, f'/workspaces/{self.group.pk}/transactions/?start=2023-06-01&amp;end=2023-06-30"')
+        self.assertNotContains(past, "June 2023 timeline")
         year = self.client.get(overview, {"period": "2023"}).context["range_nav"]
         self.assertEqual((year["left"], year["back"]), ("2023", (f"?period={today.year}", "This year")))
-        lifetime = self.client.get(overview, {"period": "all"}).context["range_nav"]
-        self.assertEqual((lifetime["left"], lifetime["back"]), ("6/1/23", None))
+        self.assertEqual([m["label"] for m in self.client.get(overview, {"period": "2023"}).context["markers"]], ["Apr", "Jul", "Oct"])
+        lifetime = self.client.get(overview, {"period": "all"})
+        self.assertEqual((lifetime.context["range_nav"]["left"], lifetime.context["range_nav"]["back"]), ("6/1/23", None))
+        self.assertEqual([m["day"] for m in lifetime.context["markers"]], [f"{y}-01-01" for y in range(2024, today.year + 1)])
+        # The Timeline's tab back to Overview keeps its month, year or Lifetime; a custom range has none.
+        url, tab = f"/workspaces/{self.group.pk}/transactions/", lambda r: r.context["tab_query"]["overview"]
+        self.assertEqual(tab(self.client.get(url, {"start": "2023-06-01", "end": "2023-06-30"})), "?period=2023-06")
+        self.assertEqual(tab(self.client.get(url, {"start": "2023-01-01", "end": "2023-12-31"})), "?period=2023")
+        self.assertEqual(tab(self.client.get(url, {"span": "all"})), "?period=all")
+        self.assertEqual(tab(self.client.get(url, {"start": "2023-06-03", "end": "2023-06-09"})), "")
+        self.assertContains(self.client.get(url, {"span": "all"}), f'/workspaces/{self.group.pk}/?period=all"')
 
     def test_workspace_period_views(self):
         self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
