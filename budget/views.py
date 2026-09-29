@@ -110,7 +110,17 @@ def settings_page(request):
     return render(request, "budget/settings.html", {**page_context(request.user), "verified": email_verified(request.user),
                   "push_public_key": settings.WEBPUSH_VAPID_PUBLIC_KEY if push.enabled() else "",
                   "mail_ready": "console" not in settings.EMAIL_BACKEND, "plaid": bank.enabled(),
-                  "connections": request.user.bank_connections.annotate(account_count=Count("accounts")).order_by("institution_name", "pk")})
+                  "connections": request.user.bank_connections.annotate(account_count=Count("accounts")).order_by("institution_name", "pk"),
+                  "this_month": period("", timezone.localdate())[1:]})
+
+
+@login_required
+def export(request):
+    """Settings' Export: the chosen workspace's Timeline export for the chosen dates. The export itself checks the dates
+    and the two-year cap; the workspace must be one this user can see."""
+    workspace = get_workspace(request.user, request.GET.get("workspace", "") if request.GET.get("workspace", "").isdigit() else 0)
+    dates = {k: request.GET[k] for k in ("start", "end") if request.GET.get(k)}
+    return redirect(reverse("transaction_export", args=[workspace.pk]) + ("?" + urlencode(dates) if dates else ""))
 
 
 def plaid_connection(request, connection_id):

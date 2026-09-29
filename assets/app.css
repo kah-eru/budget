@@ -212,6 +212,10 @@
   .icon-pill-item:active { transform: scale(0.95); background-color: var(--pressed); }
   .icon-pill-item[aria-current="page"] { background-color: var(--accent-soft); }
   .icon-pill .alerts-link { @apply min-h-10 min-w-10; }
+  /* Timeline Filters: tinted while open; a dot while filters apply. */
+  .filter-button { position: relative; }
+  .filter-button[aria-expanded="true"] { background-color: var(--accent-soft); }
+  .filter-dot { @apply absolute right-1.5 top-1.5 size-2 rounded-full bg-accent; box-shadow: 0 0 0 2px var(--surface); }
   /* A hero note: inline from sm up; on phones an (i) button opens it as a popover (placed by app.tsx). */
   .info-button { @apply inline-flex size-8 shrink-0 items-center justify-center rounded-full text-accent-text; }
   .info-button svg { @apply size-5; }

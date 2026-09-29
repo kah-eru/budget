@@ -2,24 +2,16 @@
 {% load money %}
 {% block content %}
 <h1 class="sr-only">Timeline</h1>
-<div class="mb-3 flex min-h-11 items-center justify-between gap-2">
-  {% if start %}<p class="text-muted">{{ start|date:'M j, Y' }} – {{ end|date:'M j, Y' }} · {% if form.cleaned_data.account %}{{ form.cleaned_data.account|length }} of {{ form.fields.account.queryset|length }} accounts{% elif workspace.is_personal %}All your {% if saving %}savings {% endif %}accounts{% else %}Only {% if saving %}savings {% endif %}accounts shared with this group{% endif %}</p>{% endif %}
-  {% if days %}
-  <button class="menu-button" type="button" popovertarget="timeline-menu" aria-label="More actions"><svg aria-hidden="true" viewBox="0 0 24 24" class="size-6" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
-  <div id="timeline-menu" popover class="menu" aria-label="More actions">
-    <a class="menu-item" href="{% url 'transaction_export' workspace.pk %}{{ newest_query }}" download>Export CSV<span class="sr-only">: {% if filtered %}matching transactions{% else %}all transactions{% endif %}, {{ start|date:'M j' }} to {{ end|date:'M j, Y' }}</span></a>
-    {% if layout == 'lanes' %}<label class="menu-item cursor-pointer gap-3" data-flow-toggle hidden><input type="checkbox" checked> Show money moving</label>{% endif %}
-  </div>
-  {% endif %}
-</div>
-<div class="mb-4 flex flex-wrap items-center gap-2">
-  <nav aria-label="Layout" class="flex gap-1">
-    <a class="chip" href="{{ layouts.together }}" {% if layout != 'lanes' %}aria-current="page"{% endif %}>Graph</a>
-    <a class="chip" href="{{ layouts.lanes }}" {% if layout == 'lanes' %}aria-current="page"{% endif %}>List</a>
+{# One compact row: Graph | List as icons on the left, Filters as an icon on the right. Export lives in Settings. #}
+<div class="mb-3 flex items-center justify-between gap-2">
+  <nav aria-label="Layout" class="icon-pill">
+    <a class="icon-pill-item" href="{{ layouts.together }}" aria-label="Graph" {% if layout != 'lanes' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M8 15l3.5-4 3 2.5L20 7"/></svg></a>
+    <a class="icon-pill-item" href="{{ layouts.lanes }}" aria-label="List" {% if layout == 'lanes' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></a>
   </nav>
-  <button class="workspace-summary ml-auto" type="button" data-filters-toggle aria-controls="filters-panel" aria-expanded="{% if form.errors %}true{% else %}false{% endif %}">Filters{% if filtered %} · on{% endif %}<span aria-hidden="true">▾</span></button>
+  <span class="icon-pill"><button class="icon-pill-item filter-button" type="button" data-filters-toggle aria-controls="filters-panel" aria-expanded="{% if form.errors %}true{% else %}false{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5z"/></svg><span class="sr-only">Filters{% if filtered %}, on{% endif %}</span>{% if filtered %}<span class="filter-dot" aria-hidden="true"></span>{% endif %}</button></span>
 </div>
 <div id="filters-panel" class="filters-panel card{% if form.errors %} is-open{% endif %}">
+{% if layout == 'lanes' %}<label class="mb-4 flex min-h-11 cursor-pointer items-center gap-3 font-medium" data-flow-toggle hidden><input type="checkbox" checked> Show money moving</label>{% endif %}
 <form method="get" role="search" aria-label="Filter transactions" id="timeline-filters">
   {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
   {% if form.non_field_errors %}<div role="alert" class="mb-4 rounded-lg border border-danger bg-danger-soft p-4 text-danger">{{ form.non_field_errors }}</div>{% endif %}

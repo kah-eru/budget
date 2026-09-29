@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 // Synthetic data on the disposable local database only.
-test("theme choice applies, survives reload and returns to system; Timeline exports CSV", async ({ page }) => {
+test("theme choice applies, survives reload and returns to system; Settings exports CSV", async ({ page }) => {
   await page.goto("/login/");
   await page.getByLabel("Username", { exact: true }).fill("browser-check");
   await page.getByLabel("Password", { exact: true }).fill("synthetic-browser-check-only");
@@ -38,9 +38,9 @@ test("theme choice applies, survives reload and returns to system; Timeline expo
   const manifest = await page.locator('link[rel="manifest"]').getAttribute("href");
   expect((await (await page.request.get(manifest!)).json()).name).toBe("Budget");
 
-  await page.getByRole("link", { name: "Timeline", exact: true }).click();
+  // Export lives in Settings: a workspace (when there's more than one) and dates, this month by default.
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "More actions" }).click();
-  await page.getByRole("link", { name: /^Export CSV/ }).click();
+  await page.getByRole("button", { name: "Export CSV" }).click();
   expect((await download).suggestedFilename()).toMatch(/^budget-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/);
 });

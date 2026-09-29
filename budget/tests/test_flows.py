@@ -143,11 +143,13 @@ class LanesPageTests(TestCase):
         self.assertNotContains(response, "Secret stash")
         self.assertNotContains(response, "Stash in")
 
-    def test_export_sits_in_the_menu_and_accounts_inside_filters(self):
+    def test_the_toolbar_is_icons_export_is_in_settings_and_accounts_inside_filters(self):
         response = self.get(self.alice, self.personal, account=[self.savings.pk])
         html = response.content.decode()
-        self.assertIn('id="timeline-menu"', html)
-        self.assertIn("/transactions/export.csv", html)
+        self.assertNotIn('id="timeline-menu"', html)
+        self.assertNotIn("/transactions/export.csv", html)
+        self.assertIn("Filters, on", html)
+        self.assertIn('aria-label="List"', html)
         self.assertNotIn('form="timeline-filters"', html)
         start = html.index('id="timeline-filters"')
         self.assertIn(f'value="{self.savings.pk}"', html[start:html.index("</form>", start)])

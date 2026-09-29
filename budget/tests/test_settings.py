@@ -171,3 +171,15 @@ class ExportTests(TestCase):
         self.assertEqual(self.export(start="2020-01-01").status_code, 400)
         self.client.logout()
         self.assertEqual(self.client.get(f"/workspaces/{self.group.pk}/transactions/export.csv").status_code, 302)
+
+    def test_settings_export_picks_a_visible_workspace_and_dates(self):
+        login(self.client, self.bob)
+        page = self.client.get("/settings/")
+        self.assertContains(page, 'name="workspace"')
+        self.assertContains(page, "Partner group")
+        response = self.client.get("/settings/export/", {"workspace": self.group.pk, "start": "2026-05-01", "end": "2026-05-31"})
+        self.assertRedirects(response, f"/workspaces/{self.group.pk}/transactions/export.csv?start=2026-05-01&end=2026-05-31", fetch_redirect_response=False)
+        self.assertEqual(len(self.rows(self.client.get(response.url))), 3)
+        outsider = Workspace.objects.get(owner=self.alice, is_personal=True)
+        for bad in (outsider.pk, "x", ""):
+            self.assertEqual(self.client.get("/settings/export/", {"workspace": bad}).status_code, 404)

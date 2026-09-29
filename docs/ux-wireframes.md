@@ -289,6 +289,22 @@ Rule journey: create from purchase -> choose exact merchant/description contains
 
 ## 3b. Timeline by account (2026-09-28)
 
+Update (user, 2026-09-29, third pass): a **compact Timeline**.
+- **Dates line removed:** the text above the graph (dates · accounts) is gone. The range bar and the chart's date labels already say it.
+- **One icon row:** `(📈|☰)` Graph | List as an icon pill on the left, and `(⏷)` Filters as an icon on the right. The Filters icon is tinted while open and shows a dot while filters apply. Screen readers hear "Graph", "List" and "Filters" or "Filters, on".
+- **The ⋯ menu is gone:**
+  - **Export CSV** moved to Settings → Your data: a workspace (when you have more than one), From and To (this month by default), and Export CSV.
+  - **Show money moving** (List only) moved to the top of the Filters panel.
+
+```text
+(📈 ☰)                                  (⏷•)
+Spending
+$5,994.06
+        ← [1M] 1Y Lifetime →
+~~~~~~~~~~~~~~~~~~~~~~~~~~~ chart
+9/26      8      15      22       9/29/26
+```
+
 Update (user, 2026-09-29, second pass):
 - **Layout:** the first row is now `[dates · accounts] … (⋯)`.
 - **Graph layout:** the range bar is centered between the total and the chart, with the date labels under the chart.
@@ -342,7 +358,7 @@ Accounts · 3 of 14 ▾   [x] Checking ••0000 [x] Savings ••1111 [x] Car
 
 **Compact controls (user, 2026-09-28):**
 - The layout buttons are now **Graph | List** (they were Together | Side by side); the List view's heading is "By account".
-- Export CSV and Show money moving live in a ⋯ menu at the top right.
+- Export CSV and Show money moving live in a ⋯ menu at the top right. (Superseded 2026-09-29: Export is in Settings, and Show money moving is in Filters.)
 - The account tick boxes, with Select all, appear only inside Filters.
 - The filter fields sit side by side: 2 columns on a phone, 4 on a desktop.
 

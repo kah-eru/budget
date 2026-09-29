@@ -77,10 +77,9 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
   await range.getByRole("link", { name: "1M" }).click();
   await expect(range.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
   await centered();
-  const shownRange = page.locator("h1 + div > p");
-  const thisMonth = await shownRange.textContent();
+  const thisMonth = page.url();
   await range.getByRole("link", { name: "Previous month" }).click();
-  await expect(shownRange).not.toHaveText(thisMonth!);
+  await expect(page).not.toHaveURL(thisMonth);
   await expect(range.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("link", { name: /^Today/ })).toBeVisible();
   // The List layout has no chart: the bar is centered above the list.

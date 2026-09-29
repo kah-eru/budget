@@ -956,4 +956,34 @@ Measured with Django's test client on a copy of the preview database (SQLite, th
 - `npm.cmd run build`; 14/14 Chrome checks on a restarted preview server
 - `curl` with `Accept-Encoding: gzip` returns `Content-Encoding: gzip` and `Vary: Accept-Encoding`
 
+## Compact Timeline — September 29
+
+Why: the user asked to compact the Timeline:
+- remove the text above the graph
+- move the ⋯ menu to Settings
+- make Graph | List and Filters small icon-only toggles
+
+**Timeline (`transactions.html`):**
+- The dates · accounts line and the ⋯ menu are gone.
+- One row remains: a Graph | List icon pill on the left, reusing the header's `.icon-pill` and `.icon-pill-item` (40 px targets, `aria-current` tint). The links keep the accessible names "Graph" and "List".
+- The Filters button is an icon on the right:
+  - its screen-reader text is "Filters" or "Filters, on"
+  - `.filter-button[aria-expanded="true"]` tints it while the panel is open
+  - `.filter-dot` marks it while filters apply
+- **Show money moving** (List only) moved to the top of the Filters panel. `flows.ts` still finds `[data-flow-toggle]` anywhere.
+
+**Settings export:**
+- "Your data" now has a GET form with a workspace (a select when there's more than one), From and To (this month by default), and Export CSV.
+- It posts to `settings/export/` (`views.export`). That view checks the workspace is one the user can see (404 otherwise, including a non-number) and redirects to that workspace's `transaction_export` with the dates.
+- The export keeps its date checks and two-year cap.
+- The Timeline's filter-aware export (search, person, category, accounts) is gone with the menu. Settings exports every visible transaction in the range.
+
+**Verification:**
+- 229 Django tests OK. New: the Settings export picks a visible workspace and dates, and refuses others. Changed: the toolbar test.
+- 14/14 Chrome checks:
+  - `lanes.spec` turns the lines off from Filters
+  - `settings.spec` downloads from Settings
+  - `ranges.spec` and `transactions.spec` check the URL and the chart label instead of the removed dates line
+- 360 px screenshots reviewed: graph (light and dark), Filters open, List, Settings export.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

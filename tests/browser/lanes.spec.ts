@@ -48,6 +48,7 @@ test("Timeline side by side joins a transfer across two accounts and the lines t
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.getByRole("button", { name: "Apply filters" }).click();
   await expect(page.locator("main")).toContainText("2 of");
+  await expect(page.getByRole("button", { name: "Filters, on" })).toBeVisible();  // the icon shows a dot while filters apply
   await page.getByRole("link", { name: "List", exact: true }).click();
 
   const lanes = page.getByRole("region", { name: "Transactions by account" });
@@ -70,13 +71,12 @@ test("Timeline side by side joins a transfer across two accounts and the lines t
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.screenshot({ path: ".local/lanes-desktop.png", fullPage: true });
 
-  // The lines turn off from the ⋯ menu, stay off after a reload on this device, and turn back on.
-  await page.getByRole("button", { name: "More actions" }).click();
-  await page.screenshot({ path: ".local/menu-desktop.png" });
+  // The lines turn off from Filters, stay off after a reload on this device, and turn back on.
+  await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByLabel("Show money moving").uncheck();
   await expect(lanes.locator("svg.flows")).toHaveClass(/is-off/);
   await page.reload();
-  await page.getByRole("button", { name: "More actions" }).click();
+  await page.getByRole("button", { name: /^Filters/ }).click();
   await expect(page.getByLabel("Show money moving")).not.toBeChecked();
   await page.getByLabel("Show money moving").check();
   await expect(lanes.locator("svg.flows")).not.toHaveClass(/is-off/);

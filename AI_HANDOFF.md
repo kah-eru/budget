@@ -6,7 +6,7 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-29 at the owner's request. `main` and `feat/project-foundation` are at `b6f0167` on GitHub, and Render deploys `main` (migration 0023 applies on deploy). CI passed on both branches. This push: the Budget tab with category pages, Settings in the header pill, categories you fill yourself (full picker, move confirm, word rules, delete) and a docs refresh.
-- **Last checks** (2026-09-29): 228 Django tests OK on SQLite; budgets/reporting/savings/notifications 46/46 on Neon PostgreSQL; 14/14 Chrome checks.
+- **Last checks** (2026-09-29): 229 Django tests OK on SQLite; budgets/reporting/savings/notifications 46/46 on Neon PostgreSQL (speed-up); 14/14 Chrome checks.
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,19 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). The rest of the load gate (8).
+
+Latest request (2026-09-29): compact the Timeline: remove the text above the graph, move the ⋯ menu to Settings, and make Graph | List and Filters small icon-only toggles.
+- **Built:**
+  - one icon row: a Graph | List pill and a Filters icon (tinted while open, a dot while filters apply)
+  - the dates line and the ⋯ menu removed
+  - Export CSV in Settings (a workspace and dates; `settings/export/` redirects to the workspace export)
+  - Show money moving in the Filters panel
+  - Details: [development guide](docs/development.md#compact-timeline--september-29).
+- **Trade-off (flagged to the user):** export no longer follows the Timeline's search, person, category and account filters; it covers every visible transaction in the chosen dates.
+- **Verification:** 229 Django tests OK; 14/14 Chrome checks; 360 px screenshots reviewed.
+- Committed locally with the speed-up commit, **not pushed**. The preview server was restarted.
+
+## Log (newest first)
 
 Latest request (2026-09-29): the app feels a little slow; look at every way to make it snappier. Plan approved.
 - **Built:**
@@ -29,8 +42,6 @@ Latest request (2026-09-29): the app feels a little slow; look at every way to m
 - **Verification:** 228 Django tests OK; 46/46 on Neon; 14/14 Chrome checks; gzip header confirmed.
 - **Owner's choice:** the free cold-start pinger is in the [operations guide](docs/operations.md). Nothing was set up.
 - Committed locally, **not pushed**. The preview server was restarted with it.
-
-## Log (newest first)
 
 Latest request (2026-09-29): verify the category and limit logic against the user's flow: empty categories after import; create, rename, delete and set a limit; pick from all transactions of all accounts, clearly labelled; ask before moving from another category; "every transaction with this name" checked by default; choose keywords so future transactions sort automatically.
 - **Verification found gaps:** bank-guessed categories, no delete, a search-only picker without account labels, silent moves, and no keyword picker. Plan approved and built.

@@ -25,7 +25,8 @@ test("search transactions, edit from a filtered list and return to it; year view
   await page.goto(page.url() + "?period=2026-03");
   // The Timeline tab keeps the month chosen on Overview.
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
-  await expect(page.locator("main")).toContainText("Mar 1, 2026 – Mar 31, 2026");
+  await expect(page).toHaveURL(/start=2026-03-01&end=2026-03-31/);
+  await expect(page.locator("main")).toContainText("3/26");  // the chart's period label
   await page.getByRole("button", { name: /^Filters/ }).click();
   await page.getByLabel("Search").fill("coffee " + suffix);
   await page.getByRole("button", { name: "Apply filters" }).click();
