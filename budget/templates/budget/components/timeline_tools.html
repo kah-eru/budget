@@ -1,0 +1,32 @@
+{# Graph | List and Filters as small icons, with the Filters panel opening right below them. Under the chart, or under the range bar when there's no chart. Export lives in Settings. #}
+<div class="mt-2 flex items-center justify-between gap-2">
+  <nav aria-label="Layout" class="icon-pill is-small">
+    <a class="icon-pill-item" href="{{ layouts.together }}" aria-label="Graph" {% if layout != 'lanes' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M8 15l3.5-4 3 2.5L20 7"/></svg></a>
+    <a class="icon-pill-item" href="{{ layouts.lanes }}" aria-label="List" {% if layout == 'lanes' %}aria-current="page"{% endif %}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></a>
+  </nav>
+  <span class="icon-pill is-small"><button class="icon-pill-item filter-button" type="button" data-filters-toggle aria-controls="filters-panel" aria-expanded="{% if form.errors %}true{% else %}false{% endif %}"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5z"/></svg><span class="sr-only">Filters{% if filtered %}, on{% endif %}</span>{% if filtered %}<span class="filter-dot" aria-hidden="true"></span>{% endif %}</button></span>
+</div>
+<div id="filters-panel" class="filters-panel mt-3 mb-4{% if form.errors %} is-open{% endif %}">
+{% if layout == 'lanes' %}<label class="mb-4 flex min-h-11 cursor-pointer items-center gap-3 font-medium" data-flow-toggle hidden><input type="checkbox" checked> Show money moving</label>{% endif %}
+<form method="get" role="search" aria-label="Filter transactions" id="timeline-filters">
+  {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+  {% if form.non_field_errors %}<div role="alert" class="mb-4 rounded-lg border border-danger bg-danger-soft p-4 text-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="grid grid-cols-2 gap-x-3 lg:grid-cols-4">
+    {% for field in form.visible_fields %}{% if field.name != 'account' %}
+    <div class="mb-3 min-w-0{% if field.name == 'q' %} col-span-2{% endif %}"><label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-medium">{{ field.label }}</label>{{ field }}
+      {% if field.errors %}<div role="alert" class="mt-2 text-sm text-danger">{{ field.errors }}</div>{% endif %}</div>
+    {% endif %}{% endfor %}
+  </div>
+  <p class="mb-4 text-sm text-muted">Empty dates show one calendar month. Ranges are limited to two years.</p>
+  {% if form.fields.account.queryset|length > 1 %}
+  <fieldset class="mb-4" data-accounts>
+    <legend class="sr-only">Accounts to show</legend>
+    <div class="mb-2 flex items-center justify-between gap-3"><span class="text-sm font-medium">Accounts · <span data-account-count>{% if form.cleaned_data.account %}{{ form.cleaned_data.account|length }} of {{ form.fields.account.queryset|length }}{% else %}All{% endif %}</span></span><button class="chip bg-accent-soft" type="button" data-select-all hidden>Select all</button></div>
+    <div class="-m-1 flex max-h-72 flex-wrap gap-2 overflow-y-auto p-1">{% for box in form.account %}<label class="tick-chip">{{ box.tag }}<span>{{ box.choice_label }}</span></label>{% endfor %}</div>
+    {% if form.account.errors %}<div role="alert" class="mt-2 text-sm text-danger">{{ form.account.errors }}</div>{% endif %}
+    <p class="mt-2 text-sm text-muted">None ticked shows every account.</p>
+  </fieldset>
+  {% endif %}
+  <div class="flex flex-wrap gap-3"><button class="primary" type="submit">Apply filters</button>{% if filtered %}<a class="secondary" href="{% url 'transactions' workspace.pk %}{{ clear_query }}">Clear filters</a>{% endif %}</div>
+</form>
+</div>

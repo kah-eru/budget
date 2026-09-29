@@ -289,6 +289,15 @@ Rule journey: create from purchase -> choose exact merchant/description contains
 
 ## 3b. Timeline by account (2026-09-28)
 
+Update (user, 2026-09-29, fourth pass): the three icons sit **directly under the chart**, between the date labels and Posted spending, and are smaller (32 px icons in a pill instead of 40 px). The Filters panel opens right below them. Without a chart (List, or no data), they sit under the range bar.
+
+```text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~ chart
+9/26      8      15      22       9/29/26
+(📈 ☰)                                (⏷)
+Posted spending                  $6,004.56
+```
+
 Update (user, 2026-09-29, third pass): a **compact Timeline**.
 - **Dates line removed:** the text above the graph (dates · accounts) is gone. The range bar and the chart's date labels already say it.
 - **One icon row:** `(📈|☰)` Graph | List as an icon pill on the left, and `(⏷)` Filters as an icon on the right. The Filters icon is tinted while open and shows a dot while filters apply. Screen readers hear "Graph", "List" and "Filters" or "Filters, on".

@@ -22,9 +22,10 @@ Latest request (2026-09-29): compact the Timeline: remove the text above the gra
   - Export CSV in Settings (a workspace and dates; `settings/export/` redirects to the workspace export)
   - Show money moving in the Filters panel
   - Details: [development guide](docs/development.md#compact-timeline--september-29).
+- **Follow-up (same day):** the three icons moved directly under the chart, above Posted spending, and are smaller (32 px, `.icon-pill.is-small`), in `components/timeline_tools.html`. Without a chart they sit under the range bar. 229 Django tests OK; 14/14 Chrome checks; screenshots reviewed.
 - **Trade-off (flagged to the user):** export no longer follows the Timeline's search, person, category and account filters; it covers every visible transaction in the chosen dates.
 - **Verification:** 229 Django tests OK; 14/14 Chrome checks; 360 px screenshots reviewed.
-- Committed locally with the speed-up commit, **not pushed**. The preview server was restarted.
+- Committed locally with the speed-up commit (plus the follow-up commit), **not pushed**. The preview server was restarted.
 
 ## Log (newest first)
 

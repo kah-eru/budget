@@ -971,6 +971,14 @@ Why: the user asked to compact the Timeline:
   - `.filter-button[aria-expanded="true"]` tints it while the panel is open
   - `.filter-dot` marks it while filters apply
 - **Show money moving** (List only) moved to the top of the Filters panel. `flows.ts` still finds `[data-flow-toggle]` anywhere.
+- **Follow-up (user, same day): under the chart and smaller.**
+  - The row and its Filters panel are `components/timeline_tools.html`, included once:
+    - after `chart_labels.html` in the Spending and Savings cards
+    - otherwise under the range bar (List, or no data)
+  - The two branches are complementary, so the ids stay unique.
+  - `.icon-pill.is-small` makes the items 32 px with 16 px icons, and the dot is 6 px.
+  - The panel is no longer a separate card; it opens right under the icons.
+  - Checks: 229 Django tests OK; 14/14 Chrome checks; 360 px screenshots reviewed (graph light and dark, Filters open, List).
 
 **Settings export:**
 - "Your data" now has a GET form with a workspace (a select when there's more than one), From and To (this month by default), and Export CSV.
