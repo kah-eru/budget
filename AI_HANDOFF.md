@@ -20,6 +20,13 @@ Latest request (2026-09-29): update the docs.
 - The handoff snapshot (Stage, Last checks) is refreshed.
 - The wireframes and the development guide were already updated with each commit. No code changes this turn.
 - **Git:** five local commits are **not pushed** (`314dad2` speed-up, `775afe4` compact Timeline, `54360cc` icons under the chart, `a01ce0f` one-line rows, `8c3ef23` day lines, signs and Go to), plus this docs commit. `main` on GitHub is still `bd0e9b1`.
+- Follow-up question (no code change): is there a Plaid MCP to test transaction updates? Yes, Plaid's official sandbox MCP (AI coding toolkit) can fire `SYNC_UPDATES_AVAILABLE` and make custom test users. The webhook only reaches a public URL (Render), so locally use "Sync now". `/sandbox/transactions/create` also works, but only on items made with `user_transactions_dynamic`. Nothing installed.
+- **Live sandbox test (user said "sure test it"):** a scratchpad script on a throwaway test database, calling the real Plaid sandbox, passed:
+  - connected First Platypus Bank as `user_transactions_dynamic`: 7 accounts
+  - first sync brought in 311 rows (the first try returned 0 while Plaid prepared them)
+  - added one made-up $12.34 transaction, then ran the app's own `handle_webhook(SYNC_UPDATES_AVAILABLE)`; the second try found it (posted 2026-09-29, expense, 1234 cents)
+  - the sandbox item was removed and the test database dropped
+  - Not covered: Plaid's signed delivery to `/banks/webhook/`, which needs the public Render URL and the Plaid keys set there.
 
 ## Log (newest first)
 
