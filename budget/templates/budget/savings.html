@@ -2,6 +2,7 @@
 {% load money %}
 {% block content %}
 <a class="chip -ml-3 mb-2 font-semibold" href="{% url 'workspace' workspace.pk %}" aria-label="Back to {{ workspace.name }}"><span aria-hidden="true" class="mr-1 text-xl leading-none">‹</span>{{ workspace.name }}</a>
+<div class="mb-3 flex min-h-11 items-center">{% include "budget/components/period_nav.html" %}</div>
 <section aria-labelledby="savings-title" class="card">
   <h1 id="savings-title" class="text-sm font-semibold text-accent-text">Savings</h1>
   <p class="hero-amount mt-2">{{ saved.balance_cents|dollars }}</p>
@@ -11,7 +12,6 @@
   <div data-spending-chart data-total-label="Saved so far" data-day-label="{% if kind == 'month' %}That day{% else %}That month{% endif %}" class="chart-slot mt-3 overflow-hidden" role="img" aria-label="Net saved so far, {{ label }}. The totals below have the same numbers.">{% include "budget/components/chart_skeleton.html" %}</div>
   {{ series|json_script:'daily-series' }}
   {% endif %}
-  {% include "budget/components/period_nav.html" %}
   {% if saved.accounts %}
   <dl>
     <div class="stat-row"><dt>Money in</dt><dd class="amount font-semibold">{{ saved.in_cents|dollars }}</dd></div>

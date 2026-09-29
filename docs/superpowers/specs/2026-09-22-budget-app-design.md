@@ -195,6 +195,14 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
+### Requested — 2026-09-29: a smaller total, a one-icon Chart | Budgets and one range bar
+
+Status: built 2026-09-29 (development guide "One range bar"). User choice: the range bar is the first row on both pages. Wireframes: UX §2 and §3b.
+- **Total:** smaller on the Overview and the Timeline, to fit up to $999,999,999.00.
+- **Chart | Budgets:** one icon on the total's line, at the right.
+- **Range bar:** 1M / 1Y / Lifetime is one shared component, in the same place on the Overview, the Timeline and the Savings page.
+- **Vertical space:** the chart and the range selector take less room.
+
 ### Requested — 2026-09-28: 1M | 1Y | Lifetime and header polish
 
 Status: built 2026-09-28 (development guide "1M | 1Y | Lifetime"). User choices: calendar month and year, and a people icon for Manage sharing in groups. Wireframes: UX Navigation, §2 and §3b.

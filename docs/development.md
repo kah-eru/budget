@@ -708,4 +708,37 @@ User choices: calendar month and year; a people icon for Manage sharing in group
   - `transactions.spec.ts` now allows 60 s and waits for the URL after saving.
   - Load-gate item: batch the name-match budgets.
 
+## One range bar, a smaller total and a Chart | Budgets icon — September 29
+
+Why: the user asked, with a sketch, for:
+- a smaller total that fits $999,999,999.00
+- Chart | Budgets as one icon on the total's line
+- 1M / 1Y / Lifetime in the same place on the Overview and the Timeline
+- a shorter chart and range selector
+
+User choice: the range bar is the first row on both pages.
+
+**Range bar:**
+- `components/period_nav.html` takes `range_nav` from `views.range_nav(kind, prev, next, month, year, lifetime)`: hrefs, with arrows only for a month or a year.
+- `period_context()` builds it for the Overview and the Savings page (`?period=…`).
+- The Timeline builds it from its range: `month` or `year` when the range is exactly that calendar period, `all` for Lifetime, otherwise custom (no arrows, no current chip). Its arrows use `period_bounds()` either side and keep the other filters.
+- It is the first row everywhere, in a `min-h-11` row, so it sits at the same height as the Timeline's ⋯ row. The Timeline `h1` is `sr-only`.
+
+**Total:** `.hero-amount` is 1.75rem on phones and 2.5rem from `sm` up (was 3rem).
+
+**Chart | Budgets:**
+- The radio fieldset is now `button[data-overview-toggle]` (`.icon-toggle`). CSS shows the icon for the view it switches to; JS sets `aria-label` to "Show budgets" or "Show chart".
+- `applySwitch()` is shared with the header switch, which is now the only `[data-switch]`, so its localStorage branch is gone.
+
+**Chart:** `.chart-slot` and `AreaChart` are 2.8:1, capped at 13rem. The slot needs `width: 100%`; otherwise the height cap narrows an auto-width block with an aspect ratio.
+
+**Verification:**
+- 222 Django tests OK (Timeline arrows step a month and keep filters; custom ranges have none).
+- 13/13 Chrome checks. `ranges.spec.ts` now covers:
+  - "$999,999,999.00" on one line at 360 and 1280 px
+  - the bar at the same y on the Overview and the Timeline
+  - the Timeline ← step
+- `categories.spec.ts` searches for its own row, because the reused preview database now pushes it off the first page.
+- Screenshots reviewed: 360 px light and dark, and 1280 px.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

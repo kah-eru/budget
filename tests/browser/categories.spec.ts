@@ -36,8 +36,11 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   }
   await section.getByRole("link", { name: /^Groceries/ }).click();
   await expect(page.getByLabel("Category", { exact: true })).toHaveValue(/\d+/);
+  // The reused preview database holds earlier runs' April groceries, so search for this run's row within the category.
+  await page.goto(page.url() + "&q=" + suffix);
   await expect(page.locator("main")).toContainText("Market " + suffix);
 
+  await page.goBack();
   await page.goBack();
   await page.getByRole("link", { name: "Manage categories" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Pets " + suffix);
@@ -71,7 +74,7 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await page.getByRole("button", { name: "Save budget" }).click();
   await page.goto("/");
   await page.goto(page.url().split("?")[0] + "?period=2026-04");
-  await page.locator("label.segment", { hasText: "Budgets" }).click();  // Overview's Chart | Budgets switch
+  await page.getByRole("button", { name: "Show budgets" }).click();  // Overview's Chart | Budgets switch
   const budgets = page.getByRole("region", { name: /^Budgets/ });
   await expect(budgets.getByRole("link", { name: new RegExp("market " + suffix) })).toContainText("$12.10 over");
   for (const scheme of ["light", "dark"] as const) {

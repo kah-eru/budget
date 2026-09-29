@@ -1,7 +1,8 @@
-<nav aria-label="Period" class="mt-3 flex flex-wrap items-center justify-between gap-1 border-b border-line pb-3">
-  {% if kind != 'all' %}<a class="chip" href="?period={{ prev }}" aria-label="Previous {{ kind }}">←</a>{% endif %}
-  <a class="chip" href="?period={{ periods.month }}" {% if kind == 'month' %}aria-current="page"{% endif %}>1M</a>
-  <a class="chip" href="?period={{ periods.year }}" {% if kind == 'year' %}aria-current="page"{% endif %}>1Y</a>
-  <a class="chip" href="?period=all" {% if kind == 'all' %}aria-current="page"{% endif %}>Lifetime</a>
-  {% if kind != 'all' %}<a class="chip" href="?period={{ next }}" aria-label="Next {{ kind }}">→</a>{% endif %}
+{# The range bar, first row on the Overview, the Timeline and the Savings page: range_nav from views.range_nav(). #}
+<nav aria-label="Period" class="flex items-center gap-0.5">
+  {% if range_nav.prev %}<a class="range-arrow" href="{{ range_nav.prev }}" aria-label="Previous {{ range_nav.kind }}">←</a>{% endif %}
+  <div class="flex gap-1 rounded-full bg-sunken p-1">
+    {% for label, href, current in range_nav.items %}<a class="segment whitespace-nowrap px-2.5 py-1" href="{{ href }}" {% if current %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  </div>
+  {% if range_nav.next %}<a class="range-arrow" href="{{ range_nav.next }}" aria-label="Next {{ range_nav.kind }}">→</a>{% endif %}
 </nav>

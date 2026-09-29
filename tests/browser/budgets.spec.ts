@@ -21,9 +21,9 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   };
   await add("Fixed bill", "Housing", "1500", "1");
   await add("Yearly or irregular cost", "Health", "1200");
-  // Overview's Chart | Budgets switch shows each budget and is remembered on this device.
+  // Overview's Chart | Budgets icon shows each budget and is remembered on this device.
   await page.goto("/");
-  await page.locator("label.segment", { hasText: "Budgets" }).click();
+  await page.getByRole("button", { name: "Show budgets" }).click();
   const budgetsPanel = page.locator('[data-panel="budgets"]');
   await expect(budgetsPanel).toBeVisible();
   await expect(budgetsPanel).toContainText("Housing");
@@ -38,7 +38,7 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   }
   await page.emulateMedia({ colorScheme: "light" });
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.locator("label.segment", { hasText: "Chart" }).click();
+  await page.getByRole("button", { name: "Show chart" }).click();
   await expect(page.locator('[data-panel="chart"]')).toBeVisible();
   await page.getByRole("link", { name: "Manage budgets" }).click();
   const plan = page.getByRole("region", { name: /Monthly plan/ });

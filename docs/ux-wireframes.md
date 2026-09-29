@@ -120,6 +120,19 @@ Bank connection opens Plaid's existing Link UI. Reuse that flow; do not design a
 
 ## 2. Overview: understand the period, then inspect
 
+Update (user, 2026-09-29, with a sketch):
+- **Range bar:** the `← 1M 1Y Lifetime →` bar is the first row under the header, in the same place on the Overview, the Timeline and the Savings page.
+- **Smaller total:** the total is smaller, so up to $999,999,999.00 fits on one line.
+- **Chart | Budgets:** one icon on the total's line, at the right. It shows the view it switches to.
+- **Chart height:** the chart is shorter, capped at 13rem.
+
+```text
+Phone
+[← 1M 1Y Lifetime →]
+$5,878.56 (i)                 (≡)   ← (≡) shows Budgets; in Budgets it's a chart icon
+[chart, shorter]
+```
+
 Update (user, 2026-09-28):
 - **Period chips:** `← 1M 1Y Lifetime →`. 1M and 1Y are the calendar month and year, and the arrows step through them.
 - **Lifetime** runs from the first transaction to today:
@@ -233,6 +246,8 @@ For another member's purchase, show a read-only detail page, not a Save button. 
 Rule journey: create from purchase -> choose exact merchant/description contains -> select or create category -> preview affected existing purchases -> choose Apply to existing history -> save rule. Preview states that manual category overrides will be preserved. Future matches use the saved rule automatically. A background backfill shows progress and a link back to results.
 
 ## 3b. Timeline by account (2026-09-28)
+
+Update (user, 2026-09-29): the range chips are now the shared range bar, first row, `[← 1M 1Y Lifetime →] … (⋯)`. The arrows step a calendar month or year and keep the filters; a custom range has no arrows. The "Timeline" heading is screen-reader only (the tab names the page). Below: dates, then `[Graph|List] … [Filters]`.
 
 Update (user, 2026-09-28): the Timeline has range chips, **1M | 1Y | Lifetime**:
 - 1M and 1Y are the calendar month and year of the current range's end; Lifetime starts at the first transaction.

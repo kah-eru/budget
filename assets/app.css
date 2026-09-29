@@ -154,12 +154,17 @@
   /* Flat sections: spacing and hairlines separate content, not boxes. */
   .card { @apply mb-8; }
   .amount { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-  .hero-amount { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; @apply text-5xl font-medium leading-none; }
+  /* Sized so $999,999,999.00 fits on one line beside (i) and the Chart | Budgets icon on a 360 px phone. */
+  .hero-amount { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; @apply text-[1.75rem] font-medium leading-none sm:text-[2.5rem]; }
   /* The coloured value block at the end of a row. */
   .pill { font-variant-numeric: tabular-nums; @apply inline-flex min-w-24 items-center justify-center rounded-md bg-accent px-2.5 py-2 text-sm font-semibold text-on-accent; }
   /* Period chips under the chart. */
   .chip { @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-3 text-sm font-bold text-accent-text; }
-  .chip[aria-current="page"] { @apply bg-accent text-on-accent; }
+  .chip[aria-current="page"], .segment[aria-current="page"] { @apply bg-accent text-on-accent; }
+  .range-arrow { @apply inline-flex h-9 w-7 items-center justify-center rounded-full font-bold text-accent-text hover:bg-sunken; }
+  .icon-toggle { @apply inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-line-strong bg-surface text-accent-text; }
+  .icon-toggle svg { @apply size-5; }
+  :root:not([data-overview="budgets"]) .icon-toggle [data-icon="chart"], :root[data-overview="budgets"] .icon-toggle [data-icon="budgets"] { display: none; }
   /* Segmented System / Light / Dark control; the radio stays focusable, the label shows focus. */
   .segment { @apply relative flex-1 cursor-pointer rounded-full px-3 py-2 text-center text-sm font-bold text-accent-text has-[:checked]:bg-accent has-[:checked]:text-on-accent has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)]; transition: background-color 100ms ease-out; }
   .stat-row { @apply flex min-h-12 items-center justify-between gap-3 border-b border-line py-3; }
@@ -172,7 +177,8 @@
   .unread-dot { @apply mr-2 inline-block size-2 rounded-full bg-accent align-middle; }
   .chevron::after { content: "›"; @apply ml-2 text-lg text-muted; }
   /* The chart's space is held before its code loads, so nothing below it moves. No JavaScript: no slot (the table has the numbers). */
-  .chart-slot { display: none; aspect-ratio: 2.4 / 1; }
+  /* Shorter than the old 2.4:1, and capped so a wide screen doesn't get a tall chart. spending-chart.tsx matches it. */
+  .chart-slot { display: none; width: 100%; aspect-ratio: 2.8 / 1; max-height: 13rem; }
   :root.js .chart-slot { display: block; }
   /* The placeholder line appears only if the chart is slow (over 0.4 s), so a fast chart never shows a line before its draw-in. */
   .chart-skeleton { width: 100%; height: 100%; color: var(--line-strong); opacity: 0; animation: skeleton-pulse 1.2s ease-in-out 1.5s infinite alternate; }

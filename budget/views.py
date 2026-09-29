@@ -508,6 +508,13 @@ def labelled(rows, workspace):
     return rows
 
 
+def range_nav(kind, prev, next_, month, year, lifetime):
+    """The shared ← 1M 1Y Lifetime → bar (components/period_nav.html): hrefs, with arrows only for a month or a year."""
+    arrows = kind in ("month", "year")
+    return {"kind": kind, "prev": prev if arrows else None, "next": next_ if arrows else None,
+            "items": [("1M", month, kind == "month"), ("1Y", year, kind == "year"), ("Lifetime", lifetime, kind == "all")]}
+
+
 def period_context(user, workspace, value):
     """The Overview and Savings page period: 1M, 1Y (with ← →) or Lifetime (first transaction to today, nothing to compare
     with). range_params is the same range for Timeline links."""
@@ -516,7 +523,7 @@ def period_context(user, workspace, value):
     if kind == "all":
         start, end = first_day(user, workspace), today
         return {"kind": kind, "start": start, "end": end, "label": "Lifetime", "prev_range": None, "range_params": [("span", "all")],
-                "periods": {"month": f"{today:%Y-%m}", "year": str(today.year)}}
+                "range_nav": range_nav(kind, None, None, f"?period={today:%Y-%m}", f"?period={today.year}", "?period=all")}
     if kind == "year":
         label, prev, next_ = str(start.year), str(start.year - 1), str(start.year + 1)
     else:
@@ -525,7 +532,7 @@ def period_context(user, workspace, value):
     return {"kind": kind, "start": start, "end": end, "label": label, "prev": prev, "next": next_, "prev_range": (prev_start, prev_end),
             "prev_label": prev if kind == "year" else date_format(prev_start, "F"),
             "range_params": [("start", start.isoformat()), ("end", end.isoformat())],
-            "periods": {"month": f"{start:%Y-%m}", "year": str(start.year)}}
+            "range_nav": range_nav(kind, f"?period={prev}", f"?period={next_}", f"?period={start:%Y-%m}", f"?period={start.year}", "?period=all")}
 
 
 @login_required
@@ -761,8 +768,9 @@ def transaction_list(request, workspace_id):
         layouts[name] = "?" + query.urlencode()
     # 1M and 1Y are the calendar month and year of the range's end; the other filters stay.
     lifetime = form.cleaned_data["span"] == "all" and not request.GET.get("start") and not request.GET.get("end")
-    ranges, today = [], timezone.localdate()
-    for label, bounds in (("1M", period_bounds("month", end)), ("1Y", period_bounds("year", end)), ("Lifetime", None)):
+    today = timezone.localdate()
+
+    def range_href(bounds):
         query = newest.copy()
         for key in ("start", "end", "span"):
             query.pop(key, None)
@@ -770,15 +778,20 @@ def transaction_list(request, workspace_id):
             query["start"], query["end"] = bounds[0].isoformat(), bounds[1].isoformat()
         else:
             query["span"] = "all"
-        current = lifetime if bounds is None else not lifetime and start == bounds[0] and end in (bounds[1], today)
-        ranges.append((label, "?" + query.urlencode(), current))
+        return "?" + query.urlencode()
+
+    month, year = period_bounds("month", end), period_bounds("year", end)
+    kind = "all" if lifetime else next((k for k, b in (("month", month), ("year", year)) if start == b[0] and end in (b[1], today)), "custom")
+    step = {"month": month, "year": year}.get(kind)
+    nav = range_nav(kind, step and range_href(period_bounds(kind, step[0] - timedelta(days=1))),
+                    step and range_href(period_bounds(kind, step[1] + timedelta(days=1))), range_href(month), range_href(year), range_href(None))
     clear = QueryDict(mutable=True)
     for key in ("view", "start", "end", "span"):
         if request.GET.get(key):
             clear[key] = request.GET[key]
     context.update(rows=page, days=days, start=start, end=end, rev=rev, stale=stale, back=request.get_full_path(),
                    newest_query="?" + newest.urlencode(), paged=bool(before) and not stale, layouts=layouts, layout=form.cleaned_data["view"],
-                   ranges=ranges, by_month=by_month, clear_query="?" + clear.urlencode() if clear else "",
+                   range_nav=nav, by_month=by_month, clear_query="?" + clear.urlencode() if clear else "",
                    totals={k: sum(d[k] for d in days) for k in (("in_cents", "out_cents", "posted_cents") if saving else ("posted_cents", "pending_cents", "income_cents"))},
                    filtered=any(request.GET.get(name) for name in form.fields if name not in ("view", "start", "end", "span")))
     if form.cleaned_data["view"] == "lanes":

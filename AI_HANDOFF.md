@@ -1,12 +1,12 @@
 # AI handoff
 
-Updated: 2026-09-28. Read current docs and inspect Git before resuming.
+Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
-## Current snapshot (2026-09-28)
+## Current snapshot (2026-09-29)
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-28 at the owner's request. `main` and `feat/project-foundation` are at `37ec393` on GitHub, and Render deploys `main` (migration 0022 applies on deploy). CI passed on both branches. The push covered: the compact UI, the Graph | List fixes, savings and the demo-data script, the header Spending | Savings switch, 1M | 1Y | Lifetime and the header pill.
-- **Last checks** (2026-09-28): 222 Django tests OK on SQLite; savings/flows/reporting/budgets 48/48 on Neon PostgreSQL; 13/13 Chrome checks; screenshots reviewed.
+- **Last checks** (2026-09-29): 222 Django tests OK on SQLite; 13/13 Chrome checks; screenshots reviewed. Neon last run 2026-09-28 (48/48; no query changes since).
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,18 @@ Updated: 2026-09-28. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). Load-gate item: batch the name-match budgets in `budget_progress`.
+
+Latest request (2026-09-29, with a sketch): a smaller total (fits $999,999,999.00) on the Overview and the Timeline; Chart | Budgets as one icon on the total's line; 1M / 1Y / Lifetime in the same place on both pages, as one component; a shorter chart and range selector. Plan approved.
+- **User choice:** the range bar is the first row on both pages; it replaces the Timeline's Range chips.
+- **Built:**
+  - `views.range_nav()` and `components/period_nav.html` for the Overview, the Savings page and the Timeline (the Timeline arrows keep the filters)
+  - the icon toggle (`applySwitch()` in `app.tsx`), `.hero-amount` 1.75/2.5rem, and the chart at 2.8:1 capped at 13rem
+  - Details: [development guide](docs/development.md#one-range-bar-a-smaller-total-and-a-chart--budgets-icon--september-29).
+- **Verification:** 222 Django tests OK; 13/13 Chrome checks; screenshots reviewed (360 px light and dark, 1280 px).
+- `categories.spec.ts` now searches for its own row: the reused preview database pushed the row off page 1. A fresh preview database is still optional (ask first).
+- Committed locally, **not pushed**. The preview server is running with it.
+
+## Log (newest first)
 
 Latest request (2026-09-28): on phones, right-align the Spending | Savings switch and match the selector's height; put the Overview note behind an (i) popup that closes on unfocus; put + and the bell in one pill (+ only); add 1M / 1Y / Lifetime to the Timeline and the Overview. Plan approved.
 - **User choices:** calendar month and year (the arrows stay); a people icon for Manage sharing in groups.
@@ -27,8 +39,6 @@ Latest request (2026-09-28): on phones, right-align the Spending | Savings switc
   - `transactions.spec.ts` then hit its 30 s limit once. It now has 60 s and waits for the URL, and it passed three runs in a row. One failure right after that change left no details.
   - Load-gate item: batch the name-match budgets. Optional: a fresh preview database.
 - Pushed 2026-09-28 in `37ec393`; CI passed.
-
-## Log (newest first)
 
 Latest request (2026-09-28, with a sketch): switch Spending | Savings on both Overview and Timeline; drop the workspace name above the switch; put the switch beside the workspace selector; move Invite to the top right. Plan approved.
 - **User choices:** the Timeline in Savings shows only savings accounts; the Overview hides By category in Savings; remove the Timeline's "‹ Personal" link too.

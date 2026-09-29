@@ -175,8 +175,14 @@ class YearlyTests(ReportingTests):
         self.assertEqual(timeline.context["days"][0]["day"], date(2023, 6, 1))
         self.assertEqual(timeline.context["totals"]["posted_cents"], 2500 + 10900 + 700)
         self.assertFalse(timeline.context["filtered"])  # a range chip isn't a filter
-        self.assertEqual([label for label, _, current in timeline.context["ranges"] if current], ["Lifetime"])
-        self.assertEqual([label for label, _, current in self.client.get(url).context["ranges"] if current], ["1M"])
+        nav = timeline.context["range_nav"]
+        self.assertEqual(([label for label, _, current in nav["items"] if current], nav["prev"]), (["Lifetime"], None))
+        self.assertEqual([label for label, _, current in self.client.get(url).context["range_nav"]["items"] if current], ["1M"])
+        # 1M steps a calendar month and keeps the filters; a custom range has no arrows and no current chip.
+        feb = self.client.get(url, {"start": "2026-02-01", "end": "2026-02-28", "q": "x"}).context["range_nav"]
+        self.assertEqual((feb["prev"], feb["next"]), ("?q=x&start=2026-01-01&end=2026-01-31", "?q=x&start=2026-03-01&end=2026-03-31"))
+        custom = self.client.get(url, {"start": "2026-02-03", "end": "2026-02-20"}).context["range_nav"]
+        self.assertEqual((custom["prev"], [c for _, _, c in custom["items"]]), (None, [False, False, False]))
         self.assertEqual(self.client.get(url, {"start": "2023-06-01", "end": "2026-02-01"}).status_code, 400)
 
     def test_workspace_period_views(self):

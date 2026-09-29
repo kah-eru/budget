@@ -9,6 +9,25 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByRole("link", { name: "Overview", exact: true }).click();
 
+  // The largest total fits on one line beside (i) and the Chart | Budgets icon, on a phone and on a desktop.
+  const fits = async () => {
+    const hero = page.locator(".hero-amount").first();
+    await hero.evaluate((el) => (el.firstChild!.textContent = "$999,999,999.00"));
+    const row = await hero.evaluate((el) => {
+      const r = el.parentElement!;
+      return { lines: Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).fontSize)), over: r.scrollWidth - r.clientWidth };
+    });
+    expect(row).toEqual({ lines: 1, over: 0 });
+  };
+  await fits();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await fits();
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.reload();
+  // The range bar is the first row, in the same place on Overview and Timeline.
+  const barY = async () => (await page.getByRole("navigation", { name: "Period" }).boundingBox())?.y;
+  const overviewY = await barY();
+
   // On a phone the note waits behind (i) and closes on a tap elsewhere.
   const note = page.locator("#spending-note");
   const info = page.getByRole("button", { name: "About this total" });
@@ -39,7 +58,13 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
 
   await page.setViewportSize({ width: 360, height: 800 });
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
-  const range = page.getByRole("navigation", { name: "Range" });
+  const range = page.getByRole("navigation", { name: "Period" });
+  await expect(range.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
+  expect(await barY()).toBe(overviewY);
+  const shownRange = page.locator("h1 + div + p");
+  const thisMonth = await shownRange.textContent();
+  await range.getByRole("link", { name: "Previous month" }).click();
+  await expect(shownRange).not.toHaveText(thisMonth!);
   await expect(range.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
   await range.getByRole("link", { name: "Lifetime" }).click();
   await expect(range.getByRole("link", { name: "Lifetime" })).toHaveAttribute("aria-current", "page");
