@@ -6,7 +6,7 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-28 at the owner's request. `main` and `feat/project-foundation` are at `37ec393` on GitHub, and Render deploys `main` (migration 0022 applies on deploy). CI passed on both branches. The push covered: the compact UI, the Graph | List fixes, savings and the demo-data script, the header Spending | Savings switch, 1M | 1Y | Lifetime and the header pill.
-- **Last checks** (2026-09-29): 222 Django tests OK on SQLite; 13/13 Chrome checks; screenshots reviewed. Neon last run 2026-09-28 (48/48; no query changes since).
+- **Last checks** (2026-09-29): 223 Django tests OK on SQLite; 13/13 Chrome checks; screenshots reviewed. Neon last run 2026-09-28 (48/48; no query changes since).
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,17 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). Load-gate item: batch the name-match budgets in `budget_progress`.
+
+Latest request (2026-09-29, second pass): center the 1M / 1Y / Lifetime bar right above the graph and make it shorter, on the Overview, the Timeline and the Savings page; add date labels under the graph (the period start on the left; today, or a small button back to this month or year, on the right). Plan approved.
+- **User choices:** the current period's chart ends at today; a year shows `2026`; Lifetime shows the first record's date; the List layout gets the bar centered above the list.
+- **Built:**
+  - `range_nav()` adds `left`, `right` and `back`; `until_today()`; the new `components/chart_labels.html`
+  - the bar sits between the total and the chart; on the Timeline, the dates and ⋯ share the first row
+  - Details: [development guide](docs/development.md#range-bar-over-the-chart-and-date-labels--september-29).
+- **Verification:** 223 Django tests OK; 13/13 Chrome checks; screenshots reviewed.
+- Committed locally on top of `e0ed622`, **not pushed**. The preview server is running with it.
+
+## Log (newest first)
 
 Latest request (2026-09-29, with a sketch): a smaller total (fits $999,999,999.00) on the Overview and the Timeline; Chart | Budgets as one icon on the total's line; 1M / 1Y / Lifetime in the same place on both pages, as one component; a shorter chart and range selector. Plan approved.
 - **User choice:** the range bar is the first row on both pages; it replaces the Timeline's Range chips.
@@ -24,8 +35,6 @@ Latest request (2026-09-29, with a sketch): a smaller total (fits $999,999,999.0
 - **Verification:** 222 Django tests OK; 13/13 Chrome checks; screenshots reviewed (360 px light and dark, 1280 px).
 - `categories.spec.ts` now searches for its own row: the reused preview database pushed the row off page 1. A fresh preview database is still optional (ask first).
 - Committed locally, **not pushed**. The preview server is running with it.
-
-## Log (newest first)
 
 Latest request (2026-09-28): on phones, right-align the Spending | Savings switch and match the selector's height; put the Overview note behind an (i) popup that closes on unfocus; put + and the bell in one pill (+ only); add 1M / 1Y / Lifetime to the Timeline and the Overview. Plan approved.
 - **User choices:** calendar month and year (the arrows stay); a people icon for Manage sharing in groups.

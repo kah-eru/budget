@@ -3,9 +3,10 @@ from urllib.parse import quote
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 
 from budget.models import Account, AccountShare, Membership, Transaction, Workspace
-from budget.reporting import spending
+from budget.reporting import period_bounds, spending
 
 JAN = (date(2026, 1, 1), date(2026, 1, 31))
 
@@ -183,7 +184,27 @@ class YearlyTests(ReportingTests):
         self.assertEqual((feb["prev"], feb["next"]), ("?q=x&start=2026-01-01&end=2026-01-31", "?q=x&start=2026-03-01&end=2026-03-31"))
         custom = self.client.get(url, {"start": "2026-02-03", "end": "2026-02-20"}).context["range_nav"]
         self.assertEqual((custom["prev"], [c for _, _, c in custom["items"]]), (None, [False, False, False]))
+        self.assertEqual((custom["left"], custom["right"]), ("2/3/26", "2/20/26"))
+        today = timezone.localdate()
+        this_month = period_bounds("month", today)
+        self.assertEqual(feb["back"], (f"?q=x&start={this_month[0].isoformat()}&end={this_month[1].isoformat()}", "This month"))
         self.assertEqual(self.client.get(url, {"start": "2023-06-01", "end": "2026-02-01"}).status_code, 400)
+
+    def test_chart_labels_and_the_current_period_ending_today(self):
+        self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
+        Transaction.objects.create(account=self.shared, amount_cents=2500, classification="expense", posted_on=date(2023, 6, 1), description="Old")
+        today, overview = timezone.localdate(), f"/workspaces/{self.group.pk}/"
+        now = self.client.get(overview)
+        self.assertEqual(now.context["series"][-1]["day"], today)  # the current month's chart stops at today
+        self.assertEqual((now.context["range_nav"]["left"], now.context["range_nav"]["right"]), (f"{today.month}/{today:%y}", f"{today.month}/{today.day}/{today:%y}"))
+        past = self.client.get(overview, {"period": "2023-06"})
+        self.assertEqual(past.context["series"][-1]["day"], date(2023, 6, 30))
+        self.assertEqual((past.context["range_nav"]["left"], past.context["range_nav"]["back"]), ("6/23", (f"?period={today:%Y-%m}", "This month")))
+        self.assertContains(past, "This month")
+        year = self.client.get(overview, {"period": "2023"}).context["range_nav"]
+        self.assertEqual((year["left"], year["back"]), ("2023", (f"?period={today.year}", "This year")))
+        lifetime = self.client.get(overview, {"period": "all"}).context["range_nav"]
+        self.assertEqual((lifetime["left"], lifetime["back"]), ("6/1/23", None))
 
     def test_workspace_period_views(self):
         self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")

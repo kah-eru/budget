@@ -1,0 +1,5 @@
+{# Under the chart: where the period starts, and today (or a way back to this month or year). From views.range_nav(). #}
+<div class="flex min-h-7 items-center justify-between text-xs text-muted tabular-nums">
+  <span>{{ range_nav.left }}</span>
+  {% if range_nav.back %}<a class="back-chip" href="{{ range_nav.back.0 }}">{{ range_nav.back.1 }} <span aria-hidden="true">›</span></a>{% else %}<span>{{ range_nav.right }}</span>{% endif %}
+</div>

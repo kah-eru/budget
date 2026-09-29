@@ -120,8 +120,22 @@ Bank connection opens Plaid's existing Link UI. Reuse that flow; do not design a
 
 ## 2. Overview: understand the period, then inspect
 
+Update (user, 2026-09-29, second pass):
+- **Range bar:** a smaller `← 1M 1Y Lifetime →` bar (about 26 px tall), centered right above the chart on the Overview, the Timeline and the Savings page.
+- **Labels under the chart:**
+  - left: the start of the period (`9/26`, `2026`, or the first record's date for Lifetime)
+  - right: today (`9/29/26`) when the period includes today, or a small `This month ›` / `This year ›` link back
+- **Current period:** the chart for the current month or year ends at today.
+
+```text
+$5,878.56 (i)                 (≡)
+        ← [1M 1Y Lifetime] →
+[chart ending today]
+9/26                      9/29/26
+```
+
 Update (user, 2026-09-29, with a sketch):
-- **Range bar:** the `← 1M 1Y Lifetime →` bar is the first row under the header, in the same place on the Overview, the Timeline and the Savings page.
+- **Range bar:** (superseded by the second pass above) the bar went in the first row under the header.
 - **Smaller total:** the total is smaller, so up to $999,999,999.00 fits on one line.
 - **Chart | Budgets:** one icon on the total's line, at the right. It shows the view it switches to.
 - **Chart height:** the chart is shorter, capped at 13rem.
@@ -247,7 +261,12 @@ Rule journey: create from purchase -> choose exact merchant/description contains
 
 ## 3b. Timeline by account (2026-09-28)
 
-Update (user, 2026-09-29): the range chips are now the shared range bar, first row, `[← 1M 1Y Lifetime →] … (⋯)`. The arrows step a calendar month or year and keep the filters; a custom range has no arrows. The "Timeline" heading is screen-reader only (the tab names the page). Below: dates, then `[Graph|List] … [Filters]`.
+Update (user, 2026-09-29, second pass):
+- **Layout:** the first row is now `[dates · accounts] … (⋯)`.
+- **Graph layout:** the range bar is centered between the total and the chart, with the date labels under the chart.
+- **List layout, or no chart:** the bar is centered above the list.
+
+Earlier the same day: the range chips became the shared range bar in the first row, `[← 1M 1Y Lifetime →] … (⋯)`. The arrows step a calendar month or year and keep the filters; a custom range has no arrows. The "Timeline" heading is screen-reader only (the tab names the page). Below: dates, then `[Graph|List] … [Filters]`.
 
 Update (user, 2026-09-28): the Timeline has range chips, **1M | 1Y | Lifetime**:
 - 1M and 1Y are the calendar month and year of the current range's end; Lifetime starts at the first transaction.

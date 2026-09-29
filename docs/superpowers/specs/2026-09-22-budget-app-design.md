@@ -195,6 +195,14 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
+### Requested — 2026-09-29 (second pass): range bar over the chart, date labels
+Status: built 2026-09-29 (development guide "Range bar over the chart"). User choices:
+- the current month or year ends at today
+- a year shows `2026`; Lifetime shows the first record's date
+- in the Timeline's List layout, the bar is centered above the list
+- **Range bar:** centered right above the chart, and shorter, on the Overview, the Timeline and the Savings page.
+- **Date labels:** under the chart, the period start at the bottom left, and at the bottom right today's date or a small button back to this month or year.
+
 ### Requested — 2026-09-29: a smaller total, a one-icon Chart | Budgets and one range bar
 
 Status: built 2026-09-29 (development guide "One range bar"). User choice: the range bar is the first row on both pages. Wireframes: UX §2 and §3b.

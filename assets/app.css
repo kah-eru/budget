@@ -161,7 +161,8 @@
   /* Period chips under the chart. */
   .chip { @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-3 text-sm font-bold text-accent-text; }
   .chip[aria-current="page"], .segment[aria-current="page"] { @apply bg-accent text-on-accent; }
-  .range-arrow { @apply inline-flex h-9 w-7 items-center justify-center rounded-full font-bold text-accent-text hover:bg-sunken; }
+  .range-arrow { @apply inline-flex size-7 items-center justify-center rounded-full font-bold text-accent-text hover:bg-sunken; }
+  .back-chip { @apply inline-flex min-h-7 items-center gap-1 rounded-full bg-accent-soft px-2.5 font-bold text-accent-text; }
   .icon-toggle { @apply inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-line-strong bg-surface text-accent-text; }
   .icon-toggle svg { @apply size-5; }
   :root:not([data-overview="budgets"]) .icon-toggle [data-icon="chart"], :root[data-overview="budgets"] .icon-toggle [data-icon="budgets"] { display: none; }

@@ -24,9 +24,22 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
   await fits();
   await page.setViewportSize({ width: 360, height: 800 });
   await page.reload();
-  // The range bar is the first row, in the same place on Overview and Timeline.
-  const barY = async () => (await page.getByRole("navigation", { name: "Period" }).boundingBox())?.y;
-  const overviewY = await barY();
+  // The range bar sits centered right above the chart, on Overview and Timeline alike.
+  const centered = async () => {
+    const [bar, chart] = await Promise.all([page.getByRole("navigation", { name: "Period" }).boundingBox(),
+      page.locator("[data-spending-chart]:visible").first().boundingBox()]);
+    expect(Math.abs(bar!.x + bar!.width / 2 - (chart!.x + chart!.width / 2))).toBeLessThan(2);
+    expect(chart!.y - (bar!.y + bar!.height)).toBeGreaterThanOrEqual(0);
+    expect(chart!.y - (bar!.y + bar!.height)).toBeLessThan(12);
+  };
+  await centered();
+  // This month runs to today at the bottom right; another month offers a way back.
+  const labels = page.locator("[data-panel=chart] > div").last();
+  await expect(labels).toContainText(/\d+\/\d+\/\d{2}/);
+  await page.getByRole("link", { name: "Previous month" }).click();
+  await page.getByRole("link", { name: "This month" }).click();
+  await expect(page.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("link", { name: "This month" })).toHaveCount(0);
 
   // On a phone the note waits behind (i) and closes on a tap elsewhere.
   const note = page.locator("#spending-note");
@@ -60,12 +73,18 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
   const range = page.getByRole("navigation", { name: "Period" });
   await expect(range.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
-  expect(await barY()).toBe(overviewY);
-  const shownRange = page.locator("h1 + div + p");
+  await centered();
+  const shownRange = page.locator("h1 + div > p");
   const thisMonth = await shownRange.textContent();
   await range.getByRole("link", { name: "Previous month" }).click();
   await expect(shownRange).not.toHaveText(thisMonth!);
   await expect(range.getByRole("link", { name: "1M" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("link", { name: "This month" })).toBeVisible();
+  // The List layout has no chart: the bar is centered above the list.
+  await page.getByRole("link", { name: "List", exact: true }).click();
+  const bar = await range.boundingBox();
+  expect(Math.abs(bar!.x + bar!.width / 2 - 180)).toBeLessThan(2);
+  await page.getByRole("link", { name: "Graph", exact: true }).click();
   await range.getByRole("link", { name: "Lifetime" }).click();
   await expect(range.getByRole("link", { name: "Lifetime" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("button", { name: /^Filters/ })).not.toContainText("on");

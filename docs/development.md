@@ -741,4 +741,40 @@ User choice: the range bar is the first row on both pages.
 - `categories.spec.ts` searches for its own row, because the reused preview database now pushes it off the first page.
 - Screenshots reviewed: 360 px light and dark, and 1280 px.
 
+## Range bar over the chart, and date labels — September 29
+
+Why: the user asked for:
+- the 1M / 1Y / Lifetime bar centered right above the graph, and shorter, on the Overview, the Timeline and the Savings page
+- labels under the graph: the period start at the bottom left, and today or a way back to this period at the bottom right
+
+User choices:
+- the current period's chart ends at today
+- a year is labelled `2026`, and Lifetime uses the first record's date
+- in the List layout, the bar is centered above the list
+
+**`views.range_nav(kind, start, end, prev, next, month, year, lifetime, this_period)`** now also returns:
+- `left`: `M/YY` for a month, `YYYY` for a year, otherwise `M/D/YY`
+- `right`: today, or a custom range's end
+- `back`: an (href, "This month" / "This year") pair, when a month or year that isn't current is shown
+
+`this_period` is `?period=…` on the Overview and the Savings page. On the Timeline it's the range link for `period_bounds(kind, today)`, which keeps the filters.
+
+**Ending at today:** `until_today()` trims the chart series to today. On the Timeline only the chart JSON is trimmed (`chart_days`), because the totals are summed from `days`.
+
+**Templates:**
+- `components/period_nav.html` is `mx-auto w-fit`, `p-0.5`, with `text-xs py-0.5` segments and 28 px arrows.
+- The new `components/chart_labels.html` goes under each chart.
+- **Overview:** the bar is inside each mode section, so it's rendered twice and the hidden one is `display:none`.
+- **Timeline:**
+  - the dates line shares its row with ⋯
+  - when there's no graph card, the bar is centered above the list
+- The `AreaChart` bottom margin is 4.
+
+**Verification:**
+- 223 Django tests OK. New: labels for month, year and Lifetime; the current month ending at today; the `This month` and `This year` back links on the Overview and the Timeline.
+- 13/13 Chrome checks. `ranges.spec.ts` checks:
+  - the bar is centered above the chart on the Overview and the Timeline, and centered in List
+  - `This month ›` returns to the current month
+- Screenshots reviewed: phone light and dark, desktop, and the Savings page.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
