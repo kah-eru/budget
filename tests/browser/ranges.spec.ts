@@ -34,7 +34,7 @@ test("1M | 1Y | Lifetime on Overview and Timeline, and the phone's (i) note", as
   };
   await centered();
   // This month runs to today at the bottom right; another month says "Today", which leads back.
-  const labels = page.locator("[data-panel=chart] > div").last();
+  const labels = page.locator("[data-spending-chart]:visible").first().locator("xpath=following-sibling::div[1]");
   await expect(labels).toContainText(/\d+\/\d+\/\d{2}/);
   await page.getByRole("link", { name: "Previous month" }).click();
   await page.getByRole("link", { name: /^Today/ }).click();

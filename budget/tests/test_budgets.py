@@ -1,9 +1,10 @@
 from datetime import date
+from urllib.parse import quote
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from budget.models import Account, AccountShare, Budget, Category, Membership, Transaction, TransactionAnnotation, Workspace
+from budget.models import Account, AccountShare, Budget, Category, Membership, Rule, Transaction, TransactionAnnotation, Workspace
 from budget.reporting import budget_progress
 
 MAY = date(2026, 5, 1)
@@ -71,7 +72,7 @@ class BudgetTests(TestCase):
         self.assertEqual(self.client.post(url, {"category": self.dining.pk, "period": "month", "limit": "0"}).status_code, 400)
         self.assertEqual(self.client.post(url, {"category": self.dining.pk, "period": "month", "limit": "50"}).status_code, 302)
         self.spend(6025, category=self.dining)
-        page = self.client.get(f"/workspaces/{self.group.pk}/", {"period": "2026-05"}).content.decode()
+        page = self.client.get(f"/workspaces/{self.group.pk}/budgets/", {"period": "2026-05"}).content.decode()
         self.assertIn("$10.25 over", page)
 
     def test_year_view_counts_monthly_budgets_twelve_times_and_totals_match_the_period(self):
@@ -84,14 +85,51 @@ class BudgetTests(TestCase):
         p = budget_progress(self.bob, self.group, [monthly, yearly], MAY, span=year)
         self.assertEqual([(r["spent_cents"], r["limit_cents"], r["start"]) for r in p], [(60000, 480000, year[0]), (60000, 120000, year[0])])
         self.login(self.bob)
-        page = self.client.get(f"/workspaces/{self.group.pk}/", {"period": "2026"})
+        page = self.client.get(f"/workspaces/{self.group.pk}/budgets/", {"period": "2026"})
         self.assertEqual(page.context["budget_totals"], {"limit_cents": 600000, "spent_cents": 120000, "left_cents": 480000, "over_cents": 0})
-        page = self.client.get(f"/workspaces/{self.group.pk}/", {"period": "2026-05"})
+        page = self.client.get(f"/workspaces/{self.group.pk}/budgets/", {"period": "2026-05"})
         # A yearly budget shows in a month but stays out of that month's total.
         self.assertEqual(page.context["budget_totals"], {"limit_cents": 40000, "spent_cents": 50000, "left_cents": 0, "over_cents": 10000})
-        self.assertContains(page, 'data-panel="budgets"')
-        self.assertContains(page, "Manage budgets")
-        self.assertNotContains(page, "budgets-title")  # the separate Budgets card is gone
+        # Budgets live on the Budget tab now, not on the Overview.
+        overview = self.client.get(f"/workspaces/{self.group.pk}/", {"period": "2026-05"})
+        self.assertNotContains(overview, "data-panel")
+        self.assertNotContains(overview, "By category")
+        self.assertNotContains(overview, "Manage budgets")
+
+    def test_budget_tab_lists_every_category_and_the_category_page_manages_it(self):
+        Budget.objects.create(workspace=self.group, category=self.dining, limit_cents=5000)
+        Budget.objects.create(workspace=self.group, name_match="netflix", limit_cents=1500)
+        self.spend(2500, category=self.dining)
+        self.spend(700, description="Misc")
+        self.login(self.bob)
+        g = self.group.pk
+        tab = self.client.get(f"/workspaces/{g}/budgets/", {"period": "2026-05"})
+        rows = {r["category"].name: r for r in tab.context["rows"]}
+        self.assertEqual(set(rows), set(self.group.categories.filter(archived=False).values_list("name", flat=True)))  # even with no spending
+        self.assertEqual((rows["Dining"]["limit"]["spent_cents"], rows["Dining"]["limit"]["limit_cents"]), (2500, 5000))
+        self.assertIsNone(rows["Groceries"]["limit"])
+        self.assertContains(tab, "No limit")
+        self.assertEqual(tab.context["uncategorized"]["posted_cents"], 700)
+        self.assertEqual([p["budget"].name_match for p in tab.context["others"]], ["netflix"])
+        self.assertContains(tab, f'href="/workspaces/{g}/categories/{self.dining.pk}/?period=2026-05"')
+        # A category added from the tab comes back to the tab, on the same period.
+        added = self.client.post(f"/workspaces/{g}/categories/", {"name": "Pets", "period": "2026-05"})
+        self.assertRedirects(added, f"/workspaces/{g}/budgets/?period=2026-05", fetch_redirect_response=False)
+        # The category page: its limit, its rules, and its recent transactions.
+        Rule.objects.create(workspace=self.group, kind="contains", pattern="CAFE", category=self.dining)
+        here = f"/workspaces/{g}/categories/{self.dining.pk}/?period=2026-05"
+        page = self.client.get(here)
+        self.assertEqual([p["limit_cents"] for p in page.context["limits"]], [5000])
+        self.assertEqual([r.pattern for r in page.context["rules"]], ["CAFE"])
+        self.assertEqual([r.amount_cents for r in page.context["recent"]], [2500])
+        self.assertContains(page, "Add another limit")
+        # Set a limit starts on this category and returns here; a link off the site falls back to the Budget tab.
+        new = f"/workspaces/{g}/budgets/new/"
+        self.assertEqual(self.client.get(new, {"category": self.dining.pk, "next": here}).context["form"].initial["category"], str(self.dining.pk))
+        saved = self.client.post(f"{new}?category={self.dining.pk}&next={quote(here)}", {"category": self.dining.pk, "period": "year", "limit": "600"})
+        self.assertRedirects(saved, here, fetch_redirect_response=False)
+        outside = self.client.post(f"{new}?next=https://example.com/", {"category": self.dining.pk, "period": "year", "limit": "700"})
+        self.assertRedirects(outside, f"/workspaces/{g}/budgets/", fetch_redirect_response=False)
 
     def test_delete_and_outsiders(self):
         budget = Budget.objects.create(workspace=self.group, category=self.dining, limit_cents=5000)

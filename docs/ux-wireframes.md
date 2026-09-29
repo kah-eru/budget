@@ -49,6 +49,17 @@ Implemented 2026-09-25 (night): Robinhood-style visual layout in the user's pale
 
 ## Navigation and reusable components
 
+Update (user, 2026-09-29): a Budget tab, with Settings in the header.
+- **Header pill:** `[+ | bell | gear]`. The gear opens Settings and is highlighted on the settings pages.
+- **Bottom bar:** Timeline · Overview · Budget, with Overview in the middle. Swipes follow this order; Settings is no longer a tab.
+
+```text
+Budget.                  ( +  bell  gear )
+[Personal v]           [Spending | Savings]
+...
+[ Timeline ]   [ Overview ]   [ Budget ]
+```
+
 Header (user sketch, 2026-09-28):
 - Row 1: `Budget.`, then at the right Invite (Manage sharing in a group), the bell, and the username (hidden on phones).
 - Row 2: the workspace selector (a dropdown), with the **Spending | Savings** switch beside it on the Overview and the Timeline.
@@ -349,6 +360,27 @@ Sep 1 – Sep 28, 2026 · 2 of 14 accounts
 ```
 
 ## 4. Budget and alert: set a threshold and act on it
+
+Update (user, 2026-09-29): budgets have their own **Budget tab**, and the Overview no longer shows budgets or By category.
+- **Categories:** every category, even without spending, shows its spend for the period. With a limit, it adds a bar and what's left or over, plus the fixed-bill or set-aside details. Without one, it says "No limit".
+- **Also on the tab:**
+  - an Uncategorized row, which opens the Timeline
+  - a period total, "Add category", and "All rules"
+  - below: Other budgets (name-based), the Monthly plan, Goals and Bills
+- **The category page:** its spend for the period; its limits (Set a limit / Edit); "What goes here" (its rules, New rule, Add transactions); the 10 most recent transactions with "See … in Timeline"; rename and archive.
+- **Returning:** Set a limit, New rule and Edit return to the category page.
+
+```text
+Budget tab                         Category page
+     [← 1M 1Y Lifetime →]          ‹ Budget
+Categories                         Groceries
+Dining    $848 of $250  ████ over  $435.84  September 2026 spending
+Groceries $436 of $600  ███░       Limit     $435.84 of $600  [Add another limit]
+Pets      $0     No limit          What goes here  “FRESHMART” › [Add transactions] [New rule]
+Uncategorized $97  → Timeline      Recent   FreshMart $42 · Costco $118 …  See September 2026 in Timeline ›
+[Name ___] [Add category]          Name [Groceries] [ ] Archived  [Save category]
+Other budgets · Monthly plan · Goals · Bills
+```
 
 Journey: Budgets -> Create budget -> select category or merchant -> enter positive limit and monthly/yearly period -> save -> inspect progress. Push activation is optional and does not block saving a budget.
 

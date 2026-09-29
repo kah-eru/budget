@@ -98,10 +98,9 @@ class SavingsTests(TestCase):
         export = self.client.get(url + "export.csv", sep).content.decode()
         self.assertIn("From checking", export)
         self.assertNotIn("To savings", export)
-        # One mode for both tabs: Overview renders it before paint and hides the spending-only By category card.
+        # One mode for both tabs: Overview renders it before paint.
         overview = self.client.get(f"/workspaces/{self.personal.pk}/")
         self.assertContains(overview, '<html lang="en" data-overview-mode="savings">')
-        self.assertContains(overview, 'aria-labelledby="categories-title" class="card" data-mode="spending"')
         # A group sees only the shared savings account.
         self.login(self.bob)
         group = self.client.get(f"/workspaces/{self.group.pk}/transactions/", sep)

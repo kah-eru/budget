@@ -1,11 +1,41 @@
 {% extends 'budget/base.html' %}
 {% load money %}
 {% block content %}
-<section aria-labelledby="budgets-title" class="card">
-  <h1 id="budgets-title" class="mb-1 text-3xl">Budgets</h1>
-  <p class="mb-4 text-muted">{% if workspace.is_personal %}Limits on your own spending.{% else %}Shared by everyone in {{ workspace.name }}, using only accounts shared here.{% endif %} This month and this year so far. Fixed bills are monthly; yearly costs are set aside a twelfth each month.</p>
-  <a class="primary mb-2" href="{% url 'budget_create' workspace.pk %}">Add budget</a>
-  <ul>{% for p in budgets %}{% include 'budget/components/budget_row.html' %}{% empty %}<li class="py-5 text-muted">No budgets yet. Example: Dining, $300 a month.</li>{% endfor %}</ul>
+<h1 class="sr-only">Budget</h1>
+<div class="mb-3">{% include "budget/components/period_nav.html" %}</div>
+<section aria-labelledby="categories-title" class="card">
+  <h2 id="categories-title" class="mb-1 text-2xl font-medium">Categories</h2>
+  <p class="mb-2 text-sm text-muted">{{ label }} · {% if workspace.is_personal %}your own spending{% else %}shared by everyone in {{ workspace.name }}, using only accounts shared here{% endif %}. Tap a category to set its limit and choose what goes in it.</p>
+  {% if kind == 'all' %}<p class="mb-2 text-sm text-muted">Budgets cover a month or a year. Choose 1M or 1Y to see limits.</p>{% endif %}
+  <ul class="divide-y divide-line">
+    {% for r in rows %}
+    <li><a class="row-link category-row -mx-2 block rounded-lg px-2 py-3" href="{% url 'category_edit' workspace.pk r.category.pk %}{{ period_query }}">
+      <span class="flex items-baseline justify-between gap-3"><span class="min-w-0 break-words font-semibold">{{ r.category.name }}</span>
+        <span class="amount shrink-0 text-sm font-semibold{% if r.limit.over %} text-danger{% endif %}">{% if r.limit %}{{ r.limit.spent_cents|dollars }} of {{ r.limit.limit_cents|dollars }}{% else %}{{ r.spent.posted_cents|default:0|dollars }}{% endif %}</span></span>
+      {% if r.limit %}<span class="category-bar{% if r.limit.over %} is-over{% endif %}" aria-hidden="true"><span style="width: {{ r.limit.share }}%"></span></span>{% endif %}
+      <span class="mt-1 block text-xs text-muted">{% if r.limit %}{% if r.limit.over %}<span class="font-semibold text-danger">{{ r.limit.remaining_cents|dollars|cut:'-' }} over</span>{% elif r.limit.budget.kind == 'fixed' %}{% if r.limit.paid %}Paid{% else %}{{ r.limit.remaining_cents|dollars }} to go{% endif %}{% else %}{{ r.limit.remaining_cents|dollars }} left{% endif %}{% if r.limit.budget.kind == 'fixed' %} · Fixed bill{% if r.limit.budget.due_day %}, due on day {{ r.limit.budget.due_day }}{% endif %}{% elif r.limit.budget.kind == 'irregular' %} · set aside {{ r.limit.set_aside_monthly_cents|dollars }}/month{% endif %}{% if r.limit.start != start or r.limit.end != end %} · {{ r.limit.start.year }}{% endif %}{% if r.limit.pending_cents %} · + {{ r.limit.pending_cents|dollars }} pending{% endif %}{% else %}No limit{% if r.spent.pending_cents %} · + {{ r.spent.pending_cents|dollars }} pending{% endif %}{% endif %}</span>
+    </a></li>
+    {% empty %}
+    <li class="py-5 text-muted">No categories yet. Add one below.</li>
+    {% endfor %}
+    {% if uncategorized %}<li><a class="row-link -mx-2 block rounded-lg px-2 py-3" href="{% url 'transactions' workspace.pk %}?{{ range_query }}&amp;category=none">
+      <span class="flex items-baseline justify-between gap-3"><span class="font-semibold text-muted">Uncategorized</span><span class="amount text-sm font-semibold">{{ uncategorized.posted_cents|dollars }}</span></span>
+      <span class="mt-1 block text-xs text-muted">Open in Timeline to sort them</span>
+    </a></li>{% endif %}
+  </ul>
+  {% if budget_totals.limit_cents %}<p class="mt-1 border-t border-line pt-2 text-sm"><span class="font-semibold">{{ label }}:</span> <span class="amount">{{ budget_totals.spent_cents|dollars }} of {{ budget_totals.limit_cents|dollars }} · {{ budget_totals.left_cents|dollars }} left{% if budget_totals.over_cents %} · <span class="font-semibold text-danger">{{ budget_totals.over_cents|dollars }} over</span>{% endif %}</span>{% if kind == 'year' %}<span class="block text-xs text-muted">Monthly budgets count 12 times.</span>{% endif %}</p>{% endif %}
+  <form method="post" action="{% url 'categories' workspace.pk %}" class="mt-4 border-t border-line pt-4">{% csrf_token %}
+    <input type="hidden" name="period" value="{{ period_value }}">
+    {% include 'budget/components/form_fields.html' %}
+    <button class="secondary" type="submit">Add category</button>
+  </form>
+  <a class="stat-row chevron mt-2" href="{% url 'rules' workspace.pk %}"><span class="min-w-0 flex-1"><span class="block font-medium">All rules</span><span class="block text-sm text-muted">Set categories from names, like “STARBUCKS” → Dining</span></span></a>
+</section>
+<section aria-labelledby="others-title" class="card">
+  <h2 id="others-title" class="mb-1 text-2xl font-medium">Other budgets</h2>
+  <p class="mb-2 text-sm text-muted">Limits on names, like “Netflix”, whatever their category.</p>
+  <ul>{% for p in others %}{% include 'budget/components/budget_row.html' %}{% empty %}<li class="py-3 text-muted">{% if kind == 'all' %}Choose 1M or 1Y to see them.{% else %}None yet.{% endif %}</li>{% endfor %}</ul>
+  <a class="secondary mt-2" href="{% url 'budget_create' workspace.pk %}">Add budget</a>
 </section>
 <section aria-labelledby="plan-title" class="card">
   <h2 id="plan-title" class="mb-1 text-2xl font-medium">Monthly plan <span class="text-base font-normal text-muted">(estimate)</span></h2>
@@ -30,5 +60,4 @@
   <ul>{% for day, item in upcoming %}<li class="flex items-baseline justify-between gap-3 py-2"><span class="min-w-0 break-words"><span class="text-sm text-muted">{{ day|date:"M j" }}</span> {{ item.name }}</span><span class="amount font-medium">{% if item.kind == 'income' %}+{% endif %}{{ item.amount_cents|dollars }}</span></li>{% empty %}<li class="py-2 text-muted">Nothing due in the next 30 days.</li>{% endfor %}</ul>
   <a class="stat-row chevron font-medium" href="{% url 'bills' workspace.pk %}"><span class="flex-1">Bills, income and the 30-day forecast</span></a>
 </section>
-<a class="secondary" href="{% url 'workspace' workspace.pk %}">Back to overview</a>
 {% endblock %}

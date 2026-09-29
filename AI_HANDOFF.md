@@ -6,7 +6,7 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls and savings. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-29 at the owner's request. `main` and `feat/project-foundation` are at `c3b34c4` on GitHub, and Render deploys `main`. CI passed on both branches. This push: the range bar over the chart, the smaller total, the Chart | Budgets icon, date labels and time markers, phone swipes, tabs that keep the range, and a docs refresh.
-- **Last checks** (2026-09-29): 223 Django tests OK on SQLite; 14/14 Chrome checks; screenshots reviewed. Neon last run 2026-09-28 (48/48; no query changes since).
+- **Last checks** (2026-09-29): 224 Django tests OK on SQLite; budgets/categories/reporting/savings 48/48 on Neon PostgreSQL; 14/14 Chrome checks; screenshots reviewed.
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,19 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). Load-gate item: batch the name-match budgets in `budget_progress`.
+
+Latest request (2026-09-29): a separate Budget page with every spending category (create a category, set a limit, choose what goes in it); Settings in the top-right pill with + and the bell; Overview in the middle of the bottom bar. Plan approved.
+- **User choices:** Timeline · Overview · Budget; the Overview's budget pieces move to the tab; rows open a category page; the plan, Goals and Bills sit below.
+- **Built:**
+  - `budget_list` rewritten, `category.html`, `period_budgets()`, `next_url()`, `with_category()`
+  - the header gear and the new nav
+  - the Overview's budget pieces removed
+  - Details: [development guide](docs/development.md#budget-tab-settings-in-the-header--september-29).
+- **Fixed:** Chrome's own history swipe was taking some right swipes, so phones now set `overscroll-behavior-x: none`.
+- **Verification:** 224 Django tests OK; 48/48 on Neon; 14/14 Chrome checks; screenshots reviewed.
+- Committed locally, **not pushed**. The preview server is running with it.
+
+## Log (newest first)
 
 Latest request (2026-09-29, third pass): "Today" as plain text in place of the This month chip; phone swipes (on the chart, away from its line, for the period; elsewhere for the Overview, Timeline and Settings tabs); time markers on the chart; drop "View … timeline", so switching tabs keeps the period. Plan approved.
 - **User choice:** time lines (8/15/22, Apr/Jul/Oct, each Jan 1).
@@ -27,8 +40,6 @@ Latest request (2026-09-29, third pass): "Today" as plain text in place of the T
   - wireframes: two older notes point to their replacements
   - build plan: the status line was stale (it said milestones 2–8 hadn't started)
   - The development guide's dated entries are left as history. No code changes.
-
-## Log (newest first)
 
 Latest request (2026-09-29, second pass): center the 1M / 1Y / Lifetime bar right above the graph and make it shorter, on the Overview, the Timeline and the Savings page; add date labels under the graph (the period start on the left; today, or a small button back to this month or year, on the right). Plan approved.
 - **User choices:** the current period's chart ends at today; a year shows `2026`; Lifetime shows the first record's date; the List layout gets the bar centered above the list.

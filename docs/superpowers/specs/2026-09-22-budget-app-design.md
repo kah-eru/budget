@@ -195,6 +195,15 @@ User-requested features with proposed first defaults. None are implemented. "Cov
 
 Permission rules from the rest of this document apply to every addition: workspace-scoped data, owner-only account edits, private accounts excluded from group totals, and permission rechecks before any alert is delivered.
 
+### Requested — 2026-09-29: a Budget tab, Settings in the header, Overview in the middle
+Status: built 2026-09-29 (development guide "Budget tab"). User choices:
+- the tabs are Timeline · Overview · Budget
+- the Overview's budget pieces move to the Budget tab
+- category rows show spent against the limit, and open a category page
+- the plan, Goals and Bills sit below the categories
+- **Budget tab:** every spending category, where you can create a category, set a limit, and edit which transactions go in it.
+- **Header:** Settings moves into the top-right pill with + and the bell.
+
 ### Requested — 2026-09-29 (third pass): Today, phone swipes, time markers, tabs keep the range
 Status: built 2026-09-29 (development guide "Swipes, time markers and tabs that keep the range"). User choice: time lines rather than amount lines.
 - **Today:** the "This month" chip becomes the plain text "Today", in the bottom-right label's place.

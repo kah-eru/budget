@@ -1,4 +1,4 @@
-{% load money %}<li><a class="row-link -mx-2 block rounded-lg px-2 py-3" href="{% url 'budget_edit' workspace.pk p.budget.pk %}">
+{% load money %}<li><a class="row-link -mx-2 block rounded-lg px-2 py-3" href="{% url 'budget_edit' workspace.pk p.budget.pk %}{% if next %}?next={{ next|urlencode:'' }}{% endif %}">
   <span class="flex flex-wrap items-baseline justify-between gap-x-3"><span class="min-w-0 break-words font-semibold">{{ p.budget }}</span><span class="amount text-sm font-medium">{{ p.spent_cents|dollars }} of {{ p.limit_cents|dollars }}</span></span>
   <span class="category-bar{% if p.over %} is-over{% endif %}" aria-hidden="true"><span style="width: {{ p.share }}%"></span></span>
   <span class="mt-1 block text-sm text-muted">

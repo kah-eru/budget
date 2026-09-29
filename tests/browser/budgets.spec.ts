@@ -7,7 +7,7 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   await page.getByLabel("Username", { exact: true }).fill("browser-check");
   await page.getByLabel("Password", { exact: true }).fill("synthetic-browser-check-only");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.getByRole("link", { name: "Manage budgets" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
   await page.getByRole("link", { name: /^Income/ }).click();
   await page.getByLabel("Expected monthly income (USD)").fill("5000");
   await page.getByRole("button", { name: "Save income" }).click();
@@ -21,26 +21,31 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   };
   await add("Fixed bill", "Housing", "1500", "1");
   await add("Yearly or irregular cost", "Health", "1200");
-  // Overview's Chart | Budgets icon shows each budget and is remembered on this device.
-  await page.goto("/");
-  await page.getByRole("button", { name: "Show budgets" }).click();
-  const budgetsPanel = page.locator('[data-panel="budgets"]');
-  await expect(budgetsPanel).toBeVisible();
-  await expect(budgetsPanel).toContainText("Housing");
-  await expect(page.locator('[data-panel="chart"]')).toBeHidden();
-  await page.reload();
-  await expect(budgetsPanel).toBeVisible();
+  // The Budget tab lists every category with its limit; the Overview no longer carries budgets.
+  const categories = page.getByRole("region", { name: "Categories" });
+  await expect(categories.getByRole("link", { name: /^Housing/ })).toContainText("Fixed bill, due on day 1");
+  await expect(categories.getByRole("link", { name: /^Health/ })).toContainText("set aside $100.00/month");
   await page.setViewportSize({ width: 360, height: 800 });
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
-    await page.screenshot({ path: `.local/overview-budgets-${scheme}.png` });
+    await page.screenshot({ path: `.local/budget-tab-${scheme}.png` });
+  }
+  // A category's page: its limit, what goes in it, recent rows.
+  await categories.getByRole("link", { name: /^Housing/ }).click();
+  await expect(page.getByRole("region", { name: "Limit" })).toContainText("$1,500.00");
+  await expect(page.getByRole("link", { name: "New rule" })).toBeVisible();
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+    await page.screenshot({ path: `.local/category-page-${scheme}.png`, fullPage: true });
   }
   await page.emulateMedia({ colorScheme: "light" });
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.getByRole("button", { name: "Show chart" }).click();
-  await expect(page.locator('[data-panel="chart"]')).toBeVisible();
-  await page.getByRole("link", { name: "Manage budgets" }).click();
+  await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await expect(page.locator("main")).not.toContainText("By category");
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
   const plan = page.getByRole("region", { name: /Monthly plan/ });
   await expect(plan).toContainText("Disposable income");
   await expect(plan).toContainText("$5,000.00");
@@ -92,8 +97,8 @@ test("fixed, yearly and flexible budgets feed the monthly plan", async ({ page }
   await page.getByLabel("Description").fill(`Warehouse${tag} #7`);
   await page.getByRole("button", { name: "Save transaction" }).click();
   await page.goto("/");
-  await page.getByRole("link", { name: "Manage categories" }).click();
-  await page.getByRole("link", { name: /^Rules/ }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
+  await page.getByRole("link", { name: /^All rules/ }).click();
   await page.getByRole("link", { name: "Add rule" }).click();
   await page.getByLabel("Text").fill(`warehouse${tag}`);
   await page.getByLabel("Category", { exact: true }).selectOption({ label: "Groceries" });

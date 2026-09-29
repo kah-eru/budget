@@ -166,7 +166,7 @@ class YearlyTests(ReportingTests):
         self.assertEqual(response.context["start"], date(2023, 6, 1))
         self.assertContains(response, "Lifetime spending · since June 2023")
         self.assertNotContains(response, 'aria-label="Previous')
-        self.assertContains(response, "Budgets cover a month or a year")
+        self.assertContains(self.client.get(f"/workspaces/{self.group.pk}/budgets/?period=all"), "Budgets cover a month or a year")
         self.assertContains(response, '?period=2023">2023<')
         self.assertContains(response, "?span=all")  # Timeline links keep the range
         # The Timeline's Lifetime passes the two-year limit and charts by month; each day's header still renders.

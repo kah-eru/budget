@@ -163,9 +163,6 @@
   .chip[aria-current="page"], .segment[aria-current="page"] { @apply bg-accent text-on-accent; }
   .range-arrow { @apply inline-flex size-7 items-center justify-center rounded-full font-bold text-accent-text hover:bg-sunken; }
   .back-chip { @apply inline-flex min-h-7 items-center gap-1 rounded-full bg-accent-soft px-2.5 font-bold text-accent-text; }
-  .icon-toggle { @apply inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-line-strong bg-surface text-accent-text; }
-  .icon-toggle svg { @apply size-5; }
-  :root:not([data-overview="budgets"]) .icon-toggle [data-icon="chart"], :root[data-overview="budgets"] .icon-toggle [data-icon="budgets"] { display: none; }
   /* Segmented System / Light / Dark control; the radio stays focusable, the label shows focus. */
   .segment { @apply relative flex-1 cursor-pointer rounded-full px-3 py-2 text-center text-sm font-bold text-accent-text has-[:checked]:bg-accent has-[:checked]:text-on-accent has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--focus)]; transition: background-color 100ms ease-out; }
   .stat-row { @apply flex min-h-12 items-center justify-between gap-3 border-b border-line py-3; }
@@ -179,8 +176,8 @@
   .chevron::after { content: "›"; @apply ml-2 text-lg text-muted; }
   /* The chart's space is held before its code loads, so nothing below it moves. No JavaScript: no slot (the table has the numbers). */
   /* Shorter than the old 2.4:1, and capped so a wide screen doesn't get a tall chart. spending-chart.tsx matches it. */
-  /* Sideways drags on phones belong to assets/swipe.ts; vertical ones still scroll. */
-  @media (width < 40rem) { #main { touch-action: pan-y; } }
+  /* Sideways drags on phones belong to assets/swipe.ts; vertical ones still scroll. No browser history swipe mid-page. */
+  @media (width < 40rem) { html { overscroll-behavior-x: none; } #main { touch-action: pan-y; } }
   .chart-slot { display: none; width: 100%; aspect-ratio: 2.8 / 1; max-height: 13rem; }
   :root.js .chart-slot { display: block; }
   /* The placeholder line appears only if the chart is slow (over 0.4 s), so a fast chart never shows a line before its draw-in. */
@@ -203,11 +200,12 @@
   .menu-item { @apply flex min-h-11 w-full items-center rounded-lg px-3 text-sm font-medium text-ink; }
   .menu-item:hover, .menu-item:focus-visible { background: var(--accent-soft); }
   .menu-item[aria-current="page"] { @apply font-bold text-accent-text; }
-  /* Header: + (or Manage sharing) and the bell share one pill. */
+  /* Header: + (or Manage sharing), the bell and Settings share one pill. */
   .icon-pill { @apply inline-flex items-center gap-0.5 rounded-full border border-line-strong bg-surface p-0.5; }
   .icon-pill-item { @apply inline-flex size-10 items-center justify-center rounded-full text-accent-text; transition: transform 100ms ease-out, background-color 100ms ease-out; }
   .icon-pill-item svg { @apply size-5; }
   .icon-pill-item:active { transform: scale(0.95); background-color: var(--pressed); }
+  .icon-pill-item[aria-current="page"] { background-color: var(--accent-soft); }
   .icon-pill .alerts-link { @apply min-h-10 min-w-10; }
   /* A hero note: inline from sm up; on phones an (i) button opens it as a popover (placed by app.tsx). */
   .info-button { @apply inline-flex size-8 shrink-0 items-center justify-center rounded-full text-accent-text; }
@@ -218,7 +216,6 @@
   /* Timeline Filters and Overview panels: hidden by CSS once JS runs, so nothing flashes; without JS they all show. */
   :root.js .filters-panel:not(.is-open) { display: none; }
   :root:not(.js) [data-filters-toggle] { display: none; }
-  :root.js:not([data-overview="budgets"]) [data-panel="budgets"], :root.js[data-overview="budgets"] [data-panel="chart"] { display: none; }
   :root.js:not([data-overview-mode="savings"]) [data-mode="savings"], :root.js[data-overview-mode="savings"] [data-mode="spending"] { display: none; }
   /* Timeline account tick boxes. */
   .tick-chip { @apply inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line-strong bg-surface py-2 pr-4 pl-3 text-sm font-medium has-[:checked]:border-accent has-[:checked]:bg-accent-soft; transition: background-color 100ms ease-out; }

@@ -29,13 +29,13 @@ const mountCharts = () => {
   });
 };
 
-// Switches: the header's Spending | Savings (overviewMode) and Overview's Chart | Budgets icon (overview). base.html applies
-// the choices before paint as data attributes on <html>, and CSS shows the matching panels; without JS the switches stay
-// hidden and every panel shows. The mode lives in a cookie because the server renders the Timeline for it.
-const applySwitch = (key: "overview" | "overviewMode", value: string) => {
-  root.dataset[key] = value;
+// The header's Spending | Savings switch. base.html renders the mode as data-overview-mode on <html> and CSS shows the
+// matching sections; without JS the switch stays hidden and both show. The mode lives in a cookie because the server
+// renders the Timeline for it.
+const applySwitch = (value: string) => {
+  root.dataset.overviewMode = value;
   mountCharts();
-  if (!reduced) document.querySelectorAll<HTMLElement>(`[data-panel="${value}"], [data-mode="${value}"]`).forEach((panel) => panel.animate({ opacity: [0, 1] }, { duration: 150, easing: "ease-out" }));
+  if (!reduced) document.querySelectorAll<HTMLElement>(`[data-mode="${value}"]`).forEach((panel) => panel.animate({ opacity: [0, 1] }, { duration: 150, easing: "ease-out" }));
 };
 document.querySelectorAll<HTMLFieldSetElement>("[data-switch]").forEach((fieldset) => {
   const current = fieldset.querySelector<HTMLInputElement>(`input[value="${root.dataset.overviewMode}"]`);
@@ -59,22 +59,7 @@ document.querySelectorAll<HTMLFieldSetElement>("[data-switch]").forEach((fieldse
       location.replace(url);
       return;
     }
-    applySwitch("overviewMode", value);
-  });
-});
-document.querySelectorAll<HTMLButtonElement>("[data-overview-toggle]").forEach((button) => {
-  const label = () => (button.ariaLabel = root.dataset.overview === "budgets" ? "Show chart" : "Show budgets");
-  label();
-  button.hidden = false;
-  button.addEventListener("click", () => {
-    const value = root.dataset.overview === "budgets" ? "chart" : "budgets";
-    try {
-      localStorage.setItem("overview", value);
-    } catch {
-      // Storage blocked: the choice holds until the page changes.
-    }
-    applySwitch("overview", value);
-    label();
+    applySwitch(value);
   });
 });
 mountCharts();

@@ -38,7 +38,6 @@ test("a savings account shows on Overview and the Savings page with its net save
   await expect(savingsMode).toBeVisible();
   await expect(savingsMode).toContainText("saved");
   await expect(page.locator('[data-mode="spending"]').first()).toBeHidden();
-  await expect(page.getByRole("region", { name: "By category" })).toBeHidden();
   // The same mode on the Timeline: only savings accounts, with money in, out and net saved.
   await page.getByRole("link", { name: "Timeline", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Savings", exact: true })).toBeVisible();

@@ -26,7 +26,8 @@ test("categorize a transaction, see it by category on Overview, filter the timel
 
   await page.getByRole("link", { name: /^Back to / }).click();
   await page.goto(page.url().split("?")[0] + "?period=2026-04");
-  const section = page.getByRole("region", { name: "By category" });
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();  // the tab keeps April
+  const section = page.getByRole("region", { name: "Categories" });
   await expect(section.getByRole("link", { name: /^Groceries/ })).toBeVisible();
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
@@ -35,20 +36,19 @@ test("categorize a transaction, see it by category on Overview, filter the timel
     await section.screenshot({ path: `.local/categories-${scheme}.png` });
   }
   await section.getByRole("link", { name: /^Groceries/ }).click();
+  await page.getByRole("link", { name: /in Timeline/ }).click();
   await expect(page.getByLabel("Category", { exact: true })).toHaveValue(/\d+/);
   // The reused preview database holds earlier runs' April groceries, so search for this run's row within the category.
   await page.goto(page.url() + "&q=" + suffix);
   await expect(page.locator("main")).toContainText("Market " + suffix);
 
-  await page.goBack();
-  await page.goBack();
-  await page.getByRole("link", { name: "Manage categories" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Pets " + suffix);
   await page.getByRole("button", { name: "Add category" }).click();
-  await expect(page.getByRole("link", { name: "Pets " + suffix })).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp("^Pets " + suffix) })).toBeVisible();
 
   // A rule previews its matches; applying it to history keeps the hand-picked Groceries.
-  await page.getByRole("link", { name: /^Rules/ }).click();
+  await page.getByRole("link", { name: /^All rules/ }).click();
   await page.getByRole("link", { name: "Add rule" }).click();
   await page.getByLabel("Text").fill("market " + suffix);
   await page.getByLabel("Category", { exact: true }).selectOption({ label: "Pets " + suffix });
@@ -64,18 +64,15 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   await expect(page.locator("body")).toContainText("0 existing transactions updated");
   await expect(page.getByRole("link", { name: new RegExp("Name contains “market " + suffix) })).toBeVisible();
 
-  // A name-match budget below the April spend shows as over on Overview.
+  // A name-match budget below the April spend shows as over on the Budget tab.
   await page.goto("/");
-  await page.goto(page.url().split("?")[0] + "?period=2026-04");
-  await page.getByRole("link", { name: "Manage budgets" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
   await page.getByRole("link", { name: "Add budget" }).click();
   await page.getByLabel("Or a name containing").fill("market " + suffix);
   await page.getByLabel("Limit (USD)").fill("50");
   await page.getByRole("button", { name: "Save budget" }).click();
-  await page.goto("/");
   await page.goto(page.url().split("?")[0] + "?period=2026-04");
-  await page.getByRole("button", { name: "Show budgets" }).click();  // Overview's Chart | Budgets switch
-  const budgets = page.getByRole("region", { name: /^Budgets/ });
+  const budgets = page.getByRole("region", { name: "Other budgets" });
   await expect(budgets.getByRole("link", { name: new RegExp("market " + suffix) })).toContainText("$12.10 over");
   for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
@@ -85,7 +82,6 @@ test("categorize a transaction, see it by category on Overview, filter the timel
 
   // A $5 budget this month, then a $6 purchase today: one alert in the header and the inbox.
   await page.emulateMedia({ colorScheme: "light" });
-  await page.getByRole("link", { name: "Manage budgets" }).click();
   await page.getByRole("link", { name: "Add budget" }).click();
   await page.getByLabel("Or a name containing").fill("alert " + suffix);
   await page.getByLabel("Limit (USD)").fill("5");
@@ -121,8 +117,8 @@ test("categorize a transaction, see it by category on Overview, filter the timel
   for (const d of [`Bagels${tag} #12`, `Bagels${tag} #34`, `Deli${tag} #1`, `Deli${tag} #2`]) await addTxn(d);
   await page.goto("/");
   await page.goto(page.url().split("?")[0] + "?period=2026-04");
-  await page.getByRole("link", { name: "Manage categories" }).click();
-  await page.getByRole("link", { name: /^Dining( ›)?$/ }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
+  await page.getByRole("region", { name: "Categories" }).getByRole("link", { name: /^Dining/ }).click();
   await page.getByRole("link", { name: "Add transactions" }).click();
   await page.getByLabel("Search transaction names").fill(`bagels${tag}`);
   await page.getByRole("button", { name: "Search" }).click();

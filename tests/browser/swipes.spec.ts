@@ -11,6 +11,8 @@ test("phone swipes: the chart steps months, the page switches tabs, the line kee
   await page.getByRole("link", { name: "Overview", exact: true }).click();
   const cdp = await page.context().newCDPSession(page);
   const swipe = async (x1: number, y1: number, x2: number, y2 = y1) => {
+    // Let the page change's crossfade end first: during it every touch lands on <html>.
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x1, y: y1 }] });
     for (let i = 1; i <= 8; i++) {
       await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x1 + ((x2 - x1) * i) / 8, y: y1 + ((y2 - y1) * i) / 8 }] });
@@ -41,16 +43,21 @@ test("phone swipes: the chart steps months, the page switches tabs, the line kee
   expect(page.url()).not.toBe(here);
   const next = (await chart.boundingBox())!;
   await swipe(next.x + next.width * 0.2, next.y + 6, next.x + next.width * 0.7);
+  await expect(page).toHaveURL(here);  // wait for the page itself, not a link that vanishes mid-navigation
   await expect(page.getByRole("link", { name: /^Today/ })).toHaveCount(0);
 
-  // Anywhere else: the tabs, keeping the range.
+  // Anywhere else: the tabs (Timeline · Overview · Budget), keeping the range.
   const row = (await page.getByText("Posted spending", { exact: true }).boundingBox())!;
   await swipe(300, row.y + 5, 60);
+  await expect(page).toHaveURL(/\/budgets\/\?period=/);
+  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" })).toHaveAttribute("aria-current", "page");
+  const heading = (await page.getByRole("heading", { name: "Categories" }).boundingBox())!;
+  await swipe(60, heading.y + 5, 300);
+  await expect(page).toHaveURL(here);
+  const overviewRow = (await page.getByText("Posted spending", { exact: true }).boundingBox())!;
+  await swipe(60, overviewRow.y + 5, 300);
   await expect(page).toHaveURL(/\/transactions\/\?start=/);
-  await expect(page.getByRole("link", { name: "Timeline", exact: true })).toHaveAttribute("aria-current", "page");
-  const timelineRow = (await page.getByText("Posted spending", { exact: true }).boundingBox())!;
-  await swipe(60, timelineRow.y + 5, 300);
-  await expect(page).toHaveURL(/\/workspaces\/\d+\/\?period=/);
+  // Settings sits in the header now, not in the tabs, so a swipe there stays put.
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   const settings = page.url();
   await swipe(300, 400, 60);

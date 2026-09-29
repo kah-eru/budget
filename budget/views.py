@@ -593,7 +593,6 @@ def workspace_detail(request, workspace_id):
     series = daily(visible_transactions(request.user, workspace), start, end, by_month=kind != "month")
     context["series"], context["table"] = until_today(series), {"year": series, "all": by_year(series)}.get(kind)
     context["markers"] = chart_markers(kind, context["series"])
-    context["range_query"] = urlencode(context["range_params"])
     context["change_cents"] = None if kind == "all" else context["month"]["posted_cents"] - spending(request.user, workspace, *prev_range)["posted_cents"]
     # One grouped query for each account's posted spending in the period (the row pill).
     per_account = {r["account"]: _shape(r)["posted_cents"] for r in visible_transactions(request.user, workspace)
@@ -601,18 +600,6 @@ def workspace_detail(request, workspace_id):
     context["accounts"] = list(visible_accounts(request.user, workspace).select_related("owner").order_by("name", "pk"))
     for account in context["accounts"]:
         account.period_cents = per_account.get(account.pk, 0)
-    # Month view: monthly budgets for that month and yearly ones for their year. Year view: every budget over the year,
-    # a monthly one at 12 times its limit. The total covers only budgets measured over the period shown.
-    budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
-    # Lifetime has no budget period: the panel asks for 1M or 1Y instead.
-    context["budgets"] = [] if kind == "all" else budget_progress(request.user, workspace, budgets, start, span=(start, end) if kind == "year" else None)
-    same = [p for p in context["budgets"] if (p["start"], p["end"]) == (start, end)]
-    context["budget_totals"] = {"limit_cents": sum(p["limit_cents"] for p in same), "spent_cents": sum(p["spent_cents"] for p in same),
-                                "left_cents": sum(max(0, p["remaining_cents"]) for p in same), "over_cents": sum(max(0, -p["remaining_cents"]) for p in same)}
-    context["categories"] = by_category(visible_transactions(request.user, workspace), start, end, workspace)
-    top = max((c["posted_cents"] for c in context["categories"]), default=0)
-    for c in context["categories"]:
-        c["share"] = max(0, round(100 * c["posted_cents"] / top)) if top > 0 else 0
     context["membership_notices"] = MembershipNotice.objects.filter(workspace=workspace, recipient=request.user).order_by("-pk")[:20]
     context["worth"] = net_worth(request.user, workspace)
     saved = savings(request.user, workspace, start, end)
@@ -960,6 +947,9 @@ def category_list(request, workspace_id):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, f"Added {form.instance.name}.")
+        if "period" in request.POST:  # added from the Budget tab: back to it, on the same period
+            period = request.POST["period"]
+            return redirect(reverse("budgets", args=[workspace.pk]) + (f"?period={quote(period)}" if period else ""))
         return redirect("categories", workspace_id=workspace.pk)
     return render(request, "budget/categories.html", {**page_context(request.user, workspace), "form": form,
                   "categories": workspace.categories.order_by("archived", "name")}, status=400 if request.method == "POST" else 200)
@@ -1008,10 +998,12 @@ def category_add(request, workspace_id, category_id):
 @login_required
 @require_http_methods(["GET", "POST"])
 def category_edit(request, workspace_id, category_id):
+    """A category's page from the Budget tab: its spending and limit for the period, its rules, a way to add transactions,
+    its recent transactions, and rename or archive."""
     workspace = get_workspace(request.user, workspace_id)
     category = get_object_or_404(workspace.categories, pk=category_id)
     form = CategoryForm(request.POST if request.method == "POST" else None, instance=category)
-    back = reverse("categories", args=[workspace.pk])
+    back = reverse("budgets", args=[workspace.pk])
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             form.save()
@@ -1020,22 +1012,68 @@ def category_edit(request, workspace_id, category_id):
                 category.split_rules.update(enabled=False)
             Workspace.objects.filter(pk=workspace.pk).update(data_revision=F("data_revision") + 1)
         messages.success(request, "Category saved." + (" Its rules are now off." if category.archived else ""))
-        return redirect(back)
-    return render(request, "budget/form.html", {**page_context(request.user, workspace), "form": form, "title": f"Edit {category.name}", "action": "Save category",
-                  "cancel_url": back, "help": f"Renaming changes the label on every {workspace.name} transaction in this category.",
-                  "extra_url": reverse("category_add", args=[workspace.pk, category.pk]), "extra_label": "Add transactions"}, status=400 if request.method == "POST" else 200)
+        return redirect(back if category.archived else request.get_full_path())
+    context = {**page_context(request.user, workspace), **period_context(request.user, workspace, request.GET.get("period", ""))}
+    start, end = context["start"], context["end"]
+    spent = next((c for c in by_category(visible_transactions(request.user, workspace), start, end, workspace) if c["id"] == category.pk), {})
+    filters = TransactionFilterForm({"category": str(category.pk)}, accounts=visible_accounts(request.user, workspace), workspace=workspace)
+    recent = labelled(list(filters.apply(visible_transactions(request.user, workspace)).select_related("account").order_by("-posted_on", "-pk")[:10]), workspace) if filters.is_valid() else []
+    context.update(category=category, form=form, spent=spent, recent=recent, here=request.get_full_path(), back=request.get_full_path(), period_query=context["tab_query"]["overview"],
+                   limits=period_budgets(request.user, workspace, context, category.budgets.select_related("category")),
+                   rules=workspace.rules.filter(Q(category=category) | Q(split_category=category)).select_related("category", "split_category").order_by("priority", "pk"),
+                   timeline=reverse("transactions", args=[workspace.pk]) + "?" + urlencode([*context["range_params"], ("category", category.pk)]))
+    return render(request, "budget/category.html", context, status=400 if request.method == "POST" else 200)
+
+
+def next_url(request, default):
+    """A same-site ?next= to return to (a category page), or the default. Absolute and other-site URLs fall back."""
+    back = request.GET.get("next", "")
+    return back if back and url_has_allowed_host_and_scheme(back, allowed_hosts=None) else default
+
+
+def with_category(request, instance):
+    """A new budget or rule started from a category page (?category=<id>) begins with that category."""
+    return {"category": request.GET["category"]} if not instance.pk and request.GET.get("category", "").isdigit() else None
+
+
+def period_budgets(user, workspace, context, budgets):
+    """budget_progress() for the period on screen. Month view: monthly budgets for that month and yearly ones for their
+    year. Year view: every budget over the year, a monthly one at 12 times its limit. Lifetime has no budget period."""
+    kind, start, end = context["kind"], context["start"], context["end"]
+    return [] if kind == "all" else budget_progress(user, workspace, budgets, start, span=(start, end) if kind == "year" else None)
 
 
 @login_required
 def budget_list(request, workspace_id):
+    """The Budget tab: every category with its spending and limit for the period, then name-based budgets, the plan,
+    goals and bills. Any member may manage them; they only read spending this workspace can already see."""
     workspace = get_workspace(request.user, workspace_id)
-    budgets = workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk")
+    context = {**page_context(request.user, workspace), **period_context(request.user, workspace, request.GET.get("period", ""))}
+    kind, start, end = context["kind"], context["start"], context["end"]
     today = timezone.localdate()
-    return render(request, "budget/budgets.html", {**page_context(request.user, workspace),
-                  "budgets": budget_progress(request.user, workspace, budgets, today), "plan": disposable(request.user, workspace, today),
-                  "upcoming": recurring.forecast(workspace, today)["items"][:3],
-                  "goals": [goal_progress(g, request.user, today) for g in workspace.goals.select_related("account", "workspace").order_by("name", "pk")[:3]]
-                  if request.user.goals_enabled else None})
+    progress = period_budgets(request.user, workspace, context, workspace.budgets.select_related("category").order_by("category__name", "name_match", "pk"))
+    spent = {c["id"]: c for c in by_category(visible_transactions(request.user, workspace), start, end, workspace)}
+    limits = {}
+    for p in progress:
+        if p["budget"].category_id:
+            limits.setdefault(p["budget"].category_id, []).append(p)
+    rows = []
+    for category in workspace.categories.filter(archived=False).order_by("name"):
+        found = limits.get(category.pk, [])
+        # A category with a monthly and a yearly budget shows the one for the period on screen.
+        rows.append({"category": category, "spent": spent.get(category.pk, {}),
+                     "limit": next((p for p in found if p["budget"].period == kind), found[0] if found else None)})
+    same = [p for p in progress if (p["start"], p["end"]) == (start, end)]
+    form = CategoryForm(instance=Category(workspace=workspace))
+    del form.fields["archived"]
+    context.update(rows=rows, uncategorized=spent.get(None), others=[p for p in progress if not p["budget"].category_id], form=form,
+                   period_value=request.GET.get("period", ""), period_query=context["tab_query"]["overview"], range_query=urlencode(context["range_params"]),
+                   budget_totals={"limit_cents": sum(p["limit_cents"] for p in same), "spent_cents": sum(p["spent_cents"] for p in same),
+                                  "left_cents": sum(max(0, p["remaining_cents"]) for p in same), "over_cents": sum(max(0, -p["remaining_cents"]) for p in same)},
+                   plan=disposable(request.user, workspace, today), upcoming=recurring.forecast(workspace, today)["items"][:3],
+                   goals=[goal_progress(g, request.user, today) for g in workspace.goals.select_related("account", "workspace").order_by("name", "pk")[:3]]
+                   if request.user.goals_enabled else None)
+    return render(request, "budget/budgets.html", context)
 
 
 @login_required
@@ -1127,8 +1165,8 @@ def budget_edit(request, workspace_id, budget_id=None):
     """Any member may manage budgets; they only read spending this workspace can already see."""
     workspace = get_workspace(request.user, workspace_id)
     budget = get_object_or_404(workspace.budgets, pk=budget_id) if budget_id else Budget(workspace=workspace)
-    form = BudgetForm(request.POST if request.method == "POST" else None, instance=budget)
-    back = reverse("budgets", args=[workspace.pk])
+    form = BudgetForm(request.POST if request.method == "POST" else None, instance=budget, initial=with_category(request, budget))
+    back = next_url(request, reverse("budgets", args=[workspace.pk]))
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             form.save()
@@ -1168,8 +1206,8 @@ def rule_edit(request, workspace_id, rule_id=None):
     """Any member may manage rules: they only change this workspace's overlay, never the original entries."""
     workspace = get_workspace(request.user, workspace_id)
     rule = get_object_or_404(workspace.rules, pk=rule_id) if rule_id else Rule(workspace=workspace)
-    form = RuleForm(request.POST if request.method == "POST" else None, instance=rule)
-    back = reverse("rules", args=[workspace.pk])
+    form = RuleForm(request.POST if request.method == "POST" else None, instance=rule, initial=with_category(request, rule))
+    back = next_url(request, reverse("rules", args=[workspace.pk]))
     context = {**page_context(request.user, workspace), "form": form, "cancel_url": back, "rule": rule}
     if request.method == "POST" and form.is_valid():
         # ponytail: matches in Python over every visible row (casefold has no SQL equivalent); batch it if history grows large.

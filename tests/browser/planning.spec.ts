@@ -34,8 +34,7 @@ test("net worth, a recurring bill with its reminder, and an optional goal", asyn
   await shots(page, "networth");
 
   // A bill due in two days: the forecast lists it and Alerts reminds.
-  await page.getByRole("link", { name: "Overview", exact: true }).click();
-  await page.getByRole("link", { name: "Manage budgets" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
   await page.getByRole("link", { name: "Bills, income and the 30-day forecast" }).click();
   await page.getByRole("link", { name: "Add a bill or income" }).click();
   const due = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
@@ -51,8 +50,7 @@ test("net worth, a recurring bill with its reminder, and an optional goal", asyn
   // Goals stay hidden until turned on.
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Turn on goals" }).click();
-  await page.getByRole("link", { name: "Overview", exact: true }).click();
-  await page.getByRole("link", { name: "Manage budgets" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Budget" }).click();
   await page.getByRole("link", { name: "All goals" }).click();
   await page.getByRole("link", { name: "Add a goal" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Trip " + suffix);

@@ -46,7 +46,7 @@ class CategoryTests(TestCase):
 
     def test_overview_lists_category_spending(self):
         self.login(self.bob)
-        page = self.client.get(f"/workspaces/{self.group.pk}/", {"period": "2026-05"}).content.decode()
+        page = self.client.get(f"/workspaces/{self.group.pk}/budgets/", {"period": "2026-05"}).content.decode()
         self.assertIn("Groceries", page)
         self.assertIn("$45.00", page)
         self.assertNotIn("$33.33", page)

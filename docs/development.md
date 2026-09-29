@@ -826,4 +826,40 @@ User choice: time lines.
   - Settings stays put
 - Screenshots reviewed.
 
+## Budget tab, Settings in the header — September 29
+
+Why: the user wanted budgets easier to see:
+- a separate Budget page with every spending category, where you can create one, set a limit and choose what goes in it
+- Settings in the top-right pill
+- the Overview in the middle of the bottom bar
+
+User choices:
+- the tabs are Timeline · Overview · Budget
+- the Overview's budget pieces move to the tab
+- rows open a category page
+- the plan, Goals and Bills sit below the categories
+
+**Navigation:** `base.html` puts a gear (`aria-label="Settings"`) in `.icon-pill`. The bottom nav is Timeline, Overview and Budget. The Budget tab carries `tab_query.overview`, so it keeps the period. `swipe.ts` follows the nav order unchanged.
+
+**Budget tab (`budget_list`):**
+- `period_context()` supplies the period.
+- `by_category()` gives each category's spend. `period_budgets()` (formerly inline on the Overview) runs `budget_progress()` and gives the limits; a category shows the budget whose period matches the view.
+- `others` holds the name-based budgets.
+- The categories route redirects back to the tab when the form posts `period`.
+
+**Category page (`category_edit` → `category.html`):**
+- It shows the spend, `limits`, the rules whose category or split category this is, and the last 10 rows. Those come through `TransactionFilterForm(category=…)`, the Timeline's own filter, then `labelled()`.
+- Rename and archive post in place.
+- `budget_edit` and `rule_edit` take `?category=` (`with_category()` prefill) and a same-site `?next=` (`next_url()`; anything else falls back).
+
+**Overview:** the Chart | Budgets icon, the budgets panel, By category, and the Manage links are gone, along with their JS, CSS and `localStorage` flag. `workspace_detail` no longer runs `budget_progress` or `by_category`.
+
+**Found and fixed:** some right swipes in the last push were Chrome's own history swipe, not `swipe.ts`: `touch-action` doesn't stop it. Phones now set `html { overscroll-behavior-x: none }`. `swipes.spec.ts` also waits for each page change's crossfade, because during it touches land on `<html>`.
+
+**Verification:**
+- 224 Django tests OK. New: the Budget tab lists every category, including ones with no spending, with limit and uncategorized rows; adding returns to the tab; the category page shows limits, rules and recent rows; the prefill; `next`, and the fallback for an outside `next`.
+- 48/48 budgets, categories, reporting and savings tests on Neon.
+- 14/14 Chrome checks. The budgets, categories, planning and swipe specs now go through the tab.
+- Screenshots reviewed. The preview database has dozens of duplicate Housing budgets from past runs, which makes its category page long.
+
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.
