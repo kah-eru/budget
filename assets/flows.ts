@@ -7,6 +7,7 @@ const AWAY = "url(#flow-away)";
 const KEY = "budget-flows";
 
 export function setup(lanes: HTMLElement) {
+  lanes.querySelector(":scope > svg.flows")?.remove(); // a copy restored by Back still has the old lines
   const svg = document.createElementNS(NS, "svg");
   svg.classList.add("flows");
   svg.setAttribute("aria-hidden", "true");

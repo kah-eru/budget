@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { test, expect } from "./turbo";
 
 async function add(page: Page, accountName: string, type: string, amount: string, description: string) {
   await page.getByRole("link", { name: "Overview", exact: true }).click();

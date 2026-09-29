@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./turbo";
 
 // Run only against the disposable local development database. These are synthetic.
 test("sign-in, private account creation, explicit sharing, reflow and reduced motion", async ({ page }) => {

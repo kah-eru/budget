@@ -24,7 +24,8 @@ function TimeMarkers({ dates }: { dates: Date[] }) {
 export function mount(el: HTMLElement, days: Day[], labels = { total: "Running total", day: "That day" }, markers: string[] = []) {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const data = days.map((d) => ({ date: new Date(d.day + "T00:00:00"), total: d.cumulative_cents / 100, day: d.posted_cents / 100 }));
-  createRoot(el).render(
+  const root = createRoot(el);
+  root.render(
     <MotionConfig reducedMotion="user">
       <AreaChart data={data} aspectRatio="2.8 / 1" style={{ maxHeight: "13rem" }} animationDuration={reduced ? 0 : 350} margin={{ top: 12, right: 4, bottom: 4, left: 4 }}>
         {/* No axes: the number above is the headline, the tooltip gives the date, and faint lines mark the time. */}
@@ -37,4 +38,5 @@ export function mount(el: HTMLElement, days: Day[], labels = { total: "Running t
       </AreaChart>
     </MotionConfig>,
   );
+  return root;
 }

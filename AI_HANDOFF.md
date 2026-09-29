@@ -6,7 +6,7 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
 
 - **Stage:** a synthetic-data preview on Render. Built: milestones 1–5 and 9, plus Timeline by account (Graph | List with money lines), compact Timeline/Overview controls (icons under the chart, one-line rows that open, day lines with signed nets, Go to a day, export in Settings), savings, and a measured speed-up. Not started: AI insights (6; only the user's own API key), statements (7), the release/load gate (8). Status: [README](README.md).
 - **Git:** pushed 2026-09-29 at the owner's request. `main` and `feat/project-foundation` are at `b6f0167` on GitHub, and Render deploys `main` (migration 0023 applies on deploy). CI passed on both branches. This push: the Budget tab with category pages, Settings in the header pill, categories you fill yourself (full picker, move confirm, word rules, delete) and a docs refresh.
-- **Last checks** (2026-09-29): 236 Django tests OK on SQLite (4 PostgreSQL-only skipped); 91/91 affected tests on Neon PostgreSQL (audit fixes); 14/14 Chrome checks.
+- **Last checks** (2026-09-29): 237 Django tests OK on SQLite (4 PostgreSQL-only skipped); Chrome checks 15/15 (Turbo navigation).
 - **Local preview:** `tests/browser/server.py` on http://127.0.0.1:8000 (`browser-check`), with demo data from `tests/browser/seed_demo.py`. Details: [development guide](docs/development.md).
 - **Owner actions (optional):**
   - in Render, Plaid keys: `PLAID_CLIENT_ID`, `PLAID_SECRET` and a newly generated `PLAID_TOKEN_KEY`
@@ -14,6 +14,40 @@ Updated: 2026-09-29. Read current docs and inspect Git before resuming.
   - VAPID keys; an email provider; the Render cold-start decision
   - See the [operations guide](docs/operations.md).
 - **Next:** AI insights (brainstorm first; the provider is the user's choice). The rest of the load gate (8).
+
+Latest request (2026-09-29): "ok do 3": pages that change in place, with touch prefetch that works on Safari.
+- **Built:**
+  - Turbo Drive 8.0.23: links swap the body, and the code and chart chunk stay loaded
+  - the tabs are preloaded and show at once; Back restores the page from memory
+  - touching a link starts Turbo's prefetch (moving the finger 10 px cancels it)
+  - Alerts is never prefetched; bank pages load whole
+  - forms still load whole pages
+  - the speculation rules are gone
+  - Details: [development guide](docs/development.md#app-like-navigation-turbo--september-29).
+- **Fixed on the way:** on the Timeline, a second Spending | Savings switch did nothing, because Turbo keeps `<html>`. It's covered by `savings.spec.ts`.
+- **Skipped:** a service worker for static files. WhiteNoise already caches the hashed files for a year, and Turbo doesn't request them again.
+- **Trade-offs:**
+  - `app.js` is about 27 KB bigger gzipped, loaded once
+  - a preloaded tab can show numbers a few seconds old until its fresh copy lands (about 0.2 s)
+- **Verification:**
+  - 237 Django tests OK (4 skipped)
+  - `npm.cmd run build`
+  - Chrome: 15/15, with the new `navigation.spec.ts`; every spec now waits out Turbo's page swap (`tests/browser/turbo.ts`)
+  - not tried on a real iPhone yet
+- **Pushed** (user: "commit and push so it shows online"): `main` and `feat/project-foundation`. Render deploys `main`.
+
+## Log (newest first)
+
+Latest request (2026-09-29): iPhone apps feel smooth. Is that a browser limit, or can the site feel like an integrated app? Question only; **no product changes**.
+- **Answer given:** partly a browser limit. The main gap is that every tab change is a network page load, and Safari ignores the speculation-rules prefetch (it's off by default through Safari 26.5).
+- **Measured:** the live `/login/` page answers warm in about 0.15-0.20 s from this machine. Signed-in pages add Neon queries, and a free-tier cold start adds far more.
+- **Options offered, none chosen:**
+  1. open it from the Home Screen
+  2. fix cold starts (the owner's choice)
+  3. client-side navigation with touch-start prefetch that also works on Safari (for example Turbo), plus caching only the hashed static files
+  4. a native shell (Hotwire Native or Capacitor): the Apple Developer fee, a Mac build and App Store review; needs the user's decision
+  5. a full SwiftUI app (not recommended)
+- **Noticed:** the comment in `base.html` says there's no service worker, but `/sw.js` exists for push (it caches no pages). Not changed.
 
 Latest request (2026-09-29): fix the outside audit's confirmed findings ("do it"; plan approved).
 - **Fixed:**
@@ -45,8 +79,6 @@ Latest request (2026-09-29): fix the outside audit's confirmed findings ("do it"
   - build; 14/14 Chrome checks
   - swipe cancel and pinch zoom not tested in a browser
 - **Pushed** (user: "push it"): `main` and `feat/project-foundation` at `43643bc`; CI passed on both. Render deploys `main`.
-
-## Log (newest first)
 
 Latest request (2026-09-29): update the docs.
 - The README (the milestone 2 Timeline summary, and the speed-up under Also) and the spec (a new "Requested — 2026-09-29 (later)" section covering today's speed and Timeline requests) now match the five local commits.

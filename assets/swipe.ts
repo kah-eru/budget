@@ -118,8 +118,8 @@ function track(start: TouchEvent, moving: HTMLElement, target: Target, own: bool
   window.addEventListener("touchcancel", cancel, true);
 }
 
-export function setup() {
-  // A page reached by a swipe enters from the side the finger came from.
+// A page reached by a swipe enters from the side the finger came from.
+export function enter() {
   let entered: string | null = null;
   try {
     entered = sessionStorage.getItem("swipe");
@@ -128,18 +128,13 @@ export function setup() {
     // Storage blocked: no entrance.
   }
   const main = document.getElementById("main");
-  // Back to a page kept in the back-forward cache: undo the slide-out it left on.
-  window.addEventListener("pageshow", (event) => {
-    if (!event.persisted) return;
-    document.getAnimations().forEach((animation) => animation.cancel());
-    // The drag's inline offset (the page, or a chart swiped to another period), left on when the page was cached.
-    [main, ...document.querySelectorAll<HTMLElement>("[data-spending-chart] svg")].forEach((el) => el?.style.removeProperty("transform"));
-  });
   if (entered && main && !reduced.matches) {
     main.animate({ transform: [`translateX(${entered === "left" ? 40 : -40}px)`, "translateX(0px)"], opacity: [0, 1] }, { duration: 250, easing: EASE });
   }
+}
 
-  // Charts: capture runs before the chart's own touch handlers, so a swipe away from the line never shows the tooltip.
+// Charts, for each page: capture runs before the chart's own touch handlers, so a swipe away from the line never shows the tooltip.
+export function setupCharts() {
   document.querySelectorAll<HTMLElement>("[data-spending-chart]").forEach((slot) => {
     slot.addEventListener("touchstart", (event) => {
       const t = event.touches[0];
@@ -148,11 +143,21 @@ export function setup() {
       track(event, slot.querySelector<HTMLElement>("svg") ?? slot, periodLink, true);
     }, { capture: true, passive: true });
   });
+}
 
-  // Everywhere else: tabs.
+// Once: tabs from everywhere else, and a page back from the back-forward cache (a whole-page load after a form).
+export function setup() {
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    document.getAnimations().forEach((animation) => animation.cancel());
+    // The drag's inline offset (the page, or a chart swiped to another period), left on when the page was cached.
+    document.querySelectorAll<HTMLElement>("#main, [data-spending-chart] svg").forEach((el) => el.style.removeProperty("transform"));
+  });
+
   document.addEventListener("touchstart", (event) => {
     const t = event.touches[0];
     const el = event.target as Element;
+    const main = document.getElementById("main"); // Turbo swaps it on each page
     if (!phone.matches || !main || event.touches.length !== 1 || t.clientX < EDGE || t.clientX > window.innerWidth - EDGE) return;
     if (!main.contains(el) || el.closest("[data-spending-chart], input, select, textarea, label, [popover], dialog") || scrollsSideways(el)) return;
     track(event, main, tabLink, false);

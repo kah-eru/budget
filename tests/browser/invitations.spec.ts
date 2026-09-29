@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./turbo";
 
 // Synthetic local console email only; runserver stdout goes to this ignored file.
 async function latestMailLink(route: string) {

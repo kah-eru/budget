@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, settled } from "./turbo";
 
 // Synthetic data on the disposable local database only. Touches go through CDP, as a phone's would.
 test.use({ hasTouch: true, viewport: { width: 360, height: 800 } });
@@ -18,6 +18,7 @@ test("phone swipes: the chart steps months, the page switches tabs, the line kee
       await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x1 + ((x2 - x1) * i) / 8, y: y1 + ((y2 - y1) * i) / 8 }] });
     }
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await settled(page);  // a swipe that commits clicks a link, and Turbo swaps the page
   };
   const chart = page.locator("[data-spending-chart]:visible").first();
   await expect(chart.locator("svg path").first()).toBeAttached();

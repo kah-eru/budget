@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./turbo";
 
 // Synthetic data on the disposable local database only.
 test("a bank CSV is previewed, imported, shown and undone", async ({ page }) => {

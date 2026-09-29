@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./turbo";
 
 // Synthetic data on the disposable local database only.
 test("theme choice applies, survives reload and returns to system; Settings exports CSV", async ({ page }) => {

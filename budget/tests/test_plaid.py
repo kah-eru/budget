@@ -61,6 +61,14 @@ class PlaidTests(TestCase):
         with override_settings(PLAID_SECRET=""):
             self.assertEqual(self.client.get("/banks/connect/").status_code, 404)
 
+    def test_bank_pages_load_as_whole_pages(self):
+        # Turbo would otherwise prefetch them (each makes a Plaid link token) and keep Plaid's script across pages.
+        settings = self.client.get("/settings/").content.decode()
+        self.assertIn(f'data-turbo="false" href="/banks/{self.connection.pk}/accounts/', settings)
+        self.assertNotIn('href="/banks/', settings.replace('data-turbo="false" href="/banks/', ""))
+        with mock.patch("budget.plaid.link_token", return_value="link-sandbox-1"):
+            self.assertContains(self.client.get("/banks/connect/"), '<meta name="turbo-visit-control" content="reload">')
+
     def test_only_the_owner_reaches_a_connection(self):
         self.client.force_login(self.bob, backend="django.contrib.auth.backends.ModelBackend")
         base = f"/banks/{self.connection.pk}/"

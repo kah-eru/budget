@@ -1,4 +1,6 @@
 {% extends 'budget/base.html' %}
+{# Plaid's script belongs to one whole page: Back or Forward to here loads it fresh instead of Turbo's copy. #}
+{% block head %}<meta name="turbo-visit-control" content="reload">{% endblock %}
 {% block content %}
 <section class="max-w-xl card">
   {% if reconnect %}

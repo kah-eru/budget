@@ -183,7 +183,7 @@ Measured (lab only, not field data):
 - Setup: production-mode local server (DEBUG off, WhiteNoise manifest pipeline, synthetic SQLite, 300 synthetic transactions), Chrome with Slow 4G (150 ms RTT, 1.6 Mbps) and 4x CPU throttling, 390 px viewport. The measuring spec and server script were temporary.
 - **Found and fixed a production-only bug.** The chart chunk imported shared Motion code from `./app.js`, while Django served the page `app.<hash>.js`. The browser therefore loaded and ran the entry twice: two chart mounts, two theme listeners, and an extra 5 kB download. Dev used one URL, so it never showed. The message flash now uses native `element.animate` (what `motion/mini` wraps), so the entry shares nothing with the chart. Initial JS went from 4.79 to **1.17 kB gzip**.
 - **Chart skeleton.** A server-rendered slot with the chart's 2.4:1 aspect ratio holds a faint pulsing line (static under reduced motion) until the chart mounts. Page shift (CLS): Overview **0.117 → 0**, Timeline **0.096 → 0**. The slot is 149 px tall both before and after mount, in light and dark. Without JavaScript the slot is not shown (a `js` class on `<html>`), and a failed chart load removes it.
-- **Preloading.** Speculation rules (Chrome/Edge/Android; other browsers ignore them) prefetch the bottom-nav pages as soon as a page loads, and any other same-origin link on hover or touch. CSV export and `[download]` links are excluded, and GET pages have no side effects. Every tab switch was confirmed as served from the prefetch (`deliveryType: navigational-prefetch`), and `no-store` did not block it. Prefetched pages can be up to 5 minutes old (Chrome's limit); a new page load re-prefetches.
+- **Preloading** (replaced by Turbo; see [App-like navigation](#app-like-navigation-turbo--september-29)). Speculation rules (Chrome/Edge/Android; other browsers ignore them) prefetch the bottom-nav pages as soon as a page loads, and any other same-origin link on hover or touch. CSV export and `[download]` links are excluded, and GET pages have no side effects. Every tab switch was confirmed as served from the prefetch (`deliveryType: navigational-prefetch`), and `no-store` did not block it. Prefetched pages can be up to 5 minutes old (Chrome's limit); a new page load re-prefetches.
 - **Page crossfade.** Cross-document view transitions (Chrome, Safari 18.2+) crossfade between pages, the bottom nav holds still, and they are off under reduced motion. The head script opts in only when JavaScript runs: with JavaScript disabled, this Chrome left the page stuck behind the transition overlay, which broke the no-JavaScript browser checks.
 - **Installable.** A web app manifest (standalone display) plus an icon set (SVG, 180/192/512 PNG: the running-total line in Coffee Bean on Bubblegum Pink) and light/dark `theme-color`. On a phone, Add to Home Screen opens full screen without browser chrome. There is deliberately no service worker, so no financial page is ever stored offline.
 - **Font preload tried and dropped.** An A/B test with and without it showed no LCP difference (login 0.91–1.04 s vs 0.92–1.03 s); the font already uses `font-display: swap`.
@@ -1085,5 +1085,56 @@ Why: the user pasted an outside AI audit of `e9d3a15`. I checked each finding ag
 - 91/91 on Neon: timeline, splits, reporting, budgets, Plaid, push, savings, settings.
 - `npm.cmd run build`; 14/14 Chrome checks on a restarted preview server.
 - Not tested in a browser: the swipe cancel and pinch zoom. The Chrome checks have no touch cancel.
+
+## App-like navigation (Turbo) — September 29
+
+**Why:** the user asked why iPhone apps feel smoother than this site. Two things made it feel less like an app. Every tab change was a full page load that waited on the network. And Safari ignores speculation rules: they're off by default through Safari 26.5, so iPhones got no prefetch. The user chose option 3: swap pages in place and start fetching on touch.
+
+**Built:**
+- **Turbo Drive** (`@hotwired/turbo` 8.0.23; `assets/app.tsx`, types in `assets/turbo.d.ts`):
+  - Links swap the page's body. The app code, the styles and the chart code stay loaded, so the chart code (160 KB gzipped) is loaded once per visit, not once per page.
+  - `app.js` grows by about 27 KB gzipped, loaded once.
+  - Turbo crossfades pages as the browser's page transitions did (`<meta name="view-transition" content="same-origin">`), and does no crossfade under reduced motion.
+  - A page taking over half a second shows a 2 px accent progress bar.
+- **Tabs appear at once:**
+  - The three bottom-nav links have `data-turbo-preload`. Turbo fetches each tab once, into memory, when the page loads, and reuses that copy afterwards. It fetches a tab again only once it's no longer in memory.
+  - Tapping a tab shows that copy instantly while the fresh page loads.
+  - Back and Forward show the page as it was left.
+  - This replaces the speculation rules. Turbo's fetches can't use Chrome's prefetched pages, and Safari never used them.
+- **Prefetch on touch:**
+  - Turbo prefetches on hover only. A touch on a link now counts as a hover, and moving the finger more than 10 px (a scroll or a swipe) cancels it within Turbo's 100 ms wait.
+  - The tap's own later mouseenter is skipped, so nothing is fetched twice.
+  - Prefetches send `X-Sec-Purpose: prefetch`.
+- **Left out:**
+  - Alerts has `data-turbo-prefetch="false"`, because opening it marks alerts read.
+  - Bank links have `data-turbo="false"` and the Connect page has `turbo-visit-control: reload`: they make Plaid link tokens, and Plaid's script belongs to one whole page.
+- **Forms still load whole pages** (`Turbo.config.forms.mode = "off"`). Django re-renders an invalid form with status 200, which Turbo refuses to show.
+  - Signing out is a whole-page load, which clears Turbo's in-memory copies.
+  - Nothing is stored on disk. `/sw.js` still only handles push.
+- **Per-page setup:**
+  - `app.tsx` runs its per-page code once per `<body>`: at start and on each `turbo:load`.
+  - Chart React roots whose element has left the page are unmounted.
+  - A restored copy gets:
+    - its drag offset removed (`turbo:before-render`)
+    - its old flow lines replaced (`flows.ts`)
+    - no second save flash (`data-feedback` is removed after it plays)
+  - `swipe.ts` splits into:
+    - `setup()`, once: tab swipes and bfcache
+    - `setupCharts()`, for each page
+    - `enter()`, on the first render of a page reached by a swipe
+  - The Spending | Savings switch clears Turbo's cache, because pages kept from the old mode would be wrong, and preloads the tabs again. On the Timeline it now changes `<html data-overview-mode>` itself, since Turbo keeps `<html>`. The Chrome check caught that bug: after one switch, the next did nothing.
+  - `app.js` and `app.css` have `data-turbo-track="reload"`, so after a deploy the next page loads whole.
+
+**Skipped:** a service worker that caches the static files. WhiteNoise already serves the hashed files with year-long `immutable` caching, and with Turbo they aren't requested again between pages anyway.
+
+**Tests:**
+- `tests/browser/turbo.ts`: every spec imports `test` from it. After each click, it waits for `<html aria-busy>` to clear, since Playwright doesn't wait for Turbo's page swaps.
+- New `navigation.spec.ts` checks that:
+  - a tab keeps the same document, and its chart draws
+  - Back restores a working page with a single chart
+  - a touch prefetches Settings but never Alerts
+- Django: the tabs preload, Alerts opts out and there are no speculation rules (`test_timeline`); bank links and the Connect page load whole (`test_plaid`).
+
+**Not measured on a phone yet:** try the tabs, Back and a swipe from the Home Screen.
 
 Continue: AI insights (6), statements (7) or the release gate (8), as the user prefers. Bklit charts land in milestone 2; Kokonut Insights action in milestone 6. Live Manus tracking awaits public domain/pages. Shared storage, performance targets, SMTP delivery and production security still require release verification.

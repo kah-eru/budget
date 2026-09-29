@@ -97,6 +97,8 @@
 /* Page-to-page crossfade (Chrome, Safari 18.2+) so tabs read as one app; the bottom nav holds still. base.html opts in
    from script only, because Chrome left a no-JavaScript page stuck behind the transition overlay. Reduced motion: off. */
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+/* Turbo's bar for a page that takes over half a second, in the accent (unlayered, to beat Turbo's own style). */
+.turbo-progress-bar { height: 2px; background: var(--accent); }
 
 @layer base {
   body { @apply bg-canvas font-sans text-ink; }
